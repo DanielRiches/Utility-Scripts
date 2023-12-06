@@ -252,12 +252,9 @@ public class GridGeneratorFull : MonoBehaviour
                 }
             }
             generated = true;
-
             cellWorldPositions.Dispose();
-
             isGeneratingGrid = false;
-        }
-        
+        }        
         stopGuideCellsCoroutine = false;
     }
 
@@ -378,7 +375,6 @@ public class GridGeneratorFull : MonoBehaviour
                     {
                         gizmoColor = Color.white;
                     }
-
                     GridDebug.AddToBatch(kvp.Key, gizmoColor, GridDebug.GizmoType.Hexagon, grid.cellSize);
                     break;
             }
@@ -437,9 +433,7 @@ public class GridGeneratorFull : MonoBehaviour
             }
             yield return null;
         }
-
         guideCellList = new List<Vector3>(uniqueKeys); // Convert the HashSet back to the List
-
         guideCellsDone = true;
     }
     #endregion
@@ -604,19 +598,13 @@ public static class GridDebug
             Debug.LogWarning("Grid is empty.");
             return;
         }
-
-        // Extract the keys from the dictionary
-        NativeArray<Vector3> cellKeys = new NativeArray<Vector3>(gridGenerator.cellsDictionary.Keys.ToArray(), Allocator.TempJob);
-
-        // Allocate native arrays for job results
-        NativeArray<float> maxMagnitudes = new NativeArray<float>(1, Allocator.TempJob);
-        NativeArray<Vector3> furthestCellKeys = new NativeArray<Vector3>(1, Allocator.TempJob);
-
-        // Set initial values for the max magnitude and furthest cell
-        maxMagnitudes[0] = float.MinValue;
+        
+        NativeArray<Vector3> cellKeys = new NativeArray<Vector3>(gridGenerator.cellsDictionary.Keys.ToArray(), Allocator.TempJob);// Extract the keys from the dictionary        
+        NativeArray<float> maxMagnitudes = new NativeArray<float>(1, Allocator.TempJob);// Allocate native arrays for job results
+        NativeArray<Vector3> furthestCellKeys = new NativeArray<Vector3>(1, Allocator.TempJob);        
+        maxMagnitudes[0] = float.MinValue;// Set initial values for the max magnitude and furthest cell
         furthestCellKeys[0] = Vector3.zero;
-
-        // Create job and schedule it
+        
         FindFurthestCellJob job = new FindFurthestCellJob
         {
             cellKeys = cellKeys,
@@ -624,20 +612,16 @@ public static class GridDebug
             furthestCellKeys = furthestCellKeys
         };
 
-        JobHandle jobHandle = job.Schedule(cellKeys.Length, 64); // Adjust the batch size as needed
-
-        // Wait for the job to complete
+        int numThreads = System.Environment.ProcessorCount;
+        JobHandle jobHandle = job.Schedule(cellKeys.Length, numThreads);
         jobHandle.Complete();
 
-        // Retrieve results from native arrays
-        float maxMagnitudeResult = maxMagnitudes[0];
+        float maxMagnitudeResult = maxMagnitudes[0];        // Retrieve results from native arrays
         Vector3 furthestCellKeyResult = furthestCellKeys[0];
 
-        // Dispose of native arrays
         cellKeys.Dispose();
         maxMagnitudes.Dispose();
         furthestCellKeys.Dispose();
-
         Debug.Log($"World Position of furthest cell in the grid from origin (bottom left of grid): {furthestCellKeyResult}");
     }
 
