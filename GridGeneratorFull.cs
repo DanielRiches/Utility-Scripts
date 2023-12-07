@@ -8,6 +8,8 @@ using System.Collections;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using static GridGeneratorFull;
+using System.Threading;
 
 public class GridGeneratorFull : MonoBehaviour
 {
@@ -20,10 +22,14 @@ public class GridGeneratorFull : MonoBehaviour
 
     #region Hidden Properties / Saved Grid Values
     [Serializable]
-    public struct CellProperties // You can set what values you wish each cell to have inside here.
+    public struct CellProperties
     {
-        [SerializeField] public int teamNumber;
+        [SerializeField] public Vector3 cellCenterPosition;
+        // Add more properties as needed
     }
+
+
+
     [BurstCompile]
     private struct CellJob : IJobParallelFor
     {
@@ -77,6 +83,8 @@ public class GridGeneratorFull : MonoBehaviour
     [SerializeField] private bool debugFurthestCell;
     [Tooltip("Information on the contents of the cells dictionary.")]
     [SerializeField] private bool debugDictionary;
+    [Tooltip("Information on the contents of each CellProperties in the dictionary.")]
+    [SerializeField] private bool debugCellProperties;
     [Tooltip("Estimate the runtime cost of the grid, given the properties you put in the CellProperties struct and the inspector values selected")]
     [SerializeField] private bool debugMemoryRequirements;
     [Space(5)]
@@ -140,7 +148,6 @@ public class GridGeneratorFull : MonoBehaviour
             if (generateGridOnStart)
             {
                 generateGridOnStart = false;
-
             }
             generated = false;
             preparingGuideCells = false;
@@ -173,6 +180,20 @@ public class GridGeneratorFull : MonoBehaviour
                 {
                     Debug.Log("No cells in: " + cellsDictionary + " to debug, did you generate a grid yet?");
                     debugDictionary = false;
+                }
+            }
+
+            if (debugCellProperties)
+            {
+                if (cellsDictionary.Count > 0)
+                {
+                    GridDebug.DebugCellPropertiesDictionary(this);
+                    debugCellProperties = false;
+                }
+                else
+                {
+                    Debug.Log("No cells in: " + cellsDictionary + " to debug, did you generate a grid yet?");
+                    debugCellProperties = false;
                 }
             }
 
@@ -244,6 +265,35 @@ public class GridGeneratorFull : MonoBehaviour
                     if (!cellsDictionary.ContainsKey(cellCenter))
                     {
                         cellsDictionary.Add(cellCenter, new CellProperties());
+
+                        switch (gridStyle)
+                        {
+                            case GridStyle.Rectangle:
+                                switch (gridOrientation) // Save the cell's center position
+                                {
+                                    case GridOrientation.Vertical:
+                                        CellProperties cellProperties;
+                                        if (cellsDictionary.TryGetValue(cellCenter, out cellProperties))
+                                        {                                            
+                                            cellProperties.cellCenterPosition = cellCenter + new Vector3(gridLayout.cellSize.x * 0.5f, gridLayout.cellSize.y * 0.5f, 0f);
+                                            cellsDictionary[cellCenter] = cellProperties;
+                                        }                                        
+                                        break;
+
+                                    case GridOrientation.Horizontal:                                        
+                                        if (cellsDictionary.TryGetValue(cellCenter, out cellProperties))
+                                        {
+                                            cellProperties.cellCenterPosition = cellCenter + new Vector3(gridLayout.cellSize.x * 0.5f, 0f, gridLayout.cellSize.y * 0.5f);
+                                            cellsDictionary[cellCenter] = cellProperties;
+                                        }                                                                          
+                                        break;
+                                }
+                                break;
+
+                            case GridStyle.Hexagon:
+                                gridCollider.center = centerCellPosition;
+                                break;
+                        }
                     }
                     else
                     {
@@ -306,6 +356,12 @@ public class GridGeneratorFull : MonoBehaviour
     #region GridDebug
     private void OnDrawGizmos()
     {
+        if (debugMemoryRequirements)
+        {
+            Debug.Log("Accounting for CellProperties struct and inspector properties, estimated memory cost : " + GridDebug.CalculateMemoryRequirement(gridSize, typeof(CellProperties)));
+            debugMemoryRequirements = false;
+        }
+
         if (!generated || !drawCells) return;
 
         Color gizmoColor;
@@ -733,5 +789,49 @@ public static class GridDebug
 
     // ---------------
 
+    private static List<string> logMessages;
+    public struct DebugCellPropertiesJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<Vector3> Keys;
+        [ReadOnly] public NativeArray<CellProperties> CellPropertiesArray;
+
+        public void Execute(int index)
+        {
+            Vector3 key = Keys[index];
+            CellProperties cellProperties = CellPropertiesArray[index];
+
+            // Append log messages to the list
+            logMessages.Add($"Key: {key}");
+            logMessages.Add($"cellCenterPosition: {cellProperties.cellCenterPosition}");
+            logMessages.Add("-----------------------");
+        }
+    }
+
+    public static void DebugCellPropertiesDictionary(GridGeneratorFull gridGenerator)
+    {
+        var keysArray = new NativeArray<Vector3>(gridGenerator.cellsDictionary.Keys.ToArray(), Allocator.TempJob);
+        var valuesArray = new NativeArray<CellProperties>(gridGenerator.cellsDictionary.Values.ToArray(), Allocator.TempJob);
+
+        logMessages = new List<string>();
+
+        DebugCellPropertiesJob jobData = new DebugCellPropertiesJob
+        {
+            Keys = keysArray,
+            CellPropertiesArray = valuesArray,
+        };
+
+        JobHandle jobHandle = jobData.Schedule(keysArray.Length, System.Environment.ProcessorCount);
+        jobHandle.Complete();
+
+        // Display log messages in order
+        foreach (var message in logMessages)
+        {
+            Debug.Log(message);
+        }
+
+        keysArray.Dispose();
+        valuesArray.Dispose();
+        logMessages.Clear();
+    }
     #endregion
 }
