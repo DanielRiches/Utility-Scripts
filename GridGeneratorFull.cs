@@ -9,27 +9,28 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using static GridGeneratorFull;
-using System.Threading;
 
 public class GridGeneratorFull : MonoBehaviour
 {
     // Multithreaded and BurstCompiled Grid creation script, no specific components needed as the script will add those automatically.    
-    // Each cell is then added to a Dictionary. that can then be used to store values for each grid cell, using the cell's gridLayout.CellToWorld as the key for each entry.    
 
-    // Intended Purpose: A* Pathfinding if necessary, as Dictionary keys are grid cell positions, primarily designed for games that have a large desired grid size  with a lot of data per-tile.
+    // Each cell is added to a Dictionary that can then be used to store values for each grid cell, using the cell's gridLayout.CellToWorld as the key for each entry.
+    // Code has already been added which will save the EXACT center of the cell as a Vector3 (inside CellProperties Struct below), since gridLayout.CellToWorld actually returns
+    // the bottom left position of the cell and GetCellCenter takes into account the Z axis of cellSize, the center position has been manually worked out for you.
+    // these Vector3's can be used for A* pathfinding, as well as placement of objects on the grid.
+
+    // Intended Purpose: Primarily designed for games that have a large desired grid size with a lot of data per-tile.
 
     // PLEASE NOTE: Although heavier operations inside GridDebug class are using jobs, it can take a while to debug large grids, use cautiously.
 
-    #region Hidden Properties / Saved Grid Values
     [Serializable]
-    public struct CellProperties
+    public struct CellProperties // Add cell properties here
     {
         [SerializeField] public Vector3 cellCenterPosition;
         // Add more properties as needed
     }
 
-
-
+    #region Hidden Properties / Saved Grid Values
     [BurstCompile]
     private struct CellJob : IJobParallelFor
     {
@@ -74,13 +75,14 @@ public class GridGeneratorFull : MonoBehaviour
     [Space(5)]
     [Header("Debug")]
     [SerializeField] private List<Vector3> guideCellList = new List<Vector3>();
+    private List<Vector3> cornerCellList = new List<Vector3>();
     [SerializeField] private Vector3 centerCellPosition;
     [Tooltip("Draws the cells visually, requires GridDebug class if not already in this script.")]
     [SerializeField] private bool drawCells;    
     [Tooltip("Highlights important points on the grid by drawing them green.")]
     [SerializeField] private bool drawGuideCells;
     [Tooltip("Information on the position of the furthest cell from the start.")]
-    [SerializeField] private bool debugFurthestCell;
+    [SerializeField] private bool debugCornerCells;
     [Tooltip("Information on the contents of the cells dictionary.")]
     [SerializeField] private bool debugDictionary;
     [Tooltip("Information on the contents of each CellProperties in the dictionary.")]
@@ -197,13 +199,16 @@ public class GridGeneratorFull : MonoBehaviour
                 }
             }
 
-            if (debugFurthestCell)
+            if (debugCornerCells && guideCellsDone && cellsDictionary.Count > 0)
             {
-                if (cellsDictionary.Count > 0)
+                if (cornerCellList.Count > 0)
                 {
-                    GridDebug.DebugFurthestCellKey(this);
+                    foreach (Vector3 cornerCell in cornerCellList)
+                    {
+                        Debug.Log("Corner Cell World Space Position: " + cornerCell);
+                    }
                 }
-                debugFurthestCell = false;
+                debugCornerCells = false;
             }
         }
 
@@ -291,6 +296,26 @@ public class GridGeneratorFull : MonoBehaviour
                                 break;
 
                             case GridStyle.Hexagon:
+                                switch (gridOrientation) // Save the cell's center position
+                                {
+                                    case GridOrientation.Vertical:
+                                        CellProperties cellProperties;
+                                        if (cellsDictionary.TryGetValue(cellCenter, out cellProperties))
+                                        {
+                                            cellProperties.cellCenterPosition = cellCenter + new Vector3(gridLayout.cellSize.x * 0.5f, gridLayout.cellSize.y * 0.5f, 0f);
+                                            cellsDictionary[cellCenter] = cellProperties;
+                                        }
+                                        break;
+
+                                    case GridOrientation.Horizontal:
+                                        if (cellsDictionary.TryGetValue(cellCenter, out cellProperties))
+                                        {
+                                            cellProperties.cellCenterPosition = cellCenter + new Vector3(gridLayout.cellSize.x * 0.5f, 0f, gridLayout.cellSize.y * 0.5f);
+                                            cellsDictionary[cellCenter] = cellProperties;
+                                        }
+                                        break;
+                                }
+
                                 gridCollider.center = centerCellPosition;
                                 break;
                         }
@@ -378,7 +403,12 @@ public class GridGeneratorFull : MonoBehaviour
                         case GridOrientation.Vertical:
                             if (guideCellsDone && drawGuideCells)
                             {
-                                if (guideCellList.Contains(kvp.Key))
+                                if (kvp.Key == centerCellPosition)
+                                {                                    
+                                    desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.y, cellSize.z + 3f);
+                                    gizmoColor = Color.red;
+                                }
+                                else if (guideCellList.Contains(kvp.Key))
                                 {
                                     desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.y, cellSize.z + 1f);
                                     gizmoColor = Color.green;
@@ -400,7 +430,12 @@ public class GridGeneratorFull : MonoBehaviour
                         case GridOrientation.Horizontal:
                             if (guideCellsDone && drawGuideCells)
                             {
-                                if (guideCellList.Contains(kvp.Key))
+                                if (kvp.Key == centerCellPosition)
+                                {                                    
+                                    desiredCellSize = new Vector3(grid.cellSize.x, cellSize.z + 3f, cellSize.y);
+                                    gizmoColor = Color.red;
+                                }
+                                else if (guideCellList.Contains(kvp.Key))
                                 {
                                     desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.z + 1f, grid.cellSize.y);
                                     gizmoColor = Color.green;
@@ -423,7 +458,11 @@ public class GridGeneratorFull : MonoBehaviour
                     break;
 
                 case GridStyle.Hexagon:
-                    if (guideCellList.Contains(kvp.Key))
+                    if (kvp.Key == centerCellPosition)
+                    {                        
+                        gizmoColor = Color.red;
+                    }
+                    else if (guideCellList.Contains(kvp.Key))
                     {
                         gizmoColor = Color.green;
                     }
@@ -449,6 +488,7 @@ public class GridGeneratorFull : MonoBehaviour
             yield break;
         }
 
+        cornerCellList.Clear();
         List<Vector3> cellKeys = new List<Vector3>(cellsDictionary.Keys);
 
         foreach (var key in cellKeys)
@@ -483,9 +523,14 @@ public class GridGeneratorFull : MonoBehaviour
                         case GridStyle.Hexagon:
                             gridCollider.center = centerCellPosition;
                             break;
-                    }
+                    }  
+                    centerCellPosition = key;
                 }
-                uniqueKeys.Add(key); // Add the key to the HashSet to track uniqueness
+                else if (GridDebug.IsCellAtCorner(index, gridSize))
+                {
+                    cornerCellList.Add(key);
+                }
+                uniqueKeys.Add(key); // Add the key to the HashSet to track uniqueness              
             }
             yield return null;
         }
@@ -617,73 +662,6 @@ public static class GridDebug
 
     #region Jobs
     [BurstCompile]
-    public struct FindFurthestCellJob : IJobParallelFor
-    {
-        [ReadOnly]
-        public NativeArray<Vector3> cellKeys;
-
-        [NativeDisableParallelForRestriction]
-        public NativeArray<float> maxMagnitudes;
-
-        [NativeDisableParallelForRestriction]
-        public NativeArray<Vector3> furthestCellKeys;
-
-        public void Execute(int index)
-        {
-            float magnitude = cellKeys[index].magnitude;
-
-            // Use local variables to avoid race conditions
-            float localMaxMagnitude = maxMagnitudes[0];
-            Vector3 localFurthestCellKey = furthestCellKeys[0];
-
-            if (magnitude > localMaxMagnitude)
-            {
-                localMaxMagnitude = magnitude;
-                localFurthestCellKey = cellKeys[index];
-            }
-
-            // Write back the local variables
-            maxMagnitudes[0] = localMaxMagnitude;
-            furthestCellKeys[0] = localFurthestCellKey;
-        }
-    }
-    public static void DebugFurthestCellKey(GridGeneratorFull gridGenerator)
-    {
-        if (gridGenerator.cellsDictionary.Count == 0)
-        {
-            Debug.LogWarning("Grid is empty.");
-            return;
-        }
-        
-        NativeArray<Vector3> cellKeys = new NativeArray<Vector3>(gridGenerator.cellsDictionary.Keys.ToArray(), Allocator.TempJob);// Extract the keys from the dictionary        
-        NativeArray<float> maxMagnitudes = new NativeArray<float>(1, Allocator.TempJob);// Allocate native arrays for job results
-        NativeArray<Vector3> furthestCellKeys = new NativeArray<Vector3>(1, Allocator.TempJob);        
-        maxMagnitudes[0] = float.MinValue;// Set initial values for the max magnitude and furthest cell
-        furthestCellKeys[0] = Vector3.zero;
-        
-        FindFurthestCellJob job = new FindFurthestCellJob
-        {
-            cellKeys = cellKeys,
-            maxMagnitudes = maxMagnitudes,
-            furthestCellKeys = furthestCellKeys
-        };
-
-        int numThreads = System.Environment.ProcessorCount;
-        JobHandle jobHandle = job.Schedule(cellKeys.Length, numThreads);
-        jobHandle.Complete();
-
-        float maxMagnitudeResult = maxMagnitudes[0];        // Retrieve results from native arrays
-        Vector3 furthestCellKeyResult = furthestCellKeys[0];
-
-        cellKeys.Dispose();
-        maxMagnitudes.Dispose();
-        furthestCellKeys.Dispose();
-        Debug.Log($"World Position of furthest cell in the grid from origin (bottom left of grid): {furthestCellKeyResult}");
-    }
-
-    // ----------------
-
-    [BurstCompile]
     public struct DebugGridCellsDictionaryJob : IJobParallelFor
     {
         [ReadOnly] public NativeArray<Vector3> Keys;
@@ -789,8 +767,9 @@ public static class GridDebug
 
     // ---------------
 
+    // Do NOT BurstCompile, values will not show properly.
     private static List<string> logMessages;
-    public struct DebugCellPropertiesJob : IJobParallelFor
+    public struct DebugCellPropertiesJob : IJobParallelFor 
     {
         [ReadOnly] public NativeArray<Vector3> Keys;
         [ReadOnly] public NativeArray<CellProperties> CellPropertiesArray;
@@ -798,15 +777,13 @@ public static class GridDebug
         public void Execute(int index)
         {
             Vector3 key = Keys[index];
-            CellProperties cellProperties = CellPropertiesArray[index];
-
-            // Append log messages to the list
+            CellProperties cellProperties = CellPropertiesArray[index];            
+            
             logMessages.Add($"Key: {key}");
             logMessages.Add($"cellCenterPosition: {cellProperties.cellCenterPosition}");
             logMessages.Add("-----------------------");
         }
-    }
-
+    } 
     public static void DebugCellPropertiesDictionary(GridGeneratorFull gridGenerator)
     {
         var keysArray = new NativeArray<Vector3>(gridGenerator.cellsDictionary.Keys.ToArray(), Allocator.TempJob);
@@ -820,7 +797,8 @@ public static class GridDebug
             CellPropertiesArray = valuesArray,
         };
 
-        JobHandle jobHandle = jobData.Schedule(keysArray.Length, System.Environment.ProcessorCount);
+        int numThreads = System.Environment.ProcessorCount;
+        JobHandle jobHandle = jobData.Schedule(keysArray.Length, numThreads);
         jobHandle.Complete();
 
         // Display log messages in order
@@ -833,5 +811,7 @@ public static class GridDebug
         valuesArray.Dispose();
         logMessages.Clear();
     }
+
+    // ---------------
     #endregion
 }
