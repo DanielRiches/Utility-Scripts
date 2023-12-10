@@ -30,17 +30,15 @@ public class GridGeneratorFull : MonoBehaviour
         // Add more properties as needed
     }
 
-    #region Hidden Properties / Saved Grid Values
-    [BurstCompile]
-    private struct CellJob : IJobParallelFor
-    {
-        public NativeArray<Vector3> cellWorldPositions;
+    public Grid grid;
+    public GridLayout gridLayout;
+    public Dictionary<Vector3, CellProperties> cellsDictionary = new Dictionary<Vector3, CellProperties>();
+    [field: SerializeField, Header("Cells")] private List<Vector3> cellsList = new List<Vector3>();
+    [SerializeField] private List<Vector3> guideCellList = new List<Vector3>();
+    [SerializeField] private List<Vector3> cornerCellList = new List<Vector3>();
+    [SerializeField] private Vector3 centerCellPosition;
 
-        public void Execute(int index)
-        {
-            // Do something to the array if you wish.
-        }
-    }
+    #region Hidden Properties
     public enum GridOrientation
     {
         Vertical,
@@ -51,32 +49,22 @@ public class GridGeneratorFull : MonoBehaviour
         Rectangle,
         Hexagon
     }
-    public Dictionary<Vector3, CellProperties> cellsDictionary = new Dictionary<Vector3, CellProperties>();    
     private BoxCollider gridCollider;
     private bool ready;
     private bool generated;
-    private GridStyle previousGridStyle;
-    private GridOrientation previousGridOrientation;
-    private Vector2Int previousGridSize;
-    private Vector3 previousCellSize;
-    private Vector2 previousCellGap;
-    private JobHandle jobHandle;
-    private NativeArray<Vector3> cellWorldPositions;
-    private bool isGeneratingGrid;    
-    private bool preparingGuideCells;
-    private bool guideCellsDone;
-    private bool stopGuideCellsCoroutine;
-    private bool centerFound;
+    private bool populatedDictionary;
+    private bool populated;
+    private bool setDictionary;
+    private bool dictionarySet;
+    private bool guideCells;
+    private bool guideCellsDone;    
     #endregion
 
     #region Inspector
-    public Grid grid;
-    public GridLayout gridLayout;
     [Space(5)]
     [Header("Debug")]
-    [SerializeField] private List<Vector3> guideCellList = new List<Vector3>();
-    private List<Vector3> cornerCellList = new List<Vector3>();
-    [SerializeField] private Vector3 centerCellPosition;
+    [Tooltip("Will add all the cells to the Cells List above to aid debugging.")]
+    [SerializeField] private bool showCells;
     [Tooltip("Draws the cells visually, requires GridDebug class if not already in this script.")]
     [SerializeField] private bool drawCells;    
     [Tooltip("Highlights important points on the grid by drawing them green.")]
@@ -89,12 +77,6 @@ public class GridGeneratorFull : MonoBehaviour
     [SerializeField] private bool debugCellProperties;
     [Tooltip("Estimate the runtime cost of the grid, given the properties you put in the CellProperties struct and the inspector values selected")]
     [SerializeField] private bool debugMemoryRequirements;
-    [Space(5)]
-    [Header("Runtime")]
-    [Tooltip("Generate a grid the moment PlayMode is entered.")]
-    [SerializeField] private bool generateGridOnStart;
-    [Tooltip("Generate a grid, this will overwrite the previous grid.")]
-    [SerializeField] private bool generateGrid;
     [Space(5)]
     [Header("Grid Settings")]
     [Tooltip("Style of grid")]
@@ -111,9 +93,9 @@ public class GridGeneratorFull : MonoBehaviour
 
     private void Awake()
     {
+        ready = false;
         if (!TryGetComponent<Grid>(out grid))
-        {
-            ready = false;
+        {            
             grid = gameObject.AddComponent<Grid>();
             gridLayout = grid;
         }
@@ -123,41 +105,23 @@ public class GridGeneratorFull : MonoBehaviour
         }
 
         if (!TryGetComponent<BoxCollider>(out gridCollider))
-        {
-            ready = false;
+        {            
             gridCollider = gameObject.AddComponent<BoxCollider>();
-
-            if (guideCellsDone)
-            {
-                gridCollider.center = centerCellPosition; // Set the center of the BoxCollider to the center of the grid
-            }
+            gridCollider.center = centerCellPosition; // Set the center of the BoxCollider to the center of the grid
         }
         else
         {
-            if (guideCellsDone)
-            {
-                gridCollider.center = centerCellPosition;
-            }
+            gridCollider.center = centerCellPosition; // Set the center of the BoxCollider to the center of the grid
         }
-
         ready = true;
     }
 
     private void Start()
     {
         if (ready)
-        {
-            if (generateGridOnStart)
-            {
-                generateGridOnStart = false;
-            }
-            generated = false;
-            preparingGuideCells = false;
-            guideCellsDone = false;
-            generateGrid = false;            
+        {       
             SetGrid();
-            SaveGridValues();
-            StartCoroutine(GenerateGrid());
+            StartCoroutine(GenerateGrid(cellsList, cornerCellList, guideCellList));
         }
     }
 
@@ -165,10 +129,27 @@ public class GridGeneratorFull : MonoBehaviour
     {
         if (generated)
         {
-            if (!preparingGuideCells)
-            {                
-                StartCoroutine(GetGuideCells());
-                preparingGuideCells = true;
+            if (!populatedDictionary)
+            {
+                populatedDictionary = true;
+                StartCoroutine(PopulateDictionary(cellsList, cellsDictionary));
+            }
+
+            if (populated && !setDictionary)
+            {
+                setDictionary = true;
+                StartCoroutine(SetDictionary(cellsDictionary));
+            }
+
+            if (dictionarySet && !guideCells)
+            {
+                guideCells = true;
+                StartCoroutine(GetGuideCells(cellsDictionary));
+            }
+
+            if (guideCellsDone)
+            {
+                // let the manager know grid is finished
             }
 
             if (debugDictionary)
@@ -184,7 +165,6 @@ public class GridGeneratorFull : MonoBehaviour
                     debugDictionary = false;
                 }
             }
-
             if (debugCellProperties)
             {
                 if (cellsDictionary.Count > 0)
@@ -198,8 +178,7 @@ public class GridGeneratorFull : MonoBehaviour
                     debugCellProperties = false;
                 }
             }
-
-            if (debugCornerCells && guideCellsDone && cellsDictionary.Count > 0)
+            if (debugCornerCells && cellsDictionary.Count > 0)
             {
                 if (cornerCellList.Count > 0)
                 {
@@ -217,131 +196,57 @@ public class GridGeneratorFull : MonoBehaviour
             Debug.Log("Accounting for CellProperties struct and inspector properties, estimated memory cost : " + GridDebug.CalculateMemoryRequirement(gridSize, typeof(CellProperties)));
             debugMemoryRequirements = false;
         }
-
-        if (generateGrid || gridStyle != previousGridStyle || gridOrientation != previousGridOrientation || gridSize.x != previousGridSize.x || gridSize.y != previousGridSize.y || cellSize != previousCellSize || cellGap.x != previousCellGap.x || cellGap.y != previousCellGap.y)
-        {
-            if (isGeneratingGrid)
-            {
-                isGeneratingGrid = false;
-                jobHandle.Complete();
-                cellWorldPositions.Dispose();
-                Start();
-            }
-            else
-            {
-                Start();
-            }
-            generateGrid = false;
-        }
-
-        if (guideCellsDone && gridSize.x > 2 && gridSize.y > 2 && guideCellList.Count < 9)
-        {
-            guideCellsDone = false;
-            StartCoroutine(GetGuideCells());
-        }
     }
 
-    IEnumerator GenerateGrid()
-    {        
-        stopGuideCellsCoroutine = true;// Set the flag to stop the GetGuideCells coroutine
-        cellsDictionary.Clear();
-        cellSize = grid.cellSize;
-        cellWorldPositions = new NativeArray<Vector3>(gridSize.x * gridSize.y, Allocator.TempJob);
-        isGeneratingGrid = true;
-
-        int numThreads = System.Environment.ProcessorCount;
-        CellJob cellJob = new CellJob
+    IEnumerator GenerateGrid(List<Vector3> cellsList, List<Vector3> cornerCellList, List<Vector3> guideCellList)
+    {
+        for (int y = 0; y < gridSize.y; y++)
         {
-            cellWorldPositions = cellWorldPositions
-        };
-        jobHandle = cellJob.Schedule(gridSize.x * gridSize.y, numThreads);
-        
-        yield return new WaitUntil(() => jobHandle.IsCompleted || !isGeneratingGrid); // Wait for the job to complete or be canceled
-        jobHandle.Complete();
-
-        if (isGeneratingGrid)
-        {
-            for (int y = 0; y < gridSize.y; y++)
+            for (int x = 0; x < gridSize.x; x++)
             {
-                for (int x = 0; x < gridSize.x; x++)
+                Vector3 cell = gridLayout.CellToWorld(new Vector3Int(x, y, 0));
+
+                if (showCells)
                 {
-                    Vector3 cellCenter = gridLayout.CellToWorld(new Vector3Int(x, y, 0));
+                    cellsList.Add(cell);
+                }           
+                
+                if ((x == gridSize.x / 2 && (y == 0 || y == gridSize.y - 1)) || (y == gridSize.y / 2 && (x == 0 || x == gridSize.x - 1))) // Check if the cell is at the halfway point along each edge
+                {
+                    guideCellList.Add(cell);
+                }  
 
-                    if (!cellsDictionary.ContainsKey(cellCenter))
+                if (x == 0 || x == gridSize.x - 1)// Check if the cell is a corner cell
+                {
+                    if (y == 0 || y == gridSize.y - 1)
                     {
-                        cellsDictionary.Add(cellCenter, new CellProperties());
-
-                        switch (gridStyle)
-                        {
-                            case GridStyle.Rectangle:
-                                switch (gridOrientation) // Save the cell's center position
-                                {
-                                    case GridOrientation.Vertical:
-                                        CellProperties cellProperties;
-                                        if (cellsDictionary.TryGetValue(cellCenter, out cellProperties))
-                                        {                                            
-                                            cellProperties.cellCenterPosition = cellCenter + new Vector3(gridLayout.cellSize.x * 0.5f, gridLayout.cellSize.y * 0.5f, 0f);
-                                            cellsDictionary[cellCenter] = cellProperties;
-                                        }                                        
-                                        break;
-
-                                    case GridOrientation.Horizontal:                                        
-                                        if (cellsDictionary.TryGetValue(cellCenter, out cellProperties))
-                                        {
-                                            cellProperties.cellCenterPosition = cellCenter + new Vector3(gridLayout.cellSize.x * 0.5f, 0f, gridLayout.cellSize.y * 0.5f);
-                                            cellsDictionary[cellCenter] = cellProperties;
-                                        }                                                                          
-                                        break;
-                                }
-                                break;
-
-                            case GridStyle.Hexagon:
-                                switch (gridOrientation) // Save the cell's center position
-                                {
-                                    case GridOrientation.Vertical:
-                                        CellProperties cellProperties;
-                                        if (cellsDictionary.TryGetValue(cellCenter, out cellProperties))
-                                        {
-                                            cellProperties.cellCenterPosition = cellCenter + new Vector3(gridLayout.cellSize.x * 0.5f, gridLayout.cellSize.y * 0.5f, 0f);
-                                            cellsDictionary[cellCenter] = cellProperties;
-                                        }
-                                        break;
-
-                                    case GridOrientation.Horizontal:
-                                        if (cellsDictionary.TryGetValue(cellCenter, out cellProperties))
-                                        {
-                                            cellProperties.cellCenterPosition = cellCenter + new Vector3(gridLayout.cellSize.x * 0.5f, 0f, gridLayout.cellSize.y * 0.5f);
-                                            cellsDictionary[cellCenter] = cellProperties;
-                                        }
-                                        break;
-                                }
-
-                                gridCollider.center = centerCellPosition;
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        Debug.Log($"Key already exists for position: {cellCenter}");
+                        cornerCellList.Add(cell);
                     }
                 }
+                
+                if (x == gridSize.x / 2 && y == gridSize.y / 2)// Check if the cell is the center of the grid
+                {
+                    centerCellPosition = cell;
+                }
             }
-            generated = true;
-            cellWorldPositions.Dispose();
-            isGeneratingGrid = false;
-        }        
-        stopGuideCellsCoroutine = false;
+        }
+
+        yield return null;
+        generated = true;
     }
 
-    #region Save + Set Grid
-    private void SaveGridValues()
+
+
+
+
+
+    IEnumerator GetGuideCells(Dictionary<Vector3, CellProperties> cellsDictionary)
     {
-        previousGridStyle = gridStyle;
-        previousGridOrientation = gridOrientation;
-        previousGridSize = gridSize;
-        previousCellSize = cellSize;
-        previousCellGap = cellGap;
+
+
+        yield return null;
     }
+
 
     void SetGrid()
     {
@@ -376,6 +281,160 @@ public class GridGeneratorFull : MonoBehaviour
                 break;
         }
     }
+
+    #region Jobs
+    [BurstCompile]
+    struct PopulateDictionaryJob : IJobParallelFor
+    {
+        [ReadOnly] public NativeArray<Vector3> cellsList;
+        [WriteOnly] public NativeParallelHashMap<Vector3, CellProperties>.ParallelWriter cellsDictionary;
+        public GridStyle gridStyle;
+        public GridOrientation gridOrientation;
+        public float cellSizeX;
+        public float cellSizeY;
+
+        public void Execute(int index)
+        {
+            Vector3 key = cellsList[index];
+            CellProperties cellProperties = new CellProperties();
+
+            switch (gridStyle)
+            {
+                case GridStyle.Rectangle:
+                    switch (gridOrientation)
+                    {
+                        case GridOrientation.Vertical:
+                            cellProperties.cellCenterPosition = key + new Vector3(cellSizeX * 0.5f, cellSizeY * 0.5f, 0f);
+                            break;
+                        case GridOrientation.Horizontal:
+                            cellProperties.cellCenterPosition = key + new Vector3(cellSizeX * 0.5f, 0f, cellSizeY * 0.5f);
+                            break;
+                    }
+                    break;
+                case GridStyle.Hexagon:
+                    cellProperties.cellCenterPosition = key + new Vector3(cellSizeX * 0.5f, cellSizeY * 0.5f, 0f);
+                    break;
+            }
+
+            cellsDictionary.TryAdd(key, cellProperties);
+        }
+    }
+    IEnumerator PopulateDictionary(List<Vector3> cellsList, Dictionary<Vector3, CellProperties> cellsDictionary)
+    {
+        // Create / populate the nativeCellsArray
+        NativeArray<Vector3> nativeCellsArray = new NativeArray<Vector3>(cellsList.ToArray(), Allocator.TempJob);
+        NativeParallelHashMap<Vector3, CellProperties> nativeCellsDictionary = new NativeParallelHashMap<Vector3, CellProperties>(nativeCellsArray.Length, Allocator.TempJob);
+
+        PopulateDictionaryJob populateJob = new PopulateDictionaryJob
+        {
+            cellsList = nativeCellsArray, // Pass nativeCellsArray to job
+            cellsDictionary = nativeCellsDictionary.AsParallelWriter(),
+            gridStyle = gridStyle,
+            gridOrientation = gridOrientation,
+            cellSizeX = gridLayout.cellSize.x,
+            cellSizeY = gridLayout.cellSize.y
+        };
+
+        int numThreads = System.Environment.ProcessorCount;
+        JobHandle jobHandle = populateJob.Schedule(cellsList.Count, numThreads);
+        jobHandle.Complete();
+
+        // Copy back the result to the managed dictionary
+        foreach (var kvp in nativeCellsDictionary)
+        {
+            cellsDictionary[kvp.Key] = kvp.Value;
+        }
+
+        nativeCellsArray.Dispose(); // Dispose of nativeCellsList
+        nativeCellsDictionary.Dispose();
+
+        populated = true;
+        yield return null;
+    }
+
+    // ------------------
+
+    //[BurstCompile]
+    struct SetDictionaryJob : IJob
+    {
+        public NativeParallelHashMap<Vector3, CellProperties> cellsDictionary;
+        public GridStyle gridStyle;
+        public GridOrientation gridOrientation;
+        public float cellSizeX;
+        public float cellSizeY;
+
+        public void Execute()
+        {
+            List<KeyValuePair<Vector3, CellProperties>> changes = new List<KeyValuePair<Vector3, CellProperties>>();
+
+            foreach (var kvp in cellsDictionary)
+            {
+                Vector3 key = kvp.Key;
+                CellProperties cellProperties = kvp.Value;
+
+                switch (gridStyle)
+                {
+                    case GridStyle.Rectangle:
+                        switch (gridOrientation)
+                        {
+                            case GridOrientation.Vertical:
+                                cellProperties.cellCenterPosition = key + new Vector3(cellSizeX * 0.5f, cellSizeY * 0.5f, 0f);
+                                changes.Add(new KeyValuePair<Vector3, CellProperties>(key, cellProperties));
+                                break;
+
+                            case GridOrientation.Horizontal:
+                                cellProperties.cellCenterPosition = key + new Vector3(cellSizeX * 0.5f, 0f, cellSizeY * 0.5f);
+                                changes.Add(new KeyValuePair<Vector3, CellProperties>(key, cellProperties));
+                                break;
+                        }
+                        break;
+
+                    case GridStyle.Hexagon:
+                        cellProperties.cellCenterPosition = key + new Vector3(cellSizeX * 0.5f, cellSizeY * 0.5f, 0f);
+                        changes.Add(new KeyValuePair<Vector3, CellProperties>(key, cellProperties));
+                        break;
+                }
+            }
+
+            // Apply changes after the iteration
+            foreach (var change in changes)
+            {
+                cellsDictionary[change.Key] = change.Value;
+            }
+        }
+    }
+    IEnumerator SetDictionary(Dictionary<Vector3, CellProperties> cellsDictionary)
+    {
+        NativeParallelHashMap<Vector3, CellProperties> nativeCellsDictionary = new NativeParallelHashMap<Vector3, CellProperties>(cellsDictionary.Count, Allocator.TempJob);
+
+        foreach (var kvp in cellsDictionary)
+        {
+            nativeCellsDictionary.Add(kvp.Key, kvp.Value);
+        }
+
+        SetDictionaryJob setJob = new SetDictionaryJob
+        {
+            cellsDictionary = nativeCellsDictionary,
+            gridStyle = gridStyle,
+            gridOrientation = gridOrientation,
+            cellSizeX = gridLayout.cellSize.x,
+            cellSizeY = gridLayout.cellSize.y
+        };
+
+        JobHandle jobHandle = setJob.Schedule();
+        jobHandle.Complete();
+
+        // Copy back the result to the managed dictionary
+        foreach (var kvp in nativeCellsDictionary)
+        {
+            cellsDictionary[kvp.Key] = kvp.Value;
+        }
+
+        nativeCellsDictionary.Dispose();
+
+        dictionarySet = true;
+        yield return null;
+    }
     #endregion
 
     #region GridDebug
@@ -401,14 +460,14 @@ public class GridGeneratorFull : MonoBehaviour
                     switch (gridOrientation)
                     {
                         case GridOrientation.Vertical:
-                            if (guideCellsDone && drawGuideCells)
+                            if (drawGuideCells)
                             {
                                 if (kvp.Key == centerCellPosition)
                                 {                                    
                                     desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.y, cellSize.z + 3f);
                                     gizmoColor = Color.red;
                                 }
-                                else if (guideCellList.Contains(kvp.Key))
+                                else if (guideCellList.Contains(kvp.Key) || cornerCellList.Contains(kvp.Key))
                                 {
                                     desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.y, cellSize.z + 1f);
                                     gizmoColor = Color.green;
@@ -428,14 +487,14 @@ public class GridGeneratorFull : MonoBehaviour
                             break;
 
                         case GridOrientation.Horizontal:
-                            if (guideCellsDone && drawGuideCells)
+                            if (drawGuideCells)
                             {
                                 if (kvp.Key == centerCellPosition)
                                 {                                    
                                     desiredCellSize = new Vector3(grid.cellSize.x, cellSize.z + 3f, cellSize.y);
                                     gizmoColor = Color.red;
                                 }
-                                else if (guideCellList.Contains(kvp.Key))
+                                else if (guideCellList.Contains(kvp.Key) || cornerCellList.Contains(kvp.Key))
                                 {
                                     desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.z + 1f, grid.cellSize.y);
                                     gizmoColor = Color.green;
@@ -475,68 +534,7 @@ public class GridGeneratorFull : MonoBehaviour
             }
         }
         GridDebug.ExecuteGizmoBatch(gridOrientation); // Execute the batched Gizmos calls...they deserved it
-    }
-
-    IEnumerator GetGuideCells()
-    {
-        HashSet<Vector3> uniqueKeys = new HashSet<Vector3>(); // Use a HashSet to store unique keys
-        centerFound = false;
-        Vector3 localPosition;
-
-        if (stopGuideCellsCoroutine)
-        {
-            yield break;
-        }
-
-        cornerCellList.Clear();
-        List<Vector3> cellKeys = new List<Vector3>(cellsDictionary.Keys);
-
-        foreach (var key in cellKeys)
-        {
-            bool isGuide = GridDebug.GetGuideCellColor(this, key);
-
-            if (isGuide && !uniqueKeys.Contains(key))
-            {
-                int index = cellsDictionary.Keys.ToList().IndexOf(key);
-
-                if (!centerFound && GridDebug.IsCellAtCenter(index, gridSize))
-                {
-                    centerFound = true;
-                    localPosition = transform.InverseTransformPoint(key);
-                    centerCellPosition = localPosition;
-
-                    switch (gridStyle)
-                    {
-                        case GridStyle.Rectangle:
-                            switch (gridOrientation) // Set the center of the BoxCollider to the middle of the grids center cell
-                            {
-                                case GridOrientation.Vertical:
-                                    gridCollider.center = centerCellPosition + new Vector3(gridLayout.cellSize.x * 0.5f, gridLayout.cellSize.y * 0.5f, 0f);
-                                    break;
-
-                                case GridOrientation.Horizontal:
-                                    gridCollider.center = centerCellPosition + new Vector3(gridLayout.cellSize.x * 0.5f, 0f, gridLayout.cellSize.y * 0.5f);
-                                    break;
-                            }
-                            break;
-
-                        case GridStyle.Hexagon:
-                            gridCollider.center = centerCellPosition;
-                            break;
-                    }  
-                    centerCellPosition = key;
-                }
-                else if (GridDebug.IsCellAtCorner(index, gridSize))
-                {
-                    cornerCellList.Add(key);
-                }
-                uniqueKeys.Add(key); // Add the key to the HashSet to track uniqueness              
-            }
-            yield return null;
-        }
-        guideCellList = new List<Vector3>(uniqueKeys); // Convert the HashSet back to the List
-        guideCellsDone = true;
-    }
+    }    
     #endregion
 }
 
@@ -815,3 +813,60 @@ public static class GridDebug
     // ---------------
     #endregion
 }
+
+/*
+IEnumerator GetGuideCells()
+{
+    HashSet<Vector3> uniqueKeys = new HashSet<Vector3>(); // Use a HashSet to store unique keys
+    centerFound = false;
+    Vector3 localPosition;
+    cornerCellList.Clear();
+    List<Vector3> cellKeys = new List<Vector3>(cellsDictionary.Keys);
+
+    foreach (var key in cellKeys)
+    {
+        bool isGuide = GridDebug.GetGuideCellColor(this, key);
+
+        if (isGuide && !uniqueKeys.Contains(key))
+        {
+            int index = cellsDictionary.Keys.ToList().IndexOf(key);
+
+            if (!centerFound && GridDebug.IsCellAtCenter(index, gridSize))
+            {
+                centerFound = true;
+                localPosition = transform.InverseTransformPoint(key);
+                centerCellPosition = localPosition;
+
+                switch (gridStyle)
+                {
+                    case GridStyle.Rectangle:
+                        switch (gridOrientation) // Set the center of the BoxCollider to the middle of the grids center cell
+                        {
+                            case GridOrientation.Vertical:
+                                gridCollider.center = centerCellPosition + new Vector3(gridLayout.cellSize.x * 0.5f, gridLayout.cellSize.y * 0.5f, 0f);
+                                break;
+
+                            case GridOrientation.Horizontal:
+                                gridCollider.center = centerCellPosition + new Vector3(gridLayout.cellSize.x * 0.5f, 0f, gridLayout.cellSize.y * 0.5f);
+                                break;
+                        }
+                        break;
+
+                    case GridStyle.Hexagon:
+                        gridCollider.center = centerCellPosition;
+                        break;
+                }
+                centerCellPosition = key;
+            }
+            else if (GridDebug.IsCellAtCorner(index, gridSize))
+            {
+                cornerCellList.Add(key);
+            }
+            uniqueKeys.Add(key); // Add the key to the HashSet to track uniqueness              
+        }
+        yield return null;
+    }
+    guideCellList = new List<Vector3>(uniqueKeys); // Convert the HashSet back to the List
+    guideCellsDone = true;
+}
+*/
