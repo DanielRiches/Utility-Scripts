@@ -55,9 +55,7 @@ public class GridGeneratorFull : MonoBehaviour
     private bool populatedDictionary;
     private bool populated;
     private bool setDictionary;
-    private bool dictionarySet;
-    private bool guideCells;
-    private bool guideCellsDone;    
+    private bool gridDone;
     #endregion
 
     #region Inspector
@@ -140,14 +138,8 @@ public class GridGeneratorFull : MonoBehaviour
                 setDictionary = true;
                 StartCoroutine(SetDictionary(cellsDictionary));
             }
-
-            if (dictionarySet && !guideCells)
-            {
-                guideCells = true;
-                StartCoroutine(GetGuideCells(cellsDictionary));
-            }
-
-            if (guideCellsDone)
+            
+            if (gridDone)
             {
                 // let the manager know grid is finished
             }
@@ -206,11 +198,8 @@ public class GridGeneratorFull : MonoBehaviour
             {
                 Vector3 cell = gridLayout.CellToWorld(new Vector3Int(x, y, 0));
 
-                if (showCells)
-                {
-                    cellsList.Add(cell);
-                }           
-                
+                cellsList.Add(cell);
+
                 if ((x == gridSize.x / 2 && (y == 0 || y == gridSize.y - 1)) || (y == gridSize.y / 2 && (x == 0 || x == gridSize.x - 1))) // Check if the cell is at the halfway point along each edge
                 {
                     guideCellList.Add(cell);
@@ -234,19 +223,6 @@ public class GridGeneratorFull : MonoBehaviour
         yield return null;
         generated = true;
     }
-
-
-
-
-
-
-    IEnumerator GetGuideCells(Dictionary<Vector3, CellProperties> cellsDictionary)
-    {
-
-
-        yield return null;
-    }
-
 
     void SetGrid()
     {
@@ -430,9 +406,15 @@ public class GridGeneratorFull : MonoBehaviour
             cellsDictionary[kvp.Key] = kvp.Value;
         }
 
-        nativeCellsDictionary.Dispose();
+        nativeCellsDictionary.Dispose();        
 
-        dictionarySet = true;
+        if (!showCells)
+        {
+            cellsList.Clear();
+        }
+
+        gridDone = true;
+
         yield return null;
     }
     #endregion
@@ -813,60 +795,3 @@ public static class GridDebug
     // ---------------
     #endregion
 }
-
-/*
-IEnumerator GetGuideCells()
-{
-    HashSet<Vector3> uniqueKeys = new HashSet<Vector3>(); // Use a HashSet to store unique keys
-    centerFound = false;
-    Vector3 localPosition;
-    cornerCellList.Clear();
-    List<Vector3> cellKeys = new List<Vector3>(cellsDictionary.Keys);
-
-    foreach (var key in cellKeys)
-    {
-        bool isGuide = GridDebug.GetGuideCellColor(this, key);
-
-        if (isGuide && !uniqueKeys.Contains(key))
-        {
-            int index = cellsDictionary.Keys.ToList().IndexOf(key);
-
-            if (!centerFound && GridDebug.IsCellAtCenter(index, gridSize))
-            {
-                centerFound = true;
-                localPosition = transform.InverseTransformPoint(key);
-                centerCellPosition = localPosition;
-
-                switch (gridStyle)
-                {
-                    case GridStyle.Rectangle:
-                        switch (gridOrientation) // Set the center of the BoxCollider to the middle of the grids center cell
-                        {
-                            case GridOrientation.Vertical:
-                                gridCollider.center = centerCellPosition + new Vector3(gridLayout.cellSize.x * 0.5f, gridLayout.cellSize.y * 0.5f, 0f);
-                                break;
-
-                            case GridOrientation.Horizontal:
-                                gridCollider.center = centerCellPosition + new Vector3(gridLayout.cellSize.x * 0.5f, 0f, gridLayout.cellSize.y * 0.5f);
-                                break;
-                        }
-                        break;
-
-                    case GridStyle.Hexagon:
-                        gridCollider.center = centerCellPosition;
-                        break;
-                }
-                centerCellPosition = key;
-            }
-            else if (GridDebug.IsCellAtCorner(index, gridSize))
-            {
-                cornerCellList.Add(key);
-            }
-            uniqueKeys.Add(key); // Add the key to the HashSet to track uniqueness              
-        }
-        yield return null;
-    }
-    guideCellList = new List<Vector3>(uniqueKeys); // Convert the HashSet back to the List
-    guideCellsDone = true;
-}
-*/
