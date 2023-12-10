@@ -84,7 +84,7 @@ public class GridGeneratorFull : MonoBehaviour
     [Tooltip("The desired gap between each cell.")]
     [SerializeField] private Vector2 cellGap = new Vector3(0f, 0f);
     #endregion   
-
+    
     private void Awake()
     {
         ready = false;
@@ -191,7 +191,6 @@ public class GridGeneratorFull : MonoBehaviour
                 break;
         }
     }
-
     void GridDone()
     {
         gridDone = true;
@@ -352,7 +351,7 @@ public class GridGeneratorFull : MonoBehaviour
 
         yield return null;
 
-        GridDone();
+        GridDone();        
     }
     #endregion
 
