@@ -131,6 +131,12 @@ public class Utils
         }
     }
 
+    public static void DontDestroyObjectOnLoad(GameObject gameObject)
+    {
+        UnityEngine.Object.DontDestroyOnLoad(gameObject);
+    }
+
+
     // -----------------------------------------------------
     public static Ray MouseCursorRay3D(Camera camera = null)
     {
