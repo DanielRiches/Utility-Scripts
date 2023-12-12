@@ -49,6 +49,7 @@ public class GridGeneratorFull : MonoBehaviour
         Rectangle,
         Hexagon
     }
+
     private BoxCollider gridCollider;
     private bool ready;
     private bool gridDone;
@@ -57,28 +58,28 @@ public class GridGeneratorFull : MonoBehaviour
     #region Inspector
     [Space(5)]
     [Header("Debug")]
-    [Tooltip("Will add all the cells to the Cells List above to aid debugging.")]
+    [Tooltip("Will add all the cells to the Cells List during initial grid generation to aid debugging.")]
     [SerializeField] private bool showCells;
     [Tooltip("Draws the cells visually, requires GridDebug class if not already in this script.")]
     [SerializeField] private bool drawCells;
     [Tooltip("Highlights important points on the grid by drawing them green.")]
     [SerializeField] private bool drawGuideCells;
-    [Tooltip("Information on the position of the furthest cell from the start.")]
+    [Tooltip("World Space Position on the corner cells.")]
     [SerializeField] private bool debugCornerCells;
     [Tooltip("Information on the contents of the cells dictionary.")]
     [SerializeField] private bool debugDictionary;
     [Tooltip("Information on the contents of each CellProperties in the dictionary.")]
     [SerializeField] private bool debugCellProperties;
-    [Tooltip("Estimate the runtime cost of the grid, given the properties you put in the CellProperties struct and the inspector values selected")]
+    [Tooltip("Estimate the runtime cost of the grid, given the properties you put in the CellProperties struct and the inspector values selected.")]
     [SerializeField] private bool debugMemoryRequirements;
     [Space(5)]
     [Header("Grid Settings")]
     [Tooltip("Style of grid")]
     [SerializeField] private GridStyle gridStyle = GridStyle.Rectangle;
-    [Tooltip("Grid Orientation, Horizontal grids are perfect for 3D environments.")]
+    [Tooltip("World Space grid orientation.")]
     [SerializeField] private GridOrientation gridOrientation = GridOrientation.Vertical;
     [Tooltip("The desired grid size.")]
-    public Vector2Int gridSize = new Vector2Int(5, 5);
+    public Vector2Int gridSize = new Vector2Int(11, 11);
     [Tooltip("The desired cell size.")]
     [SerializeField] private Vector3 cellSize = new Vector3(1f, 1f, 0.1f);
     [Tooltip("The desired gap between each cell.")]
@@ -101,11 +102,11 @@ public class GridGeneratorFull : MonoBehaviour
         if (!TryGetComponent<BoxCollider>(out gridCollider))
         {
             gridCollider = gameObject.AddComponent<BoxCollider>();
-            gridCollider.center = centerCellPosition; // Set the center of the BoxCollider to the center of the grid
+
         }
         else
         {
-            gridCollider.center = centerCellPosition; // Set the center of the BoxCollider to the center of the grid
+            gridCollider = gameObject.GetComponent<BoxCollider>();
         }
         ready = true;
     }
@@ -348,6 +349,10 @@ public class GridGeneratorFull : MonoBehaviour
         {
             cellsList.Clear();
         }
+
+        gridCollider.center = gridCollider.transform.InverseTransformPoint(centerCellPosition);
+
+        // If you know the exact size of your grid at runtime, scale the collider to fit it here if you wish
 
         yield return null;
 
