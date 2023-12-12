@@ -12,6 +12,9 @@ public class Times
     public static WaitForSeconds zeroEight = new WaitForSeconds(0.8f);
     public static WaitForSeconds zeroNine = new WaitForSeconds(0.9f);
     public static WaitForSeconds one = new WaitForSeconds(1f);
+    public static WaitForSeconds two = new WaitForSeconds(2f);
+    public static WaitForSeconds three = new WaitForSeconds(3f);
+    public static WaitForSeconds four = new WaitForSeconds(4f);
     public static WaitForSeconds five = new WaitForSeconds(5f);
     public static WaitForSeconds ten = new WaitForSeconds(10f);
 }
