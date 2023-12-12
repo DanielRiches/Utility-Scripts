@@ -136,6 +136,11 @@ public class Utils
         UnityEngine.Object.DontDestroyOnLoad(gameObject);
     }
 
+    public static void ClearMemory()
+    {
+        System.GC.Collect();
+    }
+
 
     // -----------------------------------------------------
     public static Ray MouseCursorRay3D(Camera camera = null)
