@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Jobs;
 
 public class Utils
 {
@@ -14,7 +15,7 @@ public class Utils
     #else
     static bool newInputSystem = false;
     #endif
-
+    
     public static Vector3 GetMouseWorldPosition3D()
     {
         Ray ray = MouseCursorRay3D();
@@ -99,9 +100,10 @@ public class Utils
         }
     }
 
+    public const string defaultLayer = "Default";
     public static GameObject RayCastFirstObjectHitNotDefaultLayer()
     {
-        var layerMask = Physics.DefaultRaycastLayers & ~LayerMask.GetMask(Strings.defaultl);
+        var layerMask = Physics.DefaultRaycastLayers & ~LayerMask.GetMask(defaultLayer);
 
         Ray ray = MouseCursorRay3D();
 
@@ -138,9 +140,17 @@ public class Utils
 
     public static void ClearMemory()
     {
-        System.GC.Collect();
+        var memoryCleanupJob = new MemoryCleanupJob();
+        JobHandle memoryCleanupHandle = memoryCleanupJob.Schedule();
     }
 
+    public struct MemoryCleanupJob : IJob
+    {
+        public void Execute()
+        {
+            System.GC.Collect();
+        }
+    }
 
     // -----------------------------------------------------
     public static Ray MouseCursorRay3D(Camera camera = null)
