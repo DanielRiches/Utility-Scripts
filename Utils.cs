@@ -15,10 +15,11 @@ public class Utils
     #else
     static bool newInputSystem = false;
     #endif
-    
-    public static Vector3 GetMouseWorldPosition3D()
+
+    // Vector3 mouseWorldPosition = Utils.GetCursorWorldPosition3D();
+    public static Vector3 GetCursorWorldPosition3D()
     {
-        Ray ray = MouseCursorRay3D();
+        Ray ray = CursorRay3D();
 
         if (Physics.Raycast(ray, out RaycastHit cursorWorldPosition, Mathf.Infinity))
         {
@@ -30,51 +31,83 @@ public class Utils
         }
     }
 
-    public static Vector3 RayCastIn3DLayerSpecific(LayerMask desiredLayer)
-    {
-        Ray ray = MouseCursorRay3D();
 
-        if (Physics.Raycast(ray, out RaycastHit cursorRayCastHit, Mathf.Infinity, desiredLayer))
+    // int uiLayer = LayerMask.NameToLayer(Strings.uiLayerName);
+    // if (Utils.RayCastIn3DLayerSpecific(uiLayer, out mouseWorldPosition))
+    public static bool RayCastIn3DLayerSpecific(int desiredLayer, out Vector3 hitPoint)
+    {
+        Ray ray = CursorRay3D();
+        int layerMask = 1 << desiredLayer;
+
+        if (Physics.Raycast(ray, out RaycastHit cursorRayCastHit, Mathf.Infinity, layerMask))
         {
-            return cursorRayCastHit.point;
+            hitPoint = cursorRayCastHit.point;
+            return true;
         }
         else
         {
-            return Vector3.zero;
+            hitPoint = Vector3.zero;
+            return false;
         }
     }
 
-    public static Vector3 RayCastIn3DTagSpecific(string tag)
+    // if (Utils.RayCastIn3DTagSpecific(uiLayer, Strings.uiLayerName, out hitPoint))
+    public static bool RayCastIn3DTagSpecific(string tag, out Vector3 hitPoint)
     {
-        Ray ray = MouseCursorRay3D();
+        Ray ray = CursorRay3D();
 
         if (Physics.Raycast(ray, out RaycastHit cursorRayCastHit, Mathf.Infinity) && cursorRayCastHit.transform.CompareTag(tag))
         {
-            return cursorRayCastHit.point;
+            hitPoint = cursorRayCastHit.point;
+            return true;
         }
         else
         {
-            return Vector3.zero;
+            hitPoint = Vector3.zero;
+            return false;
         }
     }
 
-    public static Vector3 RayCastIn3DLayerAndTagSpecific(LayerMask desiredLayer, string tag)
+    // uiLayer = LayerMask.NameToLayer(Strings.uiLayerName);
+    // if (Utils.RayCastIn3DLayerAndTagSpecific(uiLayer, Strings.uiLayerName, out hitPoint))
+    public static bool RayCastIn3DLayerAndTagSpecific(int desiredLayer, string tag, out Vector3 hitPoint)
     {
-        Ray ray = MouseCursorRay3D();
+        Ray ray = CursorRay3D();
+        int layerMask = 1 << desiredLayer;
 
-        if (Physics.Raycast(ray, out RaycastHit cursorRayCastHit, Mathf.Infinity, desiredLayer) && cursorRayCastHit.transform.CompareTag(tag))
+        if (Physics.Raycast(ray, out RaycastHit cursorRayCastHit, Mathf.Infinity, layerMask) && cursorRayCastHit.transform.CompareTag(tag))
         {
-            return cursorRayCastHit.point;
+            hitPoint = cursorRayCastHit.point;
+            return true;
         }
         else
         {
-            return Vector3.zero;
+            hitPoint = Vector3.zero;
+            return false;
         }
     }
 
-    public static Transform GetMouseCursorObjectTransform()
+    // OBJECT REFERENCE = Utils.GetCursorObjectAndTransform(out TRANSFORM REFERENCE);
+    public static GameObject GetCursorObjectAndTransform(out Transform transform)
     {
-        Ray ray = MouseCursorRay3D();
+        Ray ray = CursorRay3D();
+
+        if (Physics.Raycast(ray, out RaycastHit cursorObject, Mathf.Infinity))
+        {
+            transform = cursorObject.transform;
+            return cursorObject.transform.gameObject;            
+        }
+        else
+        {
+            transform = null;
+            return null;            
+        }
+    }
+
+    // mouseCursorObjectTransform = Utils.GetCursorObjectTransform();
+    public static Transform GetCursorObjectTransform()
+    {
+        Ray ray = CursorRay3D();
 
         if (Physics.Raycast(ray, out RaycastHit cursorObjectTransform, Mathf.Infinity))
         {
@@ -86,9 +119,10 @@ public class Utils
         }
     }
 
-    public static GameObject GetMouseCursorGameObject()
+    // GameObject mouseCursorObject = Utils.GetCursorGameObject();
+    public static GameObject GetCursorGameObject()
     {
-        Ray ray = MouseCursorRay3D();
+        Ray ray = CursorRay3D();
 
         if (Physics.Raycast(ray, out RaycastHit cursorObject, Mathf.Infinity))
         {
@@ -100,12 +134,14 @@ public class Utils
         }
     }
 
+
+    // GameObject firstCursorObject = Utils.CursorFirstObjectHitNotDefaultLayer();
     public const string defaultLayer = "Default";
-    public static GameObject RayCastFirstObjectHitNotDefaultLayer()
+    public static GameObject CursorFirstObjectHitNotDefaultLayer()
     {
         var layerMask = Physics.DefaultRaycastLayers & ~LayerMask.GetMask(defaultLayer);
 
-        Ray ray = MouseCursorRay3D();
+        Ray ray = CursorRay3D();
 
         if (Physics.Raycast(ray, out RaycastHit cursorObject, Mathf.Infinity, layerMask))
         {
@@ -117,11 +153,12 @@ public class Utils
         }
     }
 
-    public static GameObject RayCastFirstObjectHit()
+    // GameObject firstCursorObject = Utils.CursorFirstObjectHit();
+    public static GameObject CursorFirstObjectHit()
     {        
         var layerMask = Physics.DefaultRaycastLayers;
 
-        Ray ray = MouseCursorRay3D();
+        Ray ray = CursorRay3D();
 
         if (Physics.Raycast(ray, out RaycastHit cursorObject, Mathf.Infinity, layerMask))
         {
@@ -133,12 +170,20 @@ public class Utils
         }
     }
 
+    // Utils.DontDestroyObjectOnLoad(this.gameObject);
     public static void DontDestroyObjectOnLoad(GameObject gameObject)
     {
         UnityEngine.Object.DontDestroyOnLoad(gameObject);
     }
 
+    // Utils.ClearMemory();
     public static void ClearMemory()
+    {
+        System.GC.Collect();
+    }
+
+    // Utils.ClearMemoryThreaded();
+    public static void ClearMemoryThreaded()
     {
         var memoryCleanupJob = new MemoryCleanupJob();
         JobHandle memoryCleanupHandle = memoryCleanupJob.Schedule();
@@ -153,7 +198,7 @@ public class Utils
     }
 
     // -----------------------------------------------------
-    public static Ray MouseCursorRay3D(Camera camera = null)
+    public static Ray CursorRay3D(Camera camera = null)
     {
         if (!camera)
         {
