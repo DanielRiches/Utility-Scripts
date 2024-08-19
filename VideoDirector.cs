@@ -14,7 +14,7 @@ public class VideoDirector : MonoBehaviour
     // 4. Add your videos to the videos array.
     // 5. Add your audio to the audio array.
     //     -- Make sure your names for associated audio are IDENTICAL. There is no need to exactly match the order in the arrays.
-    //     -- If your intended video already have audio built in simply toggle VIDEO HAS AUDIO to true before playing.
+    //     -- If your intended video already have audio built in this script will automatically use that.
     // 6. Enter Play Mode and select the play bool on this script.
 
     private VideoPlayer videoPlayer;
