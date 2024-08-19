@@ -90,7 +90,7 @@ public class VideoDirector : MonoBehaviour
         {
             RenderTexture.active = renderTexture;
             GL.Clear(true, true, Color.black); // Ensure it's cleared to black
-            RenderTexture.active = null; // Reset the active render target
+            RenderTexture.active = null;
             videoPlayer.targetTexture = renderTexture;
         }
 
@@ -329,8 +329,7 @@ public class VideoDirector : MonoBehaviour
         {      
             if (videoPlayer.audioTrackCount == 0)
             {
-                videoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;
-                Debug.Log("Audio Track not detected, checking names");
+                videoPlayer.audioOutputMode = VideoAudioOutputMode.AudioSource;                
                 foreach (AudioClip audioClip in videoAudio)
                 {
                     if (audioClip)
@@ -345,8 +344,7 @@ public class VideoDirector : MonoBehaviour
             }
             else
             {
-                videoPlayer.audioOutputMode = VideoAudioOutputMode.Direct;
-                Debug.Log("Audio Track detected");
+                videoPlayer.audioOutputMode = VideoAudioOutputMode.Direct;                
             }
             audioSource.time = 0f;
         }
