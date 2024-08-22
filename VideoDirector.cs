@@ -41,7 +41,7 @@ public class VideoDirector : MonoBehaviour
     public RenderTexture renderTexture;
     [Header("--------------------------------------------------------------------------------------")]
     [Tooltip("Video to play from the array.")] public int desiredVideoNumber;
-    [Tooltip("Leave blank if you wish to use numbers.")] public string desiredVideoName;
+    [Tooltip("Leave blank if you wish to use Desired Video Number.")] public string desiredVideoName;
     [Space(20)]
     public bool play;
     public bool pause;
@@ -54,7 +54,7 @@ public class VideoDirector : MonoBehaviour
     [Tooltip("will play videos in order.")] public bool continuousPlay;
     [Tooltip("will play a random video.")] public bool randomize;
     [Tooltip("Synchronize Video and Audio.")] public bool synchronizeVideo = true;
-    [Tooltip("Lower frequency will increase stutter.")][Range(0, 10)] public float synchronizationFrequency = 3f;
+    [Tooltip("Lower frequency will increase stutter.")][Range(0, 10)] public float synchronizationFrequency = 5f;
     [Space(20)]
     [Tooltip("Optional.")][SerializeField] private Texture2D standByTexture;
     [Tooltip("Optional.")][SerializeField] private VideoClip standByVideo;
