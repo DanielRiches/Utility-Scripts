@@ -1,24 +1,20 @@
 using UnityEngine;
 using Unity.Cinemachine;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine.Profiling;
 
 public class Options : MonoBehaviour
-{    
+{
     [SerializeField] private GameManager gameManager;
+    public CinemachineCamera playerCinemachineCamera;
     [SerializeField] private TextMeshProUGUI fpsCounterTMP;
     [SerializeField] private TextMeshProUGUI pingCounterTMP;
     [SerializeField] private TextMeshProUGUI memoryCounterTMP;
-    [SerializeField] private List<CinemachineCamera> cameras = new List<CinemachineCamera>();
-    [Header("---- Apply -----")]
-    [Space(5)]
-    [SerializeField] private bool applySettings;
-    [Space(5)]
-    private const string gameManagerTag = "GameManager";    
+    private Display mainDisplay;
+    private Resolution currentResolution;
+    private Resolution[] resolutions;
     private float fpsDisplay;
     private int lastFPS;
-    private string format;
     private float accum = 0; // FPS accumulated over the interval
     private int frames = 0; // Frames drawn over the interval
     private float timeleft; // Left time for current interval
@@ -26,46 +22,66 @@ public class Options : MonoBehaviour
     private float totalSystemMemoryGB;
     private long allocatedMemory;
     private float allocatedMemoryGB;
+    private bool uncapFPS;
     [HideInInspector] public bool invertMouseVertical;
     [HideInInspector] public float mouseHorizontalSensitivity = 1f;
     [HideInInspector] public float mouseVerticalSensitivity = 1f;
     [HideInInspector] public bool invertControllerVertical;
     [HideInInspector] public float controllerHorizontalSensitivity = 1f;
     [HideInInspector] public float controllerVerticalSensitivity = 1f;
-    private bool displayFPS;
-    private bool displayPing;
-    private bool displayMemory;
+    [HideInInspector] public bool displayFPS;
+    [HideInInspector] public bool displayPing;
+    [HideInInspector] public bool displayMemory;
+    [Header("---- Apply -----")]
+    [Space(5)]
+    [SerializeField] private bool applySettings;
     [Header("---- Graphics ------------------------------------------------------------")]
     [Space(5)]
     [Tooltip("Unlimited FPS Cap")]
     [SerializeField] private bool unlimitedFPS = false;
     [Tooltip("Desired FPS Cap")]
-    [SerializeField, Range(30, 280)] private int fps = 120;
+    [SerializeField, Range(30, 280)] private int fps = 90;
     [Tooltip("Desired Field of View on players camera")]
     [SerializeField, Range(65, 120)] private int fov = 90;
     [Header("---- Controls ------------------------------------------------------------")]
     [Space(5)]
-    [SerializeField] private bool invertMouseY;    
-    [SerializeField] private float mouseXSensitivity = 1f;    
-    [SerializeField] private float mouseYSensitivity = 1f;    
-    [SerializeField] private bool invertControllerY;    
-    [SerializeField] private float controllerXSensitivity = 1f;    
-    [SerializeField] private float controllerYSensitivity = 1f;    
+    [SerializeField] private bool invertMouseY;
+    [SerializeField] private float mouseXSensitivity = 1f;
+    [SerializeField] private float mouseYSensitivity = 1f;
+    [SerializeField] private bool invertControllerY;
+    [SerializeField] private float controllerXSensitivity = 1f;
+    [SerializeField] private float controllerYSensitivity = 1f;
     [Header("---- Diagnostics ------------------------------------------------------------")]
     [Space(5)]
-    [SerializeField] private float updateInterval = 0.5F;
-    [SerializeField] private bool fpsCounter;    
-    [SerializeField] private bool pingCounter;    
-    [SerializeField] private bool memoryCounter;
-    
+    [SerializeField] private float updateInterval = 0f;
+    public bool fpsCounter;
+    public bool pingCounter;
+    public bool memoryCounter;
+
+
+    private void Awake()
+    {
+        gameManager = GameObject.FindWithTag(Strings.gameManagerTag).GetComponent<GameManager>();
+        timeleft = updateInterval;
+    }
 
     private void Start()
     {
-        gameManager = GameObject.FindWithTag(gameManagerTag).GetComponent<GameManager>();
         gameManager.options = this;
-        timeleft = updateInterval;
         totalSystemMemory = SystemInfo.systemMemorySize;
         totalSystemMemoryGB = totalSystemMemory / 1024f;
+        mainDisplay = Display.main;
+        currentResolution = Screen.currentResolution;
+        resolutions = Screen.resolutions;
+        float maxRefreshRate = mainDisplay.systemWidth / mainDisplay.systemHeight; // Display ratio, you might need an alternative approach
+        /*
+        foreach (Resolution resolution in resolutions)
+        {
+            Debug.Log("Resolution: " + resolution.width + "x" + resolution.height + " @ " + resolution.refreshRateRatio + "Hz");
+        }
+        Debug.Log("Maximum Monitor Refresh Rate Ratio: " + currentResolution.refreshRateRatio);
+        */
+
     }
 
     void ApplySettings()
@@ -73,18 +89,36 @@ public class Options : MonoBehaviour
         if (Application.isPlaying)
         {
             if (unlimitedFPS)
-            {
-                Application.targetFrameRate = -1; // Uncap the frame rate
+            {    
+                uncapFPS = true;                
+                Application.targetFrameRate = fps; // Uncap the frame rate
+                lastFPS = fps;
             }
             else if (fps != lastFPS)
             {
+                uncapFPS = false;
+
+                if (fps > currentResolution.refreshRateRatio.value)
+                {
+                    fps = (int)currentResolution.refreshRateRatio.value;
+                    Debug.Log("Monitor is set @ " + currentResolution.refreshRateRatio + "Hz, FPS will be capped to this value");                    
+                }
+                
                 Application.targetFrameRate = fps;
+                Debug.Log(Application.targetFrameRate);
                 lastFPS = fps;
             }
-
-            if (cameras.Count > 0)
+            else
             {
-                foreach (CinemachineCamera camera in cameras) { camera.Lens.FieldOfView = fov; }
+                uncapFPS = false;
+                Application.targetFrameRate = fps;
+                lastFPS = fps;
+                Debug.Log(Application.targetFrameRate);
+            }
+
+            if (playerCinemachineCamera)
+            {
+                playerCinemachineCamera.Lens.FieldOfView = fov;
             }
 
             if (fpsCounter)
@@ -142,7 +176,7 @@ public class Options : MonoBehaviour
             controllerHorizontalSensitivity = controllerXSensitivity;
             controllerVerticalSensitivity = controllerYSensitivity;
 
-            System.GC.Collect();
+            Utils.ClearMemory();
         }
     }
 
@@ -161,68 +195,46 @@ public class Options : MonoBehaviour
             {
                 timeleft -= Time.deltaTime;
                 accum += Time.timeScale / Time.deltaTime;
-                ++frames;
-            }
+                frames++;
 
-            if (timeleft <= 0.0f)
-            {
-                fpsDisplay = accum / frames; // Display two fractional digits (F2 format)
+                if (timeleft <= 0.0f)
+                {      
+                    fpsDisplay = Mathf.RoundToInt(accum / frames);
 
-                if (displayFPS)
-                {
+                    timeleft = updateInterval;// Reset counters
+                    accum = 0;
+                    frames = 0;                   
+
                     if (fpsDisplay < 40)
                     {
-                        format = System.String.Format(" <color=white>FPS:</color> <color=red>{0:F2}</color>", fpsDisplay);
                         fpsCounterTMP.color = Color.red;
                     }
-                    else if (fpsDisplay > 40 && fpsDisplay < 70)
+                    else if (fpsDisplay >= 40 && fpsDisplay <= 70)
                     {
-                        format = System.String.Format(" <color=white>FPS:</color> <color=yellow>{0:F2}</color>", fpsDisplay);
                         fpsCounterTMP.color = Color.yellow;
                     }
                     else
                     {
-                        format = System.String.Format(" <color=white>FPS:</color> <color=green>{0:F2}</color>", fpsDisplay);
                         fpsCounterTMP.color = Color.green;
                     }
 
-                    fpsCounterTMP.text = format;
+                    fpsCounterTMP.text = $"<color=white>FPS:</color> {fpsDisplay}";
                 }
-
-                if (displayMemory)
-                {
-                    allocatedMemory = Profiler.GetTotalAllocatedMemoryLong();
-                    allocatedMemoryGB = allocatedMemory / (1024f * 1024f * 1024f);
-                    memoryCounterTMP.color = Color.white;
-                    memoryCounterTMP.text = $"Mem: {allocatedMemoryGB:F2} GB / {totalSystemMemoryGB:F2} GB";
-                }
-              
-                timeleft = updateInterval;
-                accum = 0.0f;
-                frames = 0;
             }
 
             if (displayPing)
             {
-                /*
-                if (ping >= 150)
-                {
-                    // Red
-                }
-                else if (ping <= 80)
-                {
-                    // Green
-                }
-                else
-                {
-                    // Yellow
-                }
-                */
+                // Ping display logic
+            }
+
+            if (displayMemory)
+            {
+                allocatedMemory = Profiler.GetTotalAllocatedMemoryLong();
+                allocatedMemoryGB = allocatedMemory / (1024f * 1024f * 1024f);
+                memoryCounterTMP.color = Color.white;
+                memoryCounterTMP.text = $"Mem: {allocatedMemoryGB:F2} GB / {totalSystemMemoryGB:F2} GB";
             }
         }
     }
-    public void PopulateCamera(CinemachineCamera camera)
-    {
-        cameras.Add(camera);
-    }
+
 }
