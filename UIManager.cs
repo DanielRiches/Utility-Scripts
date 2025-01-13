@@ -3,7 +3,7 @@ using TMPro;
 public class UIManager : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;
-    [Header("---- Main Menu ------------------------------------------------------------")]
+    [Header("---- Main Menu --------------------------------------------------------------")]
     [Space(5)]
     [SerializeField] private CanvasGroup mainMenuCanvasGroup;
     [SerializeField] private float mainMenuFadeDuration = 8f;
@@ -14,9 +14,11 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Transform issueImageOn;
     [SerializeField] private Transform issueImageOff;
     private float issueImageFadeDurationElapsedTime = 0f;
+    private float issueImageAlphaFadeDurationElapsedTime = 0f;
     [SerializeField] private float issueImageFadeDuration = 1f;
-    [Header("---- Options ------------------------------------------------------------")]
+    [Header("---- Options ----------------------------------------------------------------")]
     [Space(5)]
+    [SerializeField] private CanvasGroup optionsCanvasGroup;
     [SerializeField] private Transform optionsBGImage;
     private float optionsImageFadeDurationElapsedTime = 0f;
     [SerializeField] private float optionsImageFadeDuration = 1f;
@@ -54,7 +56,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Transform diagnosticsMemoryImageOff;
     private float diagnosticsMemoryImageFadeDurationElapsedTime = 0f;
     [SerializeField] private float diagnosticsMemoryImageFadeDuration = 1f;
-    [Header("---- Loading ------------------------------------------------------------")]
+    [Header("---- Loading ------------------------------------------------------------------")]
     [Space(5)]
     public TextMeshProUGUI loadingProgress;
     public GameObject loadingIcon;
@@ -71,83 +73,19 @@ public class UIManager : MonoBehaviour
 
     void Update()
     {
-        MainMenu();
+        LerpUIPosition(gameManager.inMainMenu, issueImage, issueImageOn, issueImageOff, ref issueImageFadeDurationElapsedTime, ref issueImageFadeDuration);
+        LerpUIAlpha(gameManager.inMainMenu, ref mainMenuFadeDurationElapsedTime, ref mainMenuFadeDuration, mainMenuCanvasGroup);
+
+
         Options();
         Loading();
         Diagnostics();
     }
 
-    private void MainMenu()
-    {
-        if (gameManager.inMainMenu)
-        {
-            if (mainMenuCanvasGroup.interactable == false || mainMenuCanvasGroup.blocksRaycasts == false)
-            {
-                mainMenuCanvasGroup.interactable = true; // Activate interaction
-                mainMenuCanvasGroup.blocksRaycasts = true; // Activate blocking of raycasts
-            }
-
-            if (mainMenuCanvasGroup.alpha < 1)
-            {
-                if (mainMenuCanvasGroup.alpha == 0)
-                {
-                    mainMenuFadeDurationElapsedTime = 0f;
-                }
-
-                mainMenuFadeDurationElapsedTime += Time.deltaTime;
-                mainMenuCanvasGroup.alpha = Mathf.Lerp(0, 1, mainMenuFadeDurationElapsedTime / mainMenuFadeDuration);
-                mainMenuCanvasGroup.alpha = Mathf.Clamp01(mainMenuCanvasGroup.alpha); // Ensure alpha stays between 0 and 1
-            }
-
-            if (issueImage.position != issueImageOn.position)
-            {
-                issueImageFadeDurationElapsedTime += Time.deltaTime;
-                issueImage.position = Vector3.Lerp(issueImageOff.position, issueImageOn.position, issueImageFadeDurationElapsedTime / issueImageFadeDuration);
-            }
-            else
-            {
-                issueImageFadeDurationElapsedTime = 0f;
-            }
-        }
-        else
-        {
-            if (mainMenuCanvasGroup.interactable == true || mainMenuCanvasGroup.blocksRaycasts == true)
-            {
-                mainMenuCanvasGroup.interactable = false; // De-activate interaction
-                mainMenuCanvasGroup.blocksRaycasts = false; // De-activate blocking of raycasts
-            }
-
-            if (mainMenuCanvasGroup.alpha > 0)
-            {
-                mainMenuCanvasGroup.alpha = 0f;
-            }
-        }
-    }
-
     private void Options()
     {
-        if (gameManager.inOptionsMenu)
-        {
-            if (optionsBGImage.localScale.x != 1)
-            {
-                optionsImageFadeDurationElapsedTime += Time.deltaTime;
-                optionsBGImage.localScale = Vector3.Lerp(optionsBGImage.localScale, optionsDesiredScale, optionsImageFadeDurationElapsedTime / optionsImageFadeDuration);
-            }
-            else
-            {
-                if (optionsExitImage.localScale.x != 1)
-                {
-                    optionsExitImageFadeDurationElapsedTime += Time.deltaTime;
-                    optionsBGImage.localScale = Vector3.Lerp(optionsExitImage.localScale, optionsDesiredScale, optionsExitImageFadeDurationElapsedTime / optionsExitImageFadeDuration);
-                }
-                else
-                {
-                    optionsExitImageFadeDurationElapsedTime = 0f;
-                }
-
-                optionsImageFadeDurationElapsedTime = 0f;
-            }
-        }
+        LerpUIScale(gameManager.inOptionsMenu, optionsBGImage, ref optionsDesiredScale, ref optionsImageFadeDurationElapsedTime, ref optionsImageFadeDuration, optionsCanvasGroup);
+        LerpUIScale(gameManager.inOptionsMenu, optionsExitImage, ref optionsDesiredScale, ref optionsExitImageFadeDurationElapsedTime, ref optionsExitImageFadeDuration, optionsCanvasGroup);
     }
 
     private void Loading()
@@ -192,54 +130,72 @@ public class UIManager : MonoBehaviour
 
     private void Diagnostics()
     {
-        LerpUI(gameManager.options.displayFPS, diagnosticsFPSImage, diagnosticsFPSImageOn, diagnosticsFPSImageOff, ref diagnosticsFPSImageFadeDurationElapsedTime, ref diagnosticsFPSCanvasFadeDuration, diagnosticsFPSCanvasGroup, ref diagnosticsFPSCanvasFadeDurationElapsedTime, ref diagnosticsFPSCanvasFadeDuration);
-        LerpUI(gameManager.options.displayPing, diagnosticsPingImage, diagnosticsPingImageOn, diagnosticsPingImageOff, ref diagnosticsPingImageFadeDurationElapsedTime, ref diagnosticsPingCanvasFadeDuration, diagnosticsPingCanvasGroup, ref diagnosticsPingCanvasFadeDurationElapsedTime, ref diagnosticsPingCanvasFadeDuration);
-        LerpUI(gameManager.options.displayMemory, diagnosticsMemoryImage, diagnosticsMemoryImageOn, diagnosticsMemoryImageOff, ref diagnosticsMemoryImageFadeDurationElapsedTime, ref diagnosticsMemoryCanvasFadeDuration, diagnosticsMemoryCanvasGroup, ref diagnosticsMemoryCanvasFadeDurationElapsedTime, ref diagnosticsMemoryCanvasFadeDuration);
+        if (gameManager.options.displayFPS || gameManager.options.displayPing || gameManager.options.displayMemory)
+        {
+            LerpUIPosition(gameManager.options.displayFPS, diagnosticsFPSImage, diagnosticsFPSImageOn, diagnosticsFPSImageOff, ref diagnosticsFPSImageFadeDurationElapsedTime, ref diagnosticsFPSCanvasFadeDuration);
+            LerpUIPosition(gameManager.options.displayPing, diagnosticsPingImage, diagnosticsPingImageOn, diagnosticsPingImageOff, ref diagnosticsPingImageFadeDurationElapsedTime, ref diagnosticsPingCanvasFadeDuration);
+            LerpUIPosition(gameManager.options.displayMemory, diagnosticsMemoryImage, diagnosticsMemoryImageOn, diagnosticsMemoryImageOff, ref diagnosticsMemoryImageFadeDurationElapsedTime, ref diagnosticsMemoryCanvasFadeDuration);
+        }
     }
 
-    void LerpUI(bool display, Transform image, Transform on, Transform off, ref float elapsedTime, ref float duration, CanvasGroup canvasGroup, ref float canvasGroupElapsedTime, ref float canvasGroupDuration)
+    void LerpUIPosition(bool targetMenu, Transform transform, Transform on, Transform off, ref float elapsedTime, ref float duration)
     {
-        if (display)
-        {            
-            if (image.position != on.position)
-            {    
-                elapsedTime += Time.deltaTime;
-                image.position = Vector3.Lerp(off.position, on.position, elapsedTime / duration);
-            }
-            else
-            {
-                
-                if (canvasGroup.alpha < 1)
-                {                    
-                    if (canvasGroup.alpha == 0)
-                    {
-                        canvasGroupElapsedTime = 0f;                        
-                    }
+        elapsedTime += Time.deltaTime;
+        Vector3 targetPosition = targetMenu ? on.position : off.position;
+        Vector3 startPosition = targetMenu ? off.position : on.position;
 
-                    elapsedTime = 0f;
-                    canvasGroupElapsedTime += Time.deltaTime;
-                    canvasGroup.alpha = Mathf.Lerp(0, 1, canvasGroupElapsedTime / canvasGroupDuration);
-                    canvasGroup.alpha = Mathf.Clamp01(canvasGroup.alpha); // Ensure alpha stays between 0 and 1
-                }
+        if (Vector3.Distance(transform.position, targetPosition) < 0.1f)
+        {
+            transform.position = targetPosition;
+            elapsedTime = 0f;
+        }
+
+        if (transform.position != targetPosition)
+        {
+            transform.position = Vector3.Lerp(startPosition, targetPosition, elapsedTime / duration);
+        }        
+    }
+
+    void LerpUIScale(bool targetMenu, Transform transform, ref Vector3 desiredScale, ref float elapsedTime, ref float duration, CanvasGroup canvasGroup)
+    {
+        canvasGroup.interactable = targetMenu;
+        canvasGroup.blocksRaycasts = targetMenu;
+
+        elapsedTime += Time.deltaTime;
+        Vector3 targetScale = targetMenu ? desiredScale : Vector3.zero;
+
+        if (transform.localScale != targetScale)
+        {
+            transform.localScale = Vector3.Lerp(transform.localScale, targetScale, elapsedTime / duration);
+        }
+        else
+        {
+            elapsedTime = 0f;
+        }
+    }
+
+    void LerpUIAlpha(bool targetMenu, ref float elapsedTime, ref float duration, CanvasGroup canvasGroup)
+    {
+        if (targetMenu)
+        {
+            if (canvasGroup.alpha < 1)
+            {
+                if (canvasGroup.alpha == 0) { elapsedTime = 0f; }                    
+
+                elapsedTime += Time.deltaTime;
+                canvasGroup.alpha = Mathf.Clamp01(Mathf.Lerp(0, 1, elapsedTime / duration));
+                canvasGroup.interactable = true; // Activate interaction
+                canvasGroup.blocksRaycasts = true; // Activate blocking of raycasts
             }
         }
         else
         {
             if (canvasGroup.alpha > 0)
-            {                
+            {
                 canvasGroup.alpha = 0f;
-                canvasGroupElapsedTime = 0f;
                 elapsedTime = 0f;
-            }
-
-            if (image.position != off.position)
-            {                
-                elapsedTime += Time.deltaTime;
-                image.position = Vector3.Lerp(on.position, off.position, elapsedTime / duration);
-            }
-            else
-            {                
-                elapsedTime = 0f;
+                canvasGroup.interactable = false; // Activate interaction
+                canvasGroup.blocksRaycasts = false; // Activate blocking of raycasts
             }
         }
     }

@@ -171,7 +171,7 @@ public class Utils
     }
 
     // Utils.DontDestroyObjectOnLoad(this.gameObject);
-    public static void DontDestroyObjectOnLoad(GameObject gameObject)
+    public static void DontDestroyOnLoad(GameObject gameObject)
     {
         UnityEngine.Object.DontDestroyOnLoad(gameObject);
     }
