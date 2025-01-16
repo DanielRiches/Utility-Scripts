@@ -5,6 +5,7 @@ public class GameManager : MonoBehaviour
     public GameObject mainCamera;
     [Header("---- Scripts ------------------------------------------------------------")]
     [Space(5)]
+    public PlayerInput playerInputs;
     public Options options;
     public UIManager uiManager;
     [Header("---- Game States --------------------------------------------------------")]
@@ -15,6 +16,9 @@ public class GameManager : MonoBehaviour
     public bool loading;
     public bool inMainMenu;
     public bool inOptionsMenu;
+
+    public bool usingKeyboard = true;
+    public bool usingController;
 
     void Awake()
     {

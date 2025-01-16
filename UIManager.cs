@@ -1,61 +1,55 @@
 using UnityEngine;
 using TMPro;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+
 public class UIManager : MonoBehaviour
 {
+    private PlayerInput playerInput; // Reference Auto-Generated C# Action Map Script
     [SerializeField] private GameManager gameManager;
+    [Header("---- Boot --------------------------------------------------------------")]
+    [Space(5)]
+    [SerializeField] private CanvasGroup bootCanvasGroup;
+    [Header("---- Fullscreen --------------------------------------------------------------")]
+    [Space(5)]
+    [SerializeField] private CanvasGroup fullscreenCanvasGroup;
+    [Header("---- Cursor --------------------------------------------------------------")]
+    [Space(5)]
+    [SerializeField] private CanvasGroup cursorCanvasGroup;
+    [SerializeField] private Texture2D pcCursorTexture;
+    [SerializeField] private Texture2D controllerCursorTexture;
+    [SerializeField] private RawImage cursorRenderer;
+    [SerializeField] private Transform cursorTransform;
     [Header("---- Main Menu --------------------------------------------------------------")]
     [Space(5)]
     [SerializeField] private CanvasGroup mainMenuCanvasGroup;
-    [SerializeField] private float mainMenuFadeDuration = 8f;
-    private float mainMenuFadeDurationElapsedTime = 0f;
+    [SerializeField] private CanvasGroup mainMenuCanvasGroup2;
+    [SerializeField] private Animator mainMenuAnimator;
     [Header("Issue")]
     [Space(5)]
-    [SerializeField] private Transform issueImage;
-    [SerializeField] private Transform issueImageOn;
-    [SerializeField] private Transform issueImageOff;
-    private float issueImageFadeDurationElapsedTime = 0f;
-    private float issueImageAlphaFadeDurationElapsedTime = 0f;
-    [SerializeField] private float issueImageFadeDuration = 1f;
+    [SerializeField] private Animator issueImageAnimator;
     [Header("---- Options ----------------------------------------------------------------")]
     [Space(5)]
-    [SerializeField] private CanvasGroup optionsCanvasGroup;
-    [SerializeField] private Transform optionsBGImage;
-    private float optionsImageFadeDurationElapsedTime = 0f;
-    [SerializeField] private float optionsImageFadeDuration = 1f;
-    private Vector3 optionsDesiredScale = new Vector3(1f,1f,1f);
+    [SerializeField] private CanvasGroup optionsMenuCanvasGroup;
+    [SerializeField] private Animator optiongBGAnimator;
+    [SerializeField] private Animator optionsExitAnimator;
     [SerializeField] private Transform optionsExitImage;
-    private float optionsExitImageFadeDurationElapsedTime = 0f;
-    [SerializeField] private float optionsExitImageFadeDuration = 1f;
+    private float optionsExitImageScaleDurationElapsedTime = 0f;
+    [SerializeField] private float optionsExitImageScaleDuration = 1f;
     [Header("---- Diagnostics ------------------------------------------------------------")]
     [Space(5)]
-    [SerializeField] private CanvasGroup diagnosticsFPSCanvasGroup;
-    private float diagnosticsFPSCanvasFadeDurationElapsedTime = 0f;
-    [SerializeField] private float diagnosticsFPSCanvasFadeDuration = 2f;
-    [SerializeField] private Transform diagnosticsFPSImage;
-    [SerializeField] private Transform diagnosticsFPSImageOn;
-    [SerializeField] private Transform diagnosticsFPSImageOff;
-    private float diagnosticsFPSImageFadeDurationElapsedTime = 0f;
-    [SerializeField] private float diagnosticsFPSImageFadeDuration = 1f;
+    [SerializeField] private CanvasGroup diagnosticsCanvasGroup;
+    [Space(5)]
+    [SerializeField] private Animator diagnosticsFPSAnimator;
+    [SerializeField] private Animator diagnosticsFPSCanvasAnimator;
     [Header("Ping")]
     [Space(5)]
-    [SerializeField] private CanvasGroup diagnosticsPingCanvasGroup;
-    [SerializeField] private float diagnosticsPingCanvasFadeDuration = 2f;
-    private float diagnosticsPingCanvasFadeDurationElapsedTime = 0f;
-    [SerializeField] private Transform diagnosticsPingImage;
-    [SerializeField] private Transform diagnosticsPingImageOn;
-    [SerializeField] private Transform diagnosticsPingImageOff;
-    private float diagnosticsPingImageFadeDurationElapsedTime = 0f;
-    [SerializeField] private float diagnosticsPingImageFadeDuration = 1f;
+    [SerializeField] private Animator diagnosticsPingAnimator;
+    [SerializeField] private Animator diagnosticsPingCanvasAnimator;
     [Header("Memory")]
     [Space(5)]
-    [SerializeField] private CanvasGroup diagnosticsMemoryCanvasGroup;
-    [SerializeField] private float diagnosticsMemoryCanvasFadeDuration = 2f;
-    private float diagnosticsMemoryCanvasFadeDurationElapsedTime = 0f;
-    [SerializeField] private Transform diagnosticsMemoryImage;
-    [SerializeField] private Transform diagnosticsMemoryImageOn;
-    [SerializeField] private Transform diagnosticsMemoryImageOff;
-    private float diagnosticsMemoryImageFadeDurationElapsedTime = 0f;
-    [SerializeField] private float diagnosticsMemoryImageFadeDuration = 1f;
+    [SerializeField] private Animator diagnosticsMemoryAnimator;
+    [SerializeField] private Animator diagnosticsMemoryCanvasAnimator;
     [Header("---- Loading ------------------------------------------------------------------")]
     [Space(5)]
     public TextMeshProUGUI loadingProgress;
@@ -69,23 +63,55 @@ public class UIManager : MonoBehaviour
     {
         gameManager = GameObject.FindWithTag(Strings.gameManagerTag).GetComponent<GameManager>();
         gameManager.uiManager = this;
+        playerInput = new PlayerInput();
+        playerInput.KeyboardControls.KeyboardEsc.started += onKeyboardEsc;
+
+        mainMenuAnimator.SetBool(Strings.animUITrigger, true);
+        issueImageAnimator.SetBool(Strings.animUITrigger, true);
+        optiongBGAnimator.SetBool(Strings.animUITrigger, true);
+        diagnosticsFPSAnimator.SetBool(Strings.animUITrigger, true);
+        diagnosticsFPSCanvasAnimator.SetBool(Strings.animUITrigger, true);
+        diagnosticsPingAnimator.SetBool(Strings.animUITrigger, true);
+        diagnosticsPingCanvasAnimator.SetBool(Strings.animUITrigger, true);
+        diagnosticsMemoryAnimator.SetBool(Strings.animUITrigger, true);
+        diagnosticsMemoryCanvasAnimator.SetBool(Strings.animUITrigger, true);
+
+        ActivateUI(false, fullscreenCanvasGroup);
+        ActivateUI(false, bootCanvasGroup);
+        ActivateUI(false, cursorCanvasGroup);
+        ActivateUI(false, diagnosticsCanvasGroup);      
     }
 
-    void Update()
+    private void Update()
     {
-        LerpUIPosition(gameManager.inMainMenu, issueImage, issueImageOn, issueImageOff, ref issueImageFadeDurationElapsedTime, ref issueImageFadeDuration);
-        LerpUIAlpha(gameManager.inMainMenu, ref mainMenuFadeDurationElapsedTime, ref mainMenuFadeDuration, mainMenuCanvasGroup);
+        Cursor.visible = false;
+        Utils.FollowCursorInUI(gameManager.usingKeyboard, ref cursorTransform);
+        if (gameManager.usingKeyboard)
+        {
+            cursorRenderer.texture = pcCursorTexture;
+        }
+        else if (gameManager.usingController)
+        {
+            cursorRenderer.texture = controllerCursorTexture;
+        }
 
-
-        Options();
         Loading();
-        Diagnostics();
-    }
 
-    private void Options()
-    {
-        LerpUIScale(gameManager.inOptionsMenu, optionsBGImage, ref optionsDesiredScale, ref optionsImageFadeDurationElapsedTime, ref optionsImageFadeDuration, optionsCanvasGroup);
-        LerpUIScale(gameManager.inOptionsMenu, optionsExitImage, ref optionsDesiredScale, ref optionsExitImageFadeDurationElapsedTime, ref optionsExitImageFadeDuration, optionsCanvasGroup);
+
+        ActivateUI(gameManager.inMainMenu, mainMenuCanvasGroup2);
+        ActivateUI(gameManager.inOptionsMenu, optionsMenuCanvasGroup);
+
+        AnimateUI(gameManager.inMainMenu, mainMenuAnimator, 1, Strings.animUIOpen);
+        AnimateUI(gameManager.inMainMenu, issueImageAnimator, 0, Strings.animUIOpen);
+
+        AnimateUI(gameManager.inOptionsMenu, optiongBGAnimator, 2, Strings.animUIOpen);
+
+        AnimateUI(gameManager.options.displayFPS, diagnosticsFPSAnimator, 0, Strings.animUIOpen);// DIAGNOSTICS
+        AnimateUI(gameManager.options.displayFPS, diagnosticsFPSCanvasAnimator, 1, Strings.animUIOpen);
+        AnimateUI(gameManager.options.displayPing, diagnosticsPingAnimator, 0, Strings.animUIOpen);
+        AnimateUI(gameManager.options.displayPing, diagnosticsPingCanvasAnimator, 1, Strings.animUIOpen);
+        AnimateUI(gameManager.options.displayMemory, diagnosticsMemoryAnimator, 0, Strings.animUIOpen);
+        AnimateUI(gameManager.options.displayMemory, diagnosticsMemoryCanvasAnimator, 1, Strings.animUIOpen);
     }
 
     private void Loading()
@@ -128,75 +154,97 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    private void Diagnostics()
-    {
-        if (gameManager.options.displayFPS || gameManager.options.displayPing || gameManager.options.displayMemory)
-        {
-            LerpUIPosition(gameManager.options.displayFPS, diagnosticsFPSImage, diagnosticsFPSImageOn, diagnosticsFPSImageOff, ref diagnosticsFPSImageFadeDurationElapsedTime, ref diagnosticsFPSCanvasFadeDuration);
-            LerpUIPosition(gameManager.options.displayPing, diagnosticsPingImage, diagnosticsPingImageOn, diagnosticsPingImageOff, ref diagnosticsPingImageFadeDurationElapsedTime, ref diagnosticsPingCanvasFadeDuration);
-            LerpUIPosition(gameManager.options.displayMemory, diagnosticsMemoryImage, diagnosticsMemoryImageOn, diagnosticsMemoryImageOff, ref diagnosticsMemoryImageFadeDurationElapsedTime, ref diagnosticsMemoryCanvasFadeDuration);
-        }
-    }
-
-    void LerpUIPosition(bool targetMenu, Transform transform, Transform on, Transform off, ref float elapsedTime, ref float duration)
-    {
-        elapsedTime += Time.deltaTime;
-        Vector3 targetPosition = targetMenu ? on.position : off.position;
-        Vector3 startPosition = targetMenu ? off.position : on.position;
-
-        if (Vector3.Distance(transform.position, targetPosition) < 0.1f)
-        {
-            transform.position = targetPosition;
-            elapsedTime = 0f;
-        }
-
-        if (transform.position != targetPosition)
-        {
-            transform.position = Vector3.Lerp(startPosition, targetPosition, elapsedTime / duration);
-        }        
-    }
-
-    void LerpUIScale(bool targetMenu, Transform transform, ref Vector3 desiredScale, ref float elapsedTime, ref float duration, CanvasGroup canvasGroup)
-    {
-        canvasGroup.interactable = targetMenu;
-        canvasGroup.blocksRaycasts = targetMenu;
-
-        elapsedTime += Time.deltaTime;
-        Vector3 targetScale = targetMenu ? desiredScale : Vector3.zero;
-
-        if (transform.localScale != targetScale)
-        {
-            transform.localScale = Vector3.Lerp(transform.localScale, targetScale, elapsedTime / duration);
-        }
-        else
-        {
-            elapsedTime = 0f;
-        }
-    }
-
-    void LerpUIAlpha(bool targetMenu, ref float elapsedTime, ref float duration, CanvasGroup canvasGroup)
+    private void ActivateUI(bool targetMenu, CanvasGroup canvasGroup)
     {
         if (targetMenu)
         {
-            if (canvasGroup.alpha < 1)
-            {
-                if (canvasGroup.alpha == 0) { elapsedTime = 0f; }                    
+            canvasGroup.interactable = true;
+            canvasGroup.blocksRaycasts = true;           
+        }
+        else
+        {
+            canvasGroup.interactable = false;
+            canvasGroup.blocksRaycasts = false;
+        }
+    }
 
-                elapsedTime += Time.deltaTime;
-                canvasGroup.alpha = Mathf.Clamp01(Mathf.Lerp(0, 1, elapsedTime / duration));
-                canvasGroup.interactable = true; // Activate interaction
-                canvasGroup.blocksRaycasts = true; // Activate blocking of raycasts
+    private void AnimateUI(bool trigger, Animator animator, int layer, int animationName)
+    {
+        if (trigger)
+        {
+            if(animator.GetCurrentAnimatorStateInfo(layer).normalizedTime < 0.98f)
+            {
+                if (layer == 0)
+                {                    
+                    animator.SetFloat(Strings.animUISpeed, 1);
+                }
+                else if (layer == 1)
+                {
+                    animator.SetFloat(Strings.animUIAlphaSpeed, 1);
+                }
+                else if (layer == 2)
+                {
+                    animator.SetFloat(Strings.animUIScaleSpeed, 1);
+                }                
+            }
+            
+            if (animator.GetCurrentAnimatorStateInfo(layer).normalizedTime >= 0.98f)
+            {
+                if (layer == 0)
+                {
+                    animator.SetFloat(Strings.animUISpeed, 0);
+                }
+                else if (layer == 1)
+                {
+                    animator.SetFloat(Strings.animUIAlphaSpeed, 0);
+                }
+                else if (layer == 2)
+                {
+                    animator.SetFloat(Strings.animUIScaleSpeed, 0);
+                }
             }
         }
         else
         {
-            if (canvasGroup.alpha > 0)
+            if (animator.GetCurrentAnimatorStateInfo(layer).normalizedTime > 0.1f)
             {
-                canvasGroup.alpha = 0f;
-                elapsedTime = 0f;
-                canvasGroup.interactable = false; // Activate interaction
-                canvasGroup.blocksRaycasts = false; // Activate blocking of raycasts
+                if (layer == 0)
+                {
+                    animator.SetFloat(Strings.animUISpeed, -1);
+                }
+                else if (layer == 1)
+                {
+                    animator.SetFloat(Strings.animUIAlphaSpeed, -1);
+                }
+                else if (layer == 2)
+                {
+                    animator.SetFloat(Strings.animUIScaleSpeed, -1);
+                }
             }
+
+            if (animator.GetCurrentAnimatorStateInfo(layer).normalizedTime <= 0.1f)
+            {
+                if (layer == 0)
+                {
+                    animator.SetFloat(Strings.animUISpeed, 0);
+                }
+                else if (layer == 1)
+                {
+                    animator.SetFloat(Strings.animUIAlphaSpeed, 0);
+                }
+                else if (layer == 2)
+                {
+                    animator.SetFloat(Strings.animUIScaleSpeed, 0);
+                }
+            }
+        }
+    }
+
+    void onKeyboardEsc(InputAction.CallbackContext started)
+    {
+        if (gameManager.inOptionsMenu)
+        {
+            gameManager.MainMenu();
         }
     }
 }

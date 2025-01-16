@@ -7,6 +7,7 @@ public class LoadGame : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;
     [SerializeField] private GameObject gameLoader;
+    [SerializeField] private GameObject bootCanvasObject;
     [SerializeField] private GameObject splashGameName;
     [SerializeField] private GameObject epilepsyWarning;
     [SerializeField] private GameObject autosaveWarning;
@@ -43,9 +44,20 @@ public class LoadGame : MonoBehaviour
             if (autosaveWarning)
             {
                 Object.Destroy(autosaveWarning);
-            } 
+            }
+            if (bootCanvasObject)
+            {
+                Object.Destroy(bootCanvasObject);
+            }
+
             gameManager.skipScreen = false;
+
             menuAnchor.position = mainMenuAnchor.position;
+            if (mainMenuAnchor)
+            {
+                Object.Destroy(mainMenuAnchor.gameObject);
+            }
+
             gameManager.MainMenu();
             Destroy(this);
         }
@@ -92,7 +104,11 @@ public class LoadGame : MonoBehaviour
         {
             Object.Destroy(autosaveWarning);
         }
-        
+        if (bootCanvasObject)
+        {
+            Object.Destroy(bootCanvasObject);
+        }
+
         while (Vector3.Distance(menuAnchor.position, mainMenuAnchor.position) > 0.05f)// Lerp the position
         {
             menuAnchor.position = Vector3.Lerp(menuAnchor.position, mainMenuAnchor.position, 2 * Time.deltaTime);

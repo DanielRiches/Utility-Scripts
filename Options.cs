@@ -57,7 +57,9 @@ public class Options : MonoBehaviour
     public bool fpsCounter;
     public bool pingCounter;
     public bool memoryCounter;
-
+    [Header("---- Localization ------------------------------------------------------------")]
+    [Space(5)]
+    [SerializeField] private SystemLanguage autoDetectedUserLanguage;
 
     private void Awake()
     {
@@ -74,6 +76,9 @@ public class Options : MonoBehaviour
         currentResolution = Screen.currentResolution;
         resolutions = Screen.resolutions;
         float maxRefreshRate = mainDisplay.systemWidth / mainDisplay.systemHeight; // Display ratio, you might need an alternative approach
+        autoDetectedUserLanguage = Application.systemLanguage;
+
+
         /*
         foreach (Resolution resolution in resolutions)
         {
