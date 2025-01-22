@@ -1,8 +1,10 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using TMPro;
 using Unity.Jobs;
+using System.Globalization;
 
-public class Utils
+public static class Utils
 {
     #if ENABLE_LEGACY_INPUT_MANAGER
     static bool legacyInputSystem = true;
@@ -29,6 +31,25 @@ public class Utils
         {
             return Vector3.zero;
         }
+    }
+
+    public static void FollowCursorInUI(bool usingKeyboard, ref Transform cursorCanvasImageTransform)
+    {
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(cursorCanvasImageTransform.parent as RectTransform, Input.mousePosition, null, out Vector2 localPoint);
+
+        Vector2 offset;
+        if (usingKeyboard)
+        {
+            offset = new Vector2(16f, -17f);
+        }
+        else
+        {
+            offset = Vector2.zero;
+        }
+
+        localPoint += offset;
+
+        cursorCanvasImageTransform.localPosition = localPoint;
     }
 
 
@@ -169,6 +190,93 @@ public class Utils
             return null;
         }
     }
+
+    // IF Utils.GetPreferredSystemLanguage() == "en"
+    public static string GetPreferredSystemLanguage()
+    {
+        CultureInfo currentCulture = CultureInfo.CurrentCulture;
+        string language = currentCulture.TwoLetterISOLanguageName;
+        return language;
+    }
+
+    // Utils.LocalizeText(gameManager, ref languageClassName, ref splashTitleText, "VARIABLENAMEHERE");
+    public static void LocalizeText(GameManager gameManager, ref string languageClassName, ref TextMeshProUGUI desiredTextField, string fieldName)
+    {
+        if (desiredTextField.enabled)
+        {
+            languageClassName = null;
+
+            if (gameManager.options.languageEnglish)
+            {
+                languageClassName = "GameStringsEnglish";
+            }
+            else if (gameManager.options.languageFrench)
+            {
+                languageClassName = "GameStringsFrench";
+            }
+            else if (gameManager.options.languageGerman)
+            {
+                languageClassName = "GameStringsGerman";
+            }
+            else if (gameManager.options.languageItalian)
+            {
+                languageClassName = "GameStringsItalian";
+            }
+            else if (gameManager.options.languageSpanish)
+            {
+                languageClassName = "GameStringsSpanish";
+            }
+            else if (gameManager.options.languageAfrican)
+            {
+                languageClassName = "GameStringsAfrican";
+            }
+            else if (gameManager.options.languageRussian)
+            {
+                languageClassName = "GameStringsRussian";
+            }
+            else if (gameManager.options.languageChinese)
+            {
+                languageClassName = "GameStringsChinese";
+            }
+            else if (gameManager.options.languageJapanese)
+            {
+                languageClassName = "GameStringsJapanese";
+            }
+            else if (gameManager.options.languageBrazilian)
+            {
+                languageClassName = "GameStringsBrazilian";
+            }
+            else
+            {
+                languageClassName = "GameStringsEnglish";
+            }
+
+            if (languageClassName != null)
+            {
+                var gameStringsType = typeof(GameStrings);
+                var languageType = gameStringsType.GetNestedType(languageClassName);
+
+                if (languageType != null)
+                {
+                    var field = languageType.GetField(fieldName);
+                    if (field != null)
+                    {
+                        string localizedText = field.GetValue(null) as string;
+                        desiredTextField.text = localizedText;
+                    }
+                    else
+                    {
+                        Debug.LogError($"Field '{fieldName}' not found in '{languageClassName}'");
+                    }
+                }
+                else
+                {
+                    Debug.LogError($"Language class '{languageClassName}' not found");
+                }
+            }
+        }
+    }
+
 
     // Utils.DontDestroyObjectOnLoad(this.gameObject);
     public static void DontDestroyOnLoad(GameObject gameObject)

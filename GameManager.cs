@@ -9,10 +9,25 @@ public class GameManager : MonoBehaviour
     public Options options;
     public UIManager uiManager;
     [Header("---- Game States --------------------------------------------------------")]
-    [Space(5)]    
-    public bool skipScreen;    
     [Space(5)]
-    public bool loadingGame = true;
+    public bool skipScreen;
+    public bool localizeLanguage;
+    [Header("UI")]
+    [Space(5)]
+    public bool cursor;
+    public bool inOptionsGameplayMenu;
+    public bool inOptionsVideoMenu;
+    public bool viewingNotification;
+    public bool viewingCredits;
+    public bool viewingPatchNotes;
+    public bool viewingFPS;
+    public bool viewingPing;
+    public bool viewingMemory;
+    [Header("Game")]
+    [Space(5)]
+    public bool blackScreen;
+    public bool loadingGame;
+    public bool inSplashScreen = true;
     public bool loading;
     public bool inMainMenu;
     public bool inOptionsMenu;
@@ -26,27 +41,97 @@ public class GameManager : MonoBehaviour
         Utils.DontDestroyOnLoad(mainCamera);
     }
 
-    void Update()
-    {
-
-    }
-
     public void MainMenu()
     {
         inOptionsMenu = false;
+        viewingCredits = false;
+        viewingPatchNotes = false;
+        inOptionsVideoMenu = false;
+        inOptionsGameplayMenu = false;
 
-        inMainMenu = true;        
+
+        inMainMenu = true;
+        viewingNotification = true;
     }
 
     public void OptionsMenu()
     {
         inMainMenu = false;
+        viewingCredits = false;
+        viewingPatchNotes = false;
+        inOptionsGameplayMenu = true;
+        viewingNotification = false;
 
-        inOptionsMenu = true;        
+        inOptionsMenu = true;
+    }
+
+    public void OptionsMenuGameplay()
+    {
+        inOptionsVideoMenu = false;
+
+        inOptionsGameplayMenu = true;
+    }
+
+    public void OptionsMenuVideo()
+    {
+        inOptionsGameplayMenu = false;
+        viewingNotification = false;
+
+        inOptionsVideoMenu = true;
+    }
+
+    public void Credits()
+    {
+        inMainMenu = false;
+        inOptionsMenu = false;
+        viewingPatchNotes = false;
+        viewingNotification = false;
+
+        viewingCredits = true;
+    }
+
+    public void Notification()
+    {
+        viewingNotification = true;
+    }
+
+    public void PatchNotes()
+    {
+        inMainMenu = false;
+        inOptionsMenu = false;
+        viewingCredits = false;
+        viewingNotification = false;
+
+        viewingPatchNotes = true;
+    }
+
+    public void ViewFPS()
+    {
+        viewingFPS = true;
+    }
+
+    public void ViewPing()
+    {
+        viewingPing = true;
+    }
+
+    public void ViewMemory()
+    {
+        viewingMemory = true;
+    }
+
+    public void ApplyOptionsSettings()
+    {
+        options.applySettings = true;
     }
     public void ExitGame()
     {
-        Utils.ClearMemory();        
+        Utils.ClearMemory();
         Application.Quit();
+    }
+
+    public void LoadGame()
+    {
+        loadingGame = true;
     }
 }

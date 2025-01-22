@@ -34,7 +34,7 @@ public class Options : MonoBehaviour
     [HideInInspector] public bool displayMemory;
     [Header("---- Apply -----")]
     [Space(5)]
-    [SerializeField] private bool applySettings;
+    public bool applySettings;
     [Header("---- Graphics ------------------------------------------------------------")]
     [Space(5)]
     [Tooltip("Unlimited FPS Cap")]
@@ -59,7 +59,16 @@ public class Options : MonoBehaviour
     public bool memoryCounter;
     [Header("---- Localization ------------------------------------------------------------")]
     [Space(5)]
-    [SerializeField] private SystemLanguage autoDetectedUserLanguage;
+    public bool languageEnglish;
+    public bool languageFrench;
+    public bool languageGerman;
+    public bool languageItalian;
+    public bool languageSpanish;
+    public bool languageAfrican;
+    public bool languageRussian;
+    public bool languageChinese;
+    public bool languageJapanese;
+    public bool languageBrazilian;
 
     private void Awake()
     {
@@ -75,9 +84,7 @@ public class Options : MonoBehaviour
         mainDisplay = Display.main;
         currentResolution = Screen.currentResolution;
         resolutions = Screen.resolutions;
-        float maxRefreshRate = mainDisplay.systemWidth / mainDisplay.systemHeight; // Display ratio, you might need an alternative approach
-        autoDetectedUserLanguage = Application.systemLanguage;
-
+        float maxRefreshRate = mainDisplay.systemWidth / mainDisplay.systemHeight; // Display ratio, you might need an alternative approach       
 
         /*
         foreach (Resolution resolution in resolutions)
