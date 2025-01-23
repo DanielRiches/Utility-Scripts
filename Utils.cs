@@ -14,9 +14,36 @@ public static class Utils
 
     #if ENABLE_INPUT_SYSTEM
     static bool newInputSystem = true;
-    #else
+#else
     static bool newInputSystem = false;
-    #endif
+#endif
+
+    // PLATFORM DETECTION
+    //Debug.Log("Running on Windows: " + Utils.Windows);
+    public static bool Windows { get; private set; } = false;
+    public static bool Steamdeck { get; private set; } = false;
+    public static bool Playstation5 { get; private set; } = false;
+    public static bool XBox { get; private set; } = false;
+
+    static Utils()
+    {
+        #if UNITY_STANDALONE_WIN
+        Windows = true;
+        #endif
+
+        #if UNITY_STANDALONE_LINUX
+        Steamdeck = true;
+        #endif
+
+        #if UNITY_PS5
+        Playstation5 = true;
+        #endif
+
+        #if UNITY_XBOXONE || UNITY_GAMECORE
+        XBox = true;
+        #endif
+    }
+
 
     // Vector3 mouseWorldPosition = Utils.GetCursorWorldPosition3D();
     public static Vector3 GetCursorWorldPosition3D()
@@ -191,7 +218,7 @@ public static class Utils
         }
     }
 
-    // IF Utils.GetPreferredSystemLanguage() == "en"
+    // if(Utils.GetPreferredSystemLanguage() == "en"){// DO SOMETHING}
     public static string GetPreferredSystemLanguage()
     {
         CultureInfo currentCulture = CultureInfo.CurrentCulture;
@@ -200,55 +227,154 @@ public static class Utils
     }
 
     // Utils.LocalizeText(gameManager, ref languageClassName, ref splashTitleText, "VARIABLENAMEHERE");
-    public static void LocalizeText(GameManager gameManager, ref string languageClassName, ref TextMeshProUGUI desiredTextField, string fieldName)
+    public static void LocalizeText(GameManager gameManager, ref string languageClassName, ref TextMeshProUGUI desiredTextField, string fieldName, TMP_FontAsset defaultFontAsset, TMP_FontAsset chineseFontAsset, TMP_FontAsset japaneseFontAsset)
     {
-        if (desiredTextField.enabled)
+        if (desiredTextField)
         {
             languageClassName = null;
 
             if (gameManager.options.languageEnglish)
             {
                 languageClassName = "GameStringsEnglish";
+                desiredTextField.fontStyle = FontStyles.Normal;
+
+                if (defaultFontAsset)
+                {
+                    if (desiredTextField.font != defaultFontAsset)
+                    {
+                        desiredTextField.font = defaultFontAsset;
+                    }
+                }
             }
             else if (gameManager.options.languageFrench)
             {
                 languageClassName = "GameStringsFrench";
+                desiredTextField.fontStyle = FontStyles.Normal;
+
+                if (defaultFontAsset)
+                {
+                    if (desiredTextField.font != defaultFontAsset)
+                    {
+                        desiredTextField.font = defaultFontAsset;
+                    }
+                }
             }
             else if (gameManager.options.languageGerman)
             {
                 languageClassName = "GameStringsGerman";
+                desiredTextField.fontStyle = FontStyles.Normal;
+
+                if (defaultFontAsset)
+                {
+                    if (desiredTextField.font != defaultFontAsset)
+                    {
+                        desiredTextField.font = defaultFontAsset;
+                    }
+                }
             }
             else if (gameManager.options.languageItalian)
             {
                 languageClassName = "GameStringsItalian";
+                desiredTextField.fontStyle = FontStyles.Normal;
+
+                if (defaultFontAsset)
+                {
+                    if (desiredTextField.font != defaultFontAsset)
+                    {
+                        desiredTextField.font = defaultFontAsset;
+                    }
+                }
             }
             else if (gameManager.options.languageSpanish)
             {
                 languageClassName = "GameStringsSpanish";
+                desiredTextField.fontStyle = FontStyles.Normal;
+
+                if (defaultFontAsset)
+                {
+                    if (desiredTextField.font != defaultFontAsset)
+                    {
+                        desiredTextField.font = defaultFontAsset;
+                    }
+                }
             }
-            else if (gameManager.options.languageAfrican)
+            else if (gameManager.options.languageAmerican)
             {
-                languageClassName = "GameStringsAfrican";
+                languageClassName = "GameStringsAmerican";
+                desiredTextField.fontStyle = FontStyles.Normal;
+
+                if (defaultFontAsset)
+                {
+                    if (desiredTextField.font != defaultFontAsset)
+                    {
+                        desiredTextField.font = defaultFontAsset;
+                    }
+                }
             }
             else if (gameManager.options.languageRussian)
             {
                 languageClassName = "GameStringsRussian";
+                desiredTextField.fontStyle = FontStyles.Bold;
+
+                if (defaultFontAsset)
+                {
+                    if (desiredTextField.font != defaultFontAsset)
+                    {
+                        desiredTextField.font = defaultFontAsset;
+                    }
+                }
             }
             else if (gameManager.options.languageChinese)
             {
                 languageClassName = "GameStringsChinese";
+                desiredTextField.fontStyle = FontStyles.Bold;
+
+                if (chineseFontAsset)
+                {
+                    if (desiredTextField.font != chineseFontAsset)
+                    {
+                        desiredTextField.font = chineseFontAsset;
+                    }
+                }
             }
             else if (gameManager.options.languageJapanese)
             {
                 languageClassName = "GameStringsJapanese";
+                desiredTextField.fontStyle = FontStyles.Bold;
+
+                if (japaneseFontAsset)
+                {
+                    if (desiredTextField.font != japaneseFontAsset)
+                    {
+                        desiredTextField.font = japaneseFontAsset;
+                    }
+                }
             }
             else if (gameManager.options.languageBrazilian)
             {
                 languageClassName = "GameStringsBrazilian";
+                desiredTextField.fontStyle = FontStyles.Normal;
+
+                if (defaultFontAsset)
+                {
+                    if (desiredTextField.font != defaultFontAsset)
+                    {
+                        desiredTextField.font = defaultFontAsset;
+                    }
+                }
             }
             else
             {
                 languageClassName = "GameStringsEnglish";
+                desiredTextField.fontStyle = FontStyles.Normal;
+
+                if (defaultFontAsset)
+                {
+                    if (desiredTextField.font != defaultFontAsset)
+                    {
+                        desiredTextField.font = defaultFontAsset;
+                    }
+                }
             }
 
             if (languageClassName != null)
@@ -274,6 +400,10 @@ public static class Utils
                     Debug.LogError($"Language class '{languageClassName}' not found");
                 }
             }
+        }
+        else
+        {
+            //Debug.Log("desiredTextField not active...");
         }
     }
 

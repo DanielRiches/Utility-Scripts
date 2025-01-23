@@ -7,14 +7,11 @@ public class Options : MonoBehaviour
 {
     [SerializeField] private GameManager gameManager;
     public CinemachineCamera playerCinemachineCamera;
-    [SerializeField] private TextMeshProUGUI fpsCounterTMP;
-    [SerializeField] private TextMeshProUGUI pingCounterTMP;
-    [SerializeField] private TextMeshProUGUI memoryCounterTMP;
     private Display mainDisplay;
     private Resolution currentResolution;
     private Resolution[] resolutions;
     private float fpsDisplay;
-    private int lastFPS;
+    
     private float accum = 0; // FPS accumulated over the interval
     private int frames = 0; // Frames drawn over the interval
     private float timeleft; // Left time for current interval
@@ -22,25 +19,25 @@ public class Options : MonoBehaviour
     private float totalSystemMemoryGB;
     private long allocatedMemory;
     private float allocatedMemoryGB;
-    private bool uncapFPS;
+    
     [HideInInspector] public bool invertMouseVertical;
     [HideInInspector] public float mouseHorizontalSensitivity = 1f;
     [HideInInspector] public float mouseVerticalSensitivity = 1f;
     [HideInInspector] public bool invertControllerVertical;
     [HideInInspector] public float controllerHorizontalSensitivity = 1f;
     [HideInInspector] public float controllerVerticalSensitivity = 1f;
-    [HideInInspector] public bool displayFPS;
-    [HideInInspector] public bool displayPing;
-    [HideInInspector] public bool displayMemory;
+    
+    
+    
     [Header("---- Apply -----")]
     [Space(5)]
     public bool applySettings;
-    [Header("---- Graphics ------------------------------------------------------------")]
+    [Header("---- SELECTED ------------------------------------------------------------")]
     [Space(5)]
     [Tooltip("Unlimited FPS Cap")]
-    [SerializeField] private bool unlimitedFPS = false;
+    [SerializeField] private bool selectedUncapFPS = false;
     [Tooltip("Desired FPS Cap")]
-    [SerializeField, Range(30, 280)] private int fps = 90;
+    [SerializeField, Range(30, 1000)] private int fps = 90;
     [Tooltip("Desired Field of View on players camera")]
     [SerializeField, Range(65, 120)] private int fov = 90;
     [Header("---- Controls ------------------------------------------------------------")]
@@ -54,22 +51,30 @@ public class Options : MonoBehaviour
     [Header("---- Diagnostics ------------------------------------------------------------")]
     [Space(5)]
     [SerializeField] private float updateInterval = 0f;
-    public bool fpsCounter;
-    public bool pingCounter;
-    public bool memoryCounter;
-    [Header("---- Localization ------------------------------------------------------------")]
+    public bool selectedShowFPS;    
+    public bool selectedShowPing;    
+    public bool selectedShowMemory;
+    
+    [Header("[Localization")]
     [Space(5)]
     public bool languageEnglish;
     public bool languageFrench;
     public bool languageGerman;
     public bool languageItalian;
     public bool languageSpanish;
-    public bool languageAfrican;
+    public bool languageAmerican;
     public bool languageRussian;
     public bool languageChinese;
     public bool languageJapanese;
     public bool languageBrazilian;
 
+    [Header("---- APPLIED ------------------------------------------------------------")]
+    [Space(5)]
+    [HideInInspector] public bool appliedUncapFPS;
+    [HideInInspector] public int appliedFPS;
+
+    [HideInInspector] public bool appliedPing;
+    [HideInInspector] public bool appliedMemory;
     private void Awake()
     {
         gameManager = GameObject.FindWithTag(Strings.gameManagerTag).GetComponent<GameManager>();
@@ -93,22 +98,21 @@ public class Options : MonoBehaviour
         }
         Debug.Log("Maximum Monitor Refresh Rate Ratio: " + currentResolution.refreshRateRatio);
         */
-
     }
 
     void ApplySettings()
     {
         if (Application.isPlaying)
         {
-            if (unlimitedFPS)
-            {    
-                uncapFPS = true;                
-                Application.targetFrameRate = fps; // Uncap the frame rate
-                lastFPS = fps;
-            }
-            else if (fps != lastFPS)
+            if (selectedUncapFPS)
             {
-                uncapFPS = false;
+                appliedUncapFPS = true;                
+                Application.targetFrameRate = 0; // Uncap the frame rate
+                appliedFPS = fps;
+            }
+            else if (fps != appliedFPS)
+            {
+                appliedUncapFPS = false;
 
                 if (fps > currentResolution.refreshRateRatio.value)
                 {
@@ -118,13 +122,13 @@ public class Options : MonoBehaviour
                 
                 Application.targetFrameRate = fps;
                 Debug.Log(Application.targetFrameRate);
-                lastFPS = fps;
+                appliedFPS = fps;
             }
             else
             {
-                uncapFPS = false;
+                appliedUncapFPS = false;
                 Application.targetFrameRate = fps;
-                lastFPS = fps;
+                appliedFPS = fps;
                 Debug.Log(Application.targetFrameRate);
             }
 
@@ -133,37 +137,43 @@ public class Options : MonoBehaviour
                 playerCinemachineCamera.Lens.FieldOfView = fov;
             }
 
-            if (fpsCounter)
+            if (selectedShowFPS)
             {
-                fpsCounterTMP.enabled = true;
-                displayFPS = true;
+                gameManager.uiManager.diagnosticsFPSCounterText.enabled = true;
+                appliedUncapFPS = true;
+                gameManager.viewingFPS = true;
             }
             else
             {
-                displayFPS = false;
-                fpsCounterTMP.enabled = false;
+                appliedUncapFPS = false;
+                gameManager.viewingFPS = false;
+                gameManager.uiManager.diagnosticsFPSCounterText.enabled = false;
             }
 
-            if (pingCounter)
+            if (selectedShowPing)
             {
-                pingCounterTMP.enabled = true;
-                displayPing = true;
+                gameManager.uiManager.diagnosticsPingCounterText.enabled = true;                
+                gameManager.viewingPing = true;
+                appliedPing = true;
             }
             else
             {
-                displayPing = false;
-                pingCounterTMP.enabled = false;
+                appliedPing = false;
+                gameManager.viewingPing = false;
+                gameManager.uiManager.diagnosticsPingCounterText.enabled = false;                
             }
 
-            if (memoryCounter)
+            if (selectedShowMemory)
             {
-                memoryCounterTMP.enabled = true;
-                displayMemory = true;
+                gameManager.uiManager.diagnosticsMemoryCounterText.enabled = true;                
+                gameManager.viewingMemory = true;
+                appliedMemory = true;
             }
             else
             {
-                displayMemory = false;
-                memoryCounterTMP.enabled = false;
+                appliedMemory = false;
+                gameManager.viewingMemory = false;
+                gameManager.uiManager.diagnosticsMemoryCounterText.enabled = false;                
             }
 
             if (invertMouseY)
@@ -203,7 +213,7 @@ public class Options : MonoBehaviour
             }
 
             // DIAGNOSTICS ----------------------------------------
-            if (displayFPS)
+            if (appliedUncapFPS)
             {
                 timeleft -= Time.deltaTime;
                 accum += Time.timeScale / Time.deltaTime;
@@ -219,34 +229,239 @@ public class Options : MonoBehaviour
 
                     if (fpsDisplay < 40)
                     {
-                        fpsCounterTMP.color = Color.red;
+                        gameManager.uiManager.diagnosticsFPSCounterText.color = Color.red;
                     }
                     else if (fpsDisplay >= 40 && fpsDisplay <= 70)
                     {
-                        fpsCounterTMP.color = Color.yellow;
+                        gameManager.uiManager.diagnosticsFPSCounterText.color = Color.yellow;
                     }
                     else
                     {
-                        fpsCounterTMP.color = Color.green;
+                        gameManager.uiManager.diagnosticsFPSCounterText.color = Color.green;
                     }
 
-                    fpsCounterTMP.text = $"<color=white>FPS:</color> {fpsDisplay}";
+                    gameManager.uiManager.diagnosticsFPSCounterText.text = $"<color=white>FPS:</color> {fpsDisplay}";
                 }
             }
 
-            if (displayPing)
+            if (appliedPing)
             {
                 // Ping display logic
             }
 
-            if (displayMemory)
+            if (appliedMemory)
             {
                 allocatedMemory = Profiler.GetTotalAllocatedMemoryLong();
                 allocatedMemoryGB = allocatedMemory / (1024f * 1024f * 1024f);
-                memoryCounterTMP.color = Color.white;
-                memoryCounterTMP.text = $"Mem: {allocatedMemoryGB:F2} GB / {totalSystemMemoryGB:F2} GB";
+                gameManager.uiManager.diagnosticsMemoryCounterText.color = Color.white;
+                gameManager.uiManager.diagnosticsMemoryCounterText.text = $"Mem: {allocatedMemoryGB:F2} GB / {totalSystemMemoryGB:F2} GB";
             }
         }
     }
 
+    public void OptionsSelectedShowFPS()
+    {
+        if (!selectedShowFPS)
+        {
+            selectedShowFPS = true;
+        }
+        else
+        {
+            selectedShowFPS = false;
+        }        
+    }
+    public void OptionsSelectedShowPing()
+    {
+        if (!selectedShowPing)
+        {
+            selectedShowPing = true;
+        }
+        else
+        {
+            selectedShowPing = false;
+        }
+    }
+    public void OptionsSelectedShowMemory()
+    {
+        if (!selectedShowMemory)
+        {
+            selectedShowMemory = true;
+        }
+        else
+        {
+            selectedShowMemory = false;
+        }
+    }
+
+    #region Localization
+    public void ApplyEnglishLanguage()
+    {
+        gameManager.uiManager.selectedLanguageImage.sprite = gameManager.uiManager.englishFlag;
+                
+        languageFrench = false;
+        languageGerman = false;
+        languageItalian = false;
+        languageSpanish = false;
+        languageAmerican = false;
+        languageRussian = false;
+        languageChinese = false;
+        languageJapanese = false;
+        languageBrazilian = false;
+        languageEnglish = true;
+        gameManager.localizeLanguage = true;
+    }
+
+    public void ApplyFrenchLanguage()
+    {
+        gameManager.uiManager.selectedLanguageImage.sprite = gameManager.uiManager.frenchFlag;
+
+        languageEnglish = false;        
+        languageGerman = false;
+        languageItalian = false;
+        languageSpanish = false;
+        languageAmerican = false;
+        languageRussian = false;
+        languageChinese = false;
+        languageJapanese = false;
+        languageBrazilian = false;
+        languageFrench = true;
+        gameManager.localizeLanguage = true;
+    }
+
+    public void ApplyGermanLanguage()
+    {
+        gameManager.uiManager.selectedLanguageImage.sprite = gameManager.uiManager.germanFlag;
+
+        languageEnglish = false;
+        languageFrench = false;        
+        languageItalian = false;
+        languageSpanish = false;
+        languageAmerican = false;
+        languageRussian = false;
+        languageChinese = false;
+        languageJapanese = false;
+        languageBrazilian = false;
+        languageGerman = true;
+        gameManager.localizeLanguage = true;
+    }
+
+    public void ApplyItalianLanguage()
+    {
+        gameManager.uiManager.selectedLanguageImage.sprite = gameManager.uiManager.italianFlag;
+
+        languageEnglish = false;
+        languageFrench = false;
+        languageGerman = false;        
+        languageSpanish = false;
+        languageAmerican = false;
+        languageRussian = false;
+        languageChinese = false;
+        languageJapanese = false;
+        languageBrazilian = false;
+        languageItalian = true;
+        gameManager.localizeLanguage = true;
+    }
+
+    public void ApplySpanishLanguage()
+    {
+        gameManager.uiManager.selectedLanguageImage.sprite = gameManager.uiManager.spanishFlag;
+
+        languageEnglish = false;
+        languageFrench = false;
+        languageGerman = false;
+        languageItalian = false;        
+        languageAmerican = false;
+        languageRussian = false;
+        languageChinese = false;
+        languageJapanese = false;
+        languageBrazilian = false;
+        languageSpanish = true;
+        gameManager.localizeLanguage = true;
+    }
+
+    public void ApplyAmericanLanguage()
+    {
+        gameManager.uiManager.selectedLanguageImage.sprite = gameManager.uiManager.americanFlag;
+
+        languageEnglish = false;
+        languageFrench = false;
+        languageGerman = false;
+        languageItalian = false;
+        languageSpanish = false;        
+        languageRussian = false;
+        languageChinese = false;
+        languageJapanese = false;
+        languageBrazilian = false;
+        languageAmerican = true;
+        gameManager.localizeLanguage = true;
+    }
+
+    public void ApplyRussianLanguage()
+    {
+        gameManager.uiManager.selectedLanguageImage.sprite = gameManager.uiManager.russianFlag;
+
+        languageEnglish = false;
+        languageFrench = false;
+        languageGerman = false;
+        languageItalian = false;
+        languageSpanish = false;
+        languageAmerican = false;        
+        languageChinese = false;
+        languageJapanese = false;
+        languageBrazilian = false;
+        languageRussian = true;
+        gameManager.localizeLanguage = true;
+    }
+
+    public void ApplyChineseLanguage()
+    {
+        gameManager.uiManager.selectedLanguageImage.sprite = gameManager.uiManager.chineseFlag;
+
+        languageEnglish = false;
+        languageFrench = false;
+        languageGerman = false;
+        languageItalian = false;
+        languageSpanish = false;
+        languageAmerican = false;
+        languageRussian = false;        
+        languageJapanese = false;
+        languageBrazilian = false;
+        languageChinese = true;
+        gameManager.localizeLanguage = true;
+    }
+
+    public void ApplyJapaneseLanguage()
+    {
+        gameManager.uiManager.selectedLanguageImage.sprite = gameManager.uiManager.japaneseFlag;
+
+        languageEnglish = false;
+        languageFrench = false;
+        languageGerman = false;
+        languageItalian = false;
+        languageSpanish = false;
+        languageAmerican = false;
+        languageRussian = false;
+        languageChinese = false;        
+        languageBrazilian = false;
+        languageJapanese = true;
+        gameManager.localizeLanguage = true;
+    }
+
+    public void ApplyBrazilianLanguage()
+    {
+        gameManager.uiManager.selectedLanguageImage.sprite = gameManager.uiManager.brazilFlag;
+
+        languageEnglish = false;
+        languageFrench = false;
+        languageGerman = false;
+        languageItalian = false;
+        languageSpanish = false;
+        languageAmerican = false;
+        languageRussian = false;
+        languageChinese = false;
+        languageJapanese = false;
+        languageBrazilian = true;
+        gameManager.localizeLanguage = true;
+    }
+    #endregion
 }

@@ -27,6 +27,8 @@ public class GameManager : MonoBehaviour
     [Space(5)]
     public bool blackScreen;
     public bool loadingGame;
+    public bool viewingEpilepsyWarning;
+    public bool viewingSaveWarning;
     public bool inSplashScreen = true;
     public bool loading;
     public bool inMainMenu;
@@ -43,6 +45,7 @@ public class GameManager : MonoBehaviour
 
     public void MainMenu()
     {
+        inSplashScreen = false;
         inOptionsMenu = false;
         viewingCredits = false;
         viewingPatchNotes = false;
@@ -56,6 +59,9 @@ public class GameManager : MonoBehaviour
 
     public void OptionsMenu()
     {
+        viewingEpilepsyWarning = false;
+        viewingSaveWarning = false;
+        inSplashScreen = false;
         inMainMenu = false;
         viewingCredits = false;
         viewingPatchNotes = false;
@@ -68,6 +74,7 @@ public class GameManager : MonoBehaviour
     public void OptionsMenuGameplay()
     {
         inOptionsVideoMenu = false;
+        viewingNotification = false;
 
         inOptionsGameplayMenu = true;
     }
@@ -82,6 +89,9 @@ public class GameManager : MonoBehaviour
 
     public void Credits()
     {
+        viewingSaveWarning = false;
+        viewingSaveWarning = false;
+        inSplashScreen = false;
         inMainMenu = false;
         inOptionsMenu = false;
         viewingPatchNotes = false;
@@ -97,6 +107,9 @@ public class GameManager : MonoBehaviour
 
     public void PatchNotes()
     {
+        viewingSaveWarning = false;
+        viewingSaveWarning = false;
+        inSplashScreen = false;
         inMainMenu = false;
         inOptionsMenu = false;
         viewingCredits = false;
@@ -124,6 +137,12 @@ public class GameManager : MonoBehaviour
     {
         options.applySettings = true;
     }
+
+    public void Localize()
+    {
+        localizeLanguage = true;
+    }
+
     public void ExitGame()
     {
         Utils.ClearMemory();
@@ -132,6 +151,7 @@ public class GameManager : MonoBehaviour
 
     public void LoadGame()
     {
+        viewingEpilepsyWarning = true;
         loadingGame = true;
     }
 }

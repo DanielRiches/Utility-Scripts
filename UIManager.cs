@@ -22,7 +22,9 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Transform cursorTransform;
     [Header("---- Splash --------------------------------------------------------------")]
     [Space(5)]
-    public GameObject splashLanguageDropdownObject;
+    [SerializeField] private GameObject splashEpilepsyWarningObject;
+    [SerializeField] private GameObject splashSaveWarningObject;
+    public GameObject splashLanguageDropdownObject;// ACCESSED EXTERNALLY
     [SerializeField] private GameObject splashEnglishButtonObject;
     [SerializeField] private GameObject splashFrenchButtonObject;
     [SerializeField] private GameObject splashGermanButtonObject;
@@ -95,7 +97,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Animator diagnosticsMemoryCanvasAnimator;
     [Header("---- Loading ------------------------------------------------------------------")]
     [Space(5)]
-    public TextMeshProUGUI loadingProgress;
+    public TextMeshProUGUI loadingProgress;// ACCESSED EXTERNALLY
     public GameObject loadingIcon;
     [SerializeField] private float loadingIconRotationSpeed = 1f;
     [HideInInspector] public float percentageCompleted = 0f;
@@ -115,21 +117,39 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Animator versionExitButtonAnimator;
     [SerializeField] private Animator versionButtonAnimator;
     [Space(10)]
-    [Header("[Localization]")]
+    [Header("[Localization]")]    
+    public Image selectedLanguageImage;// ACCESSED EXTERNALLY
+    public Sprite englishFlag;// ACCESSED EXTERNALLY
+    public Sprite frenchFlag;// ACCESSED EXTERNALLY
+    public Sprite germanFlag;// ACCESSED EXTERNALLY
+    public Sprite italianFlag;// ACCESSED EXTERNALLY
+    public Sprite spanishFlag;// ACCESSED EXTERNALLY
+    public Sprite americanFlag;// ACCESSED EXTERNALLY
+    public Sprite russianFlag;// ACCESSED EXTERNALLY
+    public Sprite chineseFlag;// ACCESSED EXTERNALLY
+    public Sprite japaneseFlag;// ACCESSED EXTERNALLY
+    public Sprite brazilFlag;// ACCESSED EXTERNALLY
     private string languageClassName;
-    public Image selectedLanguageImage;
-    public Sprite englishFlag;
-    public Sprite frenchFlag;
-    public Sprite germanFlag;
-    public Sprite italianFlag;
-    public Sprite spanishFlag;
-    public Sprite africanFlag;
-    public Sprite russianFlag;
-    public Sprite chineseFlag;
-    public Sprite japaneseFlag;
-    public Sprite brazilFlag;
+    [SerializeField] private TMP_FontAsset defaultFont;
+    [SerializeField] private TMP_FontAsset chineseFont;
+    [SerializeField] private TMP_FontAsset japaneseFont;
+    [Space(5)]
     [SerializeField] private TextMeshProUGUI splashTitleText;
-    [SerializeField] private TextMeshProUGUI optionsOnlineVisibilityDescription;
+    [SerializeField] private TextMeshProUGUI splashSelectLanguageText;
+    [SerializeField] private TextMeshProUGUI splashSelectLanguageNoticeText;
+    [SerializeField] private TextMeshProUGUI splashSelectedLanguageText;
+    [SerializeField] private TextMeshProUGUI splashSelectLanguageConfirmButtonText;
+    [SerializeField] private TextMeshProUGUI splashEpilepsyWarningText;
+    [SerializeField] private TextMeshProUGUI splashSaveWarningText;
+    [Space(5)]
+    [SerializeField] private TextMeshProUGUI mainMenuContinueButtonText;
+    [Space(5)]
+    [SerializeField] private TextMeshProUGUI optionsTitle;
+    [SerializeField] private TextMeshProUGUI optionsDescription;
+    [Space(5)]
+    public TextMeshProUGUI diagnosticsFPSCounterText;// ACCESSED EXTERNALLY
+    public TextMeshProUGUI diagnosticsPingCounterText;// ACCESSED EXTERNALLY
+    public TextMeshProUGUI diagnosticsMemoryCounterText;// ACCESSED EXTERNALLY
 
     private void Awake()
     {
@@ -163,6 +183,7 @@ public class UIManager : MonoBehaviour
 
         Loading();
 
+        // ACTIVATE
         ActivateUI(gameManager.blackScreen, blackScreenCanvasGroup, blackScreenGameobject, null);// BLACKSCREEN
         ActivateUI(gameManager.inMainMenu, mainMenuCanvasGroup, mainMenuGameobject, versionButtonAnimator);// MAIN MENU
 
@@ -171,11 +192,15 @@ public class UIManager : MonoBehaviour
         ActivateUI(gameManager.inOptionsMenu, optionsMenuCanvasGroup, optionsMenuGameobject, null);
 
         ActivateUI(gameManager.viewingPatchNotes, versionCanvasGroup, versionMenuGameobject, versionCanvasGroupAnimator);// VERSION
-        ActivateUI(gameManager.viewingFPS, diagnosticsFPSCanvasGroup, diagnosticsFPSGameobject, diagnosticsFPSAnimator); // DIAGNOSTICS
-        ActivateUI(gameManager.viewingPing, diagnosticsPingCanvasGroup, diagnosticsPingGameobject, diagnosticsPingAnimator);
-        ActivateUI(gameManager.viewingMemory, diagnosticsMemoryCanvasGroup, diagnosticsMemoryGameobject, diagnosticsMemoryAnimator);
 
-        ActivateUI(gameManager.viewingMemory || gameManager.viewingPing || gameManager.viewingFPS, null, diagnosticsObject, null);
+
+        ActivateUI(gameManager.viewingMemory || gameManager.viewingPing || gameManager.viewingFPS, null, diagnosticsObject, null); // DIAGNOSTICS
+        if (diagnosticsObject.activeSelf)
+        {
+            ActivateUI(gameManager.viewingFPS, diagnosticsFPSCanvasGroup, diagnosticsFPSGameobject, diagnosticsFPSAnimator);
+            ActivateUI(gameManager.viewingPing, diagnosticsPingCanvasGroup, diagnosticsPingGameobject, diagnosticsPingAnimator);
+            ActivateUI(gameManager.viewingMemory, diagnosticsMemoryCanvasGroup, diagnosticsMemoryGameobject, diagnosticsMemoryAnimator);
+        }        
 
         ActivateUI(gameManager.viewingNotification, notificationCanvasGroup, notificationGameobject, notificationAnimator);// NOTIFICATION
         ActivateUI(gameManager.viewingCredits, null, creditsMenuGameobject, creditsAnimator);// CREDITS
@@ -242,23 +267,12 @@ public class UIManager : MonoBehaviour
             AnimateUI(gameManager.viewingNotification, notificationAnimator, 0, Strings.animUIOpen); 
         }
 
-        if (diagnosticsFPSGameobject.activeSelf)// DIAGNOSTICS FPS
-        {
-            AnimateUI(gameManager.viewingFPS, diagnosticsFPSCanvasAnimator, 1, Strings.animUIOpen);
-            AnimateUI(gameManager.viewingFPS, diagnosticsFPSAnimator, 0, Strings.animUIOpen);
-        }
-
-        if (diagnosticsPingGameobject.activeSelf)// DIAGNOSTICS PING
-        {
-            AnimateUI(gameManager.viewingPing, diagnosticsPingCanvasAnimator, 1, Strings.animUIOpen);
-            AnimateUI(gameManager.viewingPing, diagnosticsPingAnimator, 0, Strings.animUIOpen);
-        }
-
-        if (diagnosticsMemoryGameobject.activeSelf)// DIAGNOSTICS MEMORY
-        {
-            AnimateUI(gameManager.viewingMemory, diagnosticsMemoryCanvasAnimator, 1, Strings.animUIOpen);
-            AnimateUI(gameManager.viewingMemory, diagnosticsMemoryAnimator, 0, Strings.animUIOpen);            
-        }
+        AnimateUI(gameManager.viewingFPS, diagnosticsFPSCanvasAnimator, 1, Strings.animUIOpen);// DIAGNOSTICS FPS
+        AnimateUI(gameManager.viewingFPS, diagnosticsFPSAnimator, 0, Strings.animUIOpen);
+        AnimateUI(gameManager.viewingPing, diagnosticsPingCanvasAnimator, 1, Strings.animUIOpen);// DIAGNOSTICS PING
+        AnimateUI(gameManager.viewingPing, diagnosticsPingAnimator, 0, Strings.animUIOpen);
+        AnimateUI(gameManager.viewingMemory, diagnosticsMemoryCanvasAnimator, 1, Strings.animUIOpen);// DIAGNOSTICS MEMORY
+        AnimateUI(gameManager.viewingMemory, diagnosticsMemoryAnimator, 0, Strings.animUIOpen);
 
         if (versionMenuGameobject.activeSelf)// VERSION
         {                       
@@ -271,7 +285,38 @@ public class UIManager : MonoBehaviour
         // LOCALIZE
         if (gameManager.localizeLanguage)
         {
-            Utils.LocalizeText(gameManager, ref languageClassName, ref splashTitleText, "gameTitle");
+            if (gameManager.inSplashScreen)
+            {                
+                Utils.LocalizeText(gameManager, ref languageClassName, ref splashTitleText, "gameTitle", defaultFont, chineseFont, japaneseFont);
+
+                Utils.LocalizeText(gameManager, ref languageClassName, ref splashSelectLanguageText, "splashSelectLanguageText", defaultFont, chineseFont, japaneseFont);
+                Utils.LocalizeText(gameManager, ref languageClassName, ref splashSelectedLanguageText, "splashSelectedLanguageText", defaultFont, chineseFont, japaneseFont);
+                Utils.LocalizeText(gameManager, ref languageClassName, ref splashSelectLanguageNoticeText, "splashSelectLanguageNoticeText", defaultFont, chineseFont, japaneseFont);
+                Utils.LocalizeText(gameManager, ref languageClassName, ref splashSelectLanguageConfirmButtonText, "splashSelectLanguageConfirmButtonText", defaultFont, chineseFont, japaneseFont);
+
+                if (splashEpilepsyWarningObject && gameManager.viewingEpilepsyWarning)
+                {                    
+                    Utils.LocalizeText(gameManager, ref languageClassName, ref splashEpilepsyWarningText, "splashEpilepsyWarningText", defaultFont, chineseFont, japaneseFont);
+                }
+                if (splashSaveWarningObject && gameManager.viewingSaveWarning)
+                {
+                    Utils.LocalizeText(gameManager, ref languageClassName, ref splashSaveWarningText, "splashSaveWarningText", defaultFont, chineseFont, japaneseFont);
+                }
+            }
+
+            if (gameManager.inMainMenu)
+            {
+                Utils.LocalizeText(gameManager, ref languageClassName, ref mainMenuContinueButtonText, "mainMenuContinueButtonText", defaultFont, chineseFont, japaneseFont);                
+            }
+
+            if (gameManager.inOptionsGameplayMenu)
+            {
+                Utils.LocalizeText(gameManager, ref languageClassName, ref optionsTitle, "optionsGameplaySectionTitle", defaultFont, chineseFont, japaneseFont);
+            }
+            else if(gameManager.inOptionsVideoMenu)
+            {
+                Utils.LocalizeText(gameManager, ref languageClassName, ref optionsTitle, "optionsVideoSectionTitle", defaultFont, chineseFont, japaneseFont);
+            }            
 
             gameManager.localizeLanguage = false;
             Utils.ClearMemory();
@@ -356,26 +401,24 @@ public class UIManager : MonoBehaviour
                         {
                             if (parentObject.activeSelf && !optionsGameplaySectionObject.activeSelf && !optionsVideoSectionObject.activeSelf)
                             {
-                                parentObject.SetActive(false);
-                                Utils.ClearMemory();
+                                parentObject.SetActive(false);                                
                             }
                         }
                         else if(parentObject == diagnosticsObject)
                         {
                             if (parentObject.activeSelf && !diagnosticsFPSGameobject.activeSelf && !diagnosticsPingGameobject.activeSelf && diagnosticsMemoryGameobject.activeSelf)
                             {
-                                parentObject.SetActive(false);
-                                Utils.ClearMemory();
+                                parentObject.SetActive(false);                                
                             }
                         }
                         else
                         {
                             if (parentObject.activeSelf)
                             {
-                                parentObject.SetActive(false);
-                                Utils.ClearMemory();
+                                parentObject.SetActive(false);                                
                             }
                         }
+                        Utils.ClearMemory();
                     }
                 }
             }
@@ -397,51 +440,58 @@ public class UIManager : MonoBehaviour
                 }
             }
         }
+        
     }
 
     private void AnimateUI(bool trigger, Animator animator, int layer, int animationName)
     {
         if (trigger)
         {
-            if (animator == creditsAnimator && animator.GetCurrentAnimatorStateInfo(layer).normalizedTime >= 0.97f)
-            {                
-                creditsFadeTimer += Time.deltaTime;                
-                if (creditsFadeTimer > 7f)
-                {                    
-                    creditsFadeTimer = 0f;
-                    gameManager.MainMenu();
+            if (animator == creditsAnimator && animator.isActiveAndEnabled)
+            {
+                if (animator.GetCurrentAnimatorStateInfo(layer).normalizedTime >= 0.97f)
+                {
+                    creditsFadeTimer += Time.deltaTime;
+                    if (creditsFadeTimer > 7f)
+                    {
+                        creditsFadeTimer = 0f;
+                        gameManager.MainMenu();
+                    }
                 }
             }
 
-            if (animator.GetCurrentAnimatorStateInfo(layer).normalizedTime < 1f)
+            if (animator.isActiveAndEnabled)
             {
-                if (layer == 0)
-                {                    
-                    animator.SetFloat(Strings.animUISpeed, 1);
+                if (animator.GetCurrentAnimatorStateInfo(layer).normalizedTime < 1f)
+                {
+                    if (layer == 0)
+                    {
+                        animator.SetFloat(Strings.animUISpeed, 1);
+                    }
+                    else if (layer == 1)
+                    {
+                        animator.SetFloat(Strings.animUIAlphaSpeed, 1);
+                    }
+                    else if (layer == 2)
+                    {
+                        animator.SetFloat(Strings.animUIScaleSpeed, 1);
+                    }
                 }
-                else if (layer == 1)
+
+                if (animator.GetCurrentAnimatorStateInfo(layer).normalizedTime >= 1f)
                 {
-                    animator.SetFloat(Strings.animUIAlphaSpeed, 1);
-                }
-                else if (layer == 2)
-                {
-                    animator.SetFloat(Strings.animUIScaleSpeed, 1);
-                }                
-            }
-            
-            if (animator.GetCurrentAnimatorStateInfo(layer).normalizedTime >= 1f)
-            {
-                if (layer == 0)
-                {
-                    animator.SetFloat(Strings.animUISpeed, 0);
-                }
-                else if (layer == 1)
-                {
-                    animator.SetFloat(Strings.animUIAlphaSpeed, 0);
-                }
-                else if (layer == 2)
-                {
-                    animator.SetFloat(Strings.animUIScaleSpeed, 0);
+                    if (layer == 0)
+                    {
+                        animator.SetFloat(Strings.animUISpeed, 0);
+                    }
+                    else if (layer == 1)
+                    {
+                        animator.SetFloat(Strings.animUIAlphaSpeed, 0);
+                    }
+                    else if (layer == 2)
+                    {
+                        animator.SetFloat(Strings.animUIScaleSpeed, 0);
+                    }
                 }
             }
         }
@@ -449,38 +499,44 @@ public class UIManager : MonoBehaviour
         {
             if (animator == creditsAnimator || animator == versionCanvasGroupAnimator || animator == mainMenuAnimator && gameManager.viewingCredits || animator == optionsGameplaySectionAnimator && gameManager.inOptionsVideoMenu || animator == optionsVideoSectionAnimator && gameManager.inOptionsGameplayMenu)
             {
-                ResetAnimation(animator, layer, animationName);
+                if (animator.isActiveAndEnabled)
+                {
+                    ResetAnimation(animator, layer, animationName);
+                }                
             }
 
-            if (animator.GetCurrentAnimatorStateInfo(layer).normalizedTime > 0f)
+            if (animator.isActiveAndEnabled)
             {
-                if (layer == 0)
+                if (animator.GetCurrentAnimatorStateInfo(layer).normalizedTime > 0f)
                 {
-                    animator.SetFloat(Strings.animUISpeed, -1);
+                    if (layer == 0)
+                    {
+                        animator.SetFloat(Strings.animUISpeed, -1);
+                    }
+                    else if (layer == 1)
+                    {
+                        animator.SetFloat(Strings.animUIAlphaSpeed, -1);
+                    }
+                    else if (layer == 2)
+                    {
+                        animator.SetFloat(Strings.animUIScaleSpeed, -1);
+                    }
                 }
-                else if (layer == 1)
-                {
-                    animator.SetFloat(Strings.animUIAlphaSpeed, -1);
-                }
-                else if (layer == 2)
-                {
-                    animator.SetFloat(Strings.animUIScaleSpeed, -1);
-                }
-            }
 
-            if (animator.GetCurrentAnimatorStateInfo(layer).normalizedTime <= 0f)
-            {
-                if (layer == 0)
+                if (animator.GetCurrentAnimatorStateInfo(layer).normalizedTime <= 0f)
                 {
-                    animator.SetFloat(Strings.animUISpeed, 0);
-                }
-                else if (layer == 1)
-                {
-                    animator.SetFloat(Strings.animUIAlphaSpeed, 0);
-                }
-                else if (layer == 2)
-                {
-                    animator.SetFloat(Strings.animUIScaleSpeed, 0);
+                    if (layer == 0)
+                    {
+                        animator.SetFloat(Strings.animUISpeed, 0);
+                    }
+                    else if (layer == 1)
+                    {
+                        animator.SetFloat(Strings.animUIAlphaSpeed, 0);
+                    }
+                    else if (layer == 2)
+                    {
+                        animator.SetFloat(Strings.animUIScaleSpeed, 0);
+                    }
                 }
             }
         }
@@ -546,34 +602,57 @@ public class UIManager : MonoBehaviour
     #region Options Sections
     public void OnOptionsDescriptionExit()
     {
-        if (optionsOnlineVisibilityDescription.text != null)
+        if (optionsDescription.text != null)
         {
             if (gameManager.inOptionsGameplayMenu)
             {
-                optionsOnlineVisibilityDescription.text = null;
+                optionsDescription.text = null;
             }
         }
     }
 
     public void OnOptionsOnlineVisibilityDescriptionEnter()
     {
-        if (gameManager.inOptionsGameplayMenu)
+        if (optionsDescription.text != "Who is able to see your game in the lobby and join.")
         {
-            if (optionsOnlineVisibilityDescription.text != "Set your default online status.")
-            {
-                optionsOnlineVisibilityDescription.text = "Set your default online status.";
-            }            
-        }        
+            optionsDescription.text = "Who is able to see your game in the lobby and join.";
+        }
     }
     public void OnOptionsAutosaveDescriptionEnter()
     {
-        if (optionsOnlineVisibilityDescription.text != "Turn autosaving On or Off.")
+        if (optionsDescription.text != "Allow the game to save at certain points.")
         {
-            if (gameManager.inOptionsGameplayMenu)
-            {
-                optionsOnlineVisibilityDescription.text = "Turn autosaving On or Off.";
-            }
+            optionsDescription.text = "Allow the game to save at certain points.";
         }        
+    }
+    public void OnOptionsMaximumAutosaveDescriptionEnter()
+    {
+        if (optionsDescription.text != "The maximum number of Autosaves the game will make. The game will then overwrite the oldest Autosave each time.")
+        {
+            optionsDescription.text = "The maximum number of Autosaves the game will make. The game will then overwrite the oldest Autosave each time.";
+        }
+    }
+    public void OnOptionsMaximumQuicksaveDescriptionEnter()
+    {
+        if (optionsDescription.text != "The maximum number of Quicksaves the game will make. The game will then overwrite the oldest Quicksave each time.")
+        {
+            optionsDescription.text = "The maximum number of Quicksaves the game will make. The game will then overwrite the oldest Quicksave each time.";
+        }
+    }
+    public void OnOptionsGoreDescriptionEnter()
+    {
+        if (optionsDescription.text != "The game will not display blood. This will not affect certain chosen glitches.")
+        {
+            optionsDescription.text = "The game will not display blood. This will not affect certain chosen glitches.";
+        }
+    }
+
+    public void OnOptionsShareCinematicsDescriptionEnter()
+    {
+        if (optionsDescription.text != "Allow other players to view your cinematics if they choose to.")
+        {
+            optionsDescription.text = "Allow other players to view your cinematics if they choose to.";
+        }
     }
     #endregion
 
@@ -606,7 +685,7 @@ public class UIManager : MonoBehaviour
                 {
                     splashSpanishButtonObject.SetActive(true);
                 }
-                if (splashAfricanButtonObject && GameStrings.GameStringsAfrican.available)
+                if (splashAfricanButtonObject && GameStrings.GameStringsAmerican.available)
                 {
                     splashAfricanButtonObject.SetActive(true);
                 }
@@ -630,143 +709,6 @@ public class UIManager : MonoBehaviour
             else
             {
                 splashLanguageDropdownObject.SetActive(false);
-            }
-        }
-    }
-
-    public void SplashLanguageSelected()
-    {
-        if (selectedLanguageImage)
-        {
-            if (selectedLanguageImage.sprite == englishFlag)
-            {
-                gameManager.options.languageEnglish = true;
-                gameManager.options.languageFrench = false;
-                gameManager.options.languageGerman = false;
-                gameManager.options.languageItalian = false;
-                gameManager.options.languageSpanish = false;
-                gameManager.options.languageAfrican = false;
-                gameManager.options.languageRussian = false;
-                gameManager.options.languageChinese = false;
-                gameManager.options.languageJapanese = false;
-                gameManager.options.languageBrazilian = false;                
-            }
-            else if (selectedLanguageImage.sprite == frenchFlag)
-            {
-                gameManager.options.languageEnglish = false;
-                gameManager.options.languageFrench = true;
-                gameManager.options.languageGerman = false;
-                gameManager.options.languageItalian = false;
-                gameManager.options.languageSpanish = false;
-                gameManager.options.languageAfrican = false;
-                gameManager.options.languageRussian = false;
-                gameManager.options.languageChinese = false;
-                gameManager.options.languageJapanese = false;
-                gameManager.options.languageBrazilian = false;
-            }
-            else if (selectedLanguageImage.sprite == germanFlag)
-            {
-                gameManager.options.languageEnglish = false;
-                gameManager.options.languageFrench = false;
-                gameManager.options.languageGerman = true;
-                gameManager.options.languageItalian = false;
-                gameManager.options.languageSpanish = false;
-                gameManager.options.languageAfrican = false;
-                gameManager.options.languageRussian = false;
-                gameManager.options.languageChinese = false;
-                gameManager.options.languageJapanese = false;
-                gameManager.options.languageBrazilian = false;
-            }
-            else if (selectedLanguageImage.sprite == italianFlag)
-            {
-                gameManager.options.languageEnglish = false;
-                gameManager.options.languageFrench = false;
-                gameManager.options.languageGerman = false;
-                gameManager.options.languageItalian = true;
-                gameManager.options.languageSpanish = false;
-                gameManager.options.languageAfrican = false;
-                gameManager.options.languageRussian = false;
-                gameManager.options.languageChinese = false;
-                gameManager.options.languageJapanese = false;
-                gameManager.options.languageBrazilian = false;
-            }
-            else if (selectedLanguageImage.sprite == spanishFlag)
-            {
-                gameManager.options.languageEnglish = false;
-                gameManager.options.languageFrench = false;
-                gameManager.options.languageGerman = false;
-                gameManager.options.languageItalian = false;
-                gameManager.options.languageSpanish = true;
-                gameManager.options.languageAfrican = false;
-                gameManager.options.languageRussian = false;
-                gameManager.options.languageChinese = false;
-                gameManager.options.languageJapanese = false;
-                gameManager.options.languageBrazilian = false;
-            }
-            else if (selectedLanguageImage.sprite == africanFlag)
-            {
-                gameManager.options.languageEnglish = false;
-                gameManager.options.languageFrench = false;
-                gameManager.options.languageGerman = false;
-                gameManager.options.languageItalian = false;
-                gameManager.options.languageSpanish = false;
-                gameManager.options.languageAfrican = true;
-                gameManager.options.languageRussian = false;
-                gameManager.options.languageChinese = false;
-                gameManager.options.languageJapanese = false;
-                gameManager.options.languageBrazilian = false;
-            }
-            else if (selectedLanguageImage.sprite == russianFlag)
-            {
-                gameManager.options.languageEnglish = false;
-                gameManager.options.languageFrench = false;
-                gameManager.options.languageGerman = false;
-                gameManager.options.languageItalian = false;
-                gameManager.options.languageSpanish = false;
-                gameManager.options.languageAfrican = false;
-                gameManager.options.languageRussian = true;
-                gameManager.options.languageChinese = false;
-                gameManager.options.languageJapanese = false;
-                gameManager.options.languageBrazilian = false;
-            }
-            else if (selectedLanguageImage.sprite == chineseFlag)
-            {
-                gameManager.options.languageEnglish = false;
-                gameManager.options.languageFrench = false;
-                gameManager.options.languageGerman = false;
-                gameManager.options.languageItalian = false;
-                gameManager.options.languageSpanish = false;
-                gameManager.options.languageAfrican = false;
-                gameManager.options.languageRussian = false;
-                gameManager.options.languageChinese = true;
-                gameManager.options.languageJapanese = false;
-                gameManager.options.languageBrazilian = false;
-            }
-            else if (selectedLanguageImage.sprite == japaneseFlag)
-            {
-                gameManager.options.languageEnglish = false;
-                gameManager.options.languageFrench = true;
-                gameManager.options.languageGerman = false;
-                gameManager.options.languageItalian = false;
-                gameManager.options.languageSpanish = false;
-                gameManager.options.languageAfrican = false;
-                gameManager.options.languageRussian = false;
-                gameManager.options.languageChinese = false;
-                gameManager.options.languageJapanese = true;
-                gameManager.options.languageBrazilian = false;
-            }
-            else if (selectedLanguageImage.sprite == brazilFlag)
-            {
-                gameManager.options.languageEnglish = false;
-                gameManager.options.languageFrench = false;
-                gameManager.options.languageGerman = false;
-                gameManager.options.languageItalian = false;
-                gameManager.options.languageSpanish = false;
-                gameManager.options.languageAfrican = false;
-                gameManager.options.languageRussian = false;
-                gameManager.options.languageChinese = false;
-                gameManager.options.languageJapanese = false;
-                gameManager.options.languageBrazilian = true;
             }
         }
     }

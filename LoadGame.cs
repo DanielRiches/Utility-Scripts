@@ -25,7 +25,7 @@ public class LoadGame : MonoBehaviour
         gameManager = GameObject.FindWithTag(Strings.gameManagerTag).GetComponent<GameManager>();
         playerInput = new PlayerInput();
         playerInput.KeyboardControls.AnyKey.started += onSkipSplash;
-        playerInput.GamePadControls.Start.started += onSkipSplash;
+        playerInput.GamePadControls.Start.started += onSkipSplash;        
     }
 
     
@@ -36,145 +36,148 @@ public class LoadGame : MonoBehaviour
             // CHECK FOR EXISTING GAME SETTINGS FILE TO SEE IF LANGUAGE WAS PREVIOUSLY SELECTED
             //  IF IT WAS APPLY THE LANGUAGE, APPLY ALL OTHER SETTINGS FOR OPTIONS THEN FINALLY CALL gameManager.LoadGame();
             // ELSE
-            if (!splashLanguageSelectObject.activeSelf)
-            {      
-                splashLanguageSelectObject.SetActive(true);
+            if (splashLanguageSelectObject && !gameManager.viewingEpilepsyWarning && !gameManager.viewingSaveWarning)
+            {
+                if (!splashLanguageSelectObject.activeSelf)
+                {
+                    if (Utils.GetPreferredSystemLanguage() == "en")
+                    {
+                        if (GameStrings.GameStringsEnglish.available)
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
+                            gameManager.options.languageEnglish = true;
+                        }
+                        else
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
+                            gameManager.options.languageEnglish = true;
+                        }
 
-                if (Utils.GetPreferredSystemLanguage() == "en")
-                {
-                    if (GameStrings.GameStringsEnglish.available)
-                    {                        
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                        gameManager.options.languageEnglish = true;
+                    }
+                    else if (Utils.GetPreferredSystemLanguage() == "fr")
+                    {
+                        if (GameStrings.GameStringsFrench.available)
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.frenchFlag;
+                            gameManager.options.languageFrench = true;
+                        }
+                        else
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
+                            gameManager.options.languageEnglish = true;
+                        }
+                    }
+                    else if (Utils.GetPreferredSystemLanguage() == "de")
+                    {
+                        if (GameStrings.GameStringsGerman.available)
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.germanFlag;
+                            gameManager.options.languageGerman = true;
+                        }
+                        else
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
+                            gameManager.options.languageEnglish = true;
+                        }
+                    }
+                    else if (Utils.GetPreferredSystemLanguage() == "it")
+                    {
+                        if (GameStrings.GameStringsItalian.available)
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.italianFlag;
+                            gameManager.options.languageItalian = true;
+                        }
+                        else
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
+                            gameManager.options.languageEnglish = true;
+                        }
+                    }
+                    else if (Utils.GetPreferredSystemLanguage() == "es")
+                    {
+                        if (GameStrings.GameStringsSpanish.available)
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.spanishFlag;
+                            gameManager.options.languageSpanish = true;
+                        }
+                        else
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
+                            gameManager.options.languageEnglish = true;
+                        }
+                    }
+                    else if (Utils.GetPreferredSystemLanguage() == "en-US")
+                    {
+                        if (GameStrings.GameStringsAmerican.available)
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.americanFlag;
+                            gameManager.options.languageAmerican = true;
+                        }
+                        else
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
+                            gameManager.options.languageEnglish = true;
+                        }
+                    }
+                    else if (Utils.GetPreferredSystemLanguage() == "ru")
+                    {
+                        if (GameStrings.GameStringsRussian.available)
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.russianFlag;
+                            gameManager.options.languageRussian = true;
+                        }
+                        else
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
+                            gameManager.options.languageEnglish = true;
+                        }
+                    }
+                    else if (Utils.GetPreferredSystemLanguage() == "zh")
+                    {
+                        if (GameStrings.GameStringsChinese.available)
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.chineseFlag;
+                            gameManager.options.languageChinese = true;
+                        }
+                        else
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
+                            gameManager.options.languageEnglish = true;
+                        }
+                    }
+                    else if (Utils.GetPreferredSystemLanguage() == "ja")
+                    {
+                        if (GameStrings.GameStringsJapanese.available)
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.japaneseFlag;
+                            gameManager.options.languageJapanese = true;
+                        }
+                        else
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
+                            gameManager.options.languageEnglish = true;
+                        }
+                    }
+                    else if (Utils.GetPreferredSystemLanguage() == "pt")
+                    {
+                        if (GameStrings.GameStringsBrazilian.available)
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.brazilFlag;
+                            gameManager.options.languageBrazilian = true;
+                        }
+                        else
+                        {
+                            splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
+                            gameManager.options.languageEnglish = true;
+                        }
                     }
                     else
                     {
                         splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                        gameManager.options.languageEnglish = true;
+                        Debug.Log("No compatible languages detected, defaulted to English.");
                     }
-                    
-                }
-                else if (Utils.GetPreferredSystemLanguage() == "fr")
-                {   
-                    if (GameStrings.GameStringsFrench.available)
-                    {                        
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.frenchFlag;
-                        gameManager.options.languageFrench = true;
-                    }
-                    else
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                        gameManager.options.languageEnglish = true;
-                    }
-                }
-                else if (Utils.GetPreferredSystemLanguage() == "de")
-                {
-                    if (GameStrings.GameStringsGerman.available)
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.germanFlag;
-                        gameManager.options.languageGerman = true;
-                    }
-                    else
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                        gameManager.options.languageEnglish = true;
-                    }
-                }
-                else if (Utils.GetPreferredSystemLanguage() == "it")
-                {
-                    if (GameStrings.GameStringsItalian.available)
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.italianFlag;
-                        gameManager.options.languageItalian = true;
-                    }
-                    else
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                        gameManager.options.languageEnglish = true;
-                    }
-                }
-                else if (Utils.GetPreferredSystemLanguage() == "es")
-                {   
-                    if (GameStrings.GameStringsSpanish.available)
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.spanishFlag;
-                        gameManager.options.languageSpanish = true;
-                    }
-                    else
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                        gameManager.options.languageEnglish = true;
-                    }
-                }
-                else if (Utils.GetPreferredSystemLanguage() == "af")
-                {
-                    if (GameStrings.GameStringsAfrican.available)
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.africanFlag;
-                        gameManager.options.languageAfrican = true;
-                    }
-                    else
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                        gameManager.options.languageEnglish = true;
-                    }
-                }
-                else if (Utils.GetPreferredSystemLanguage() == "ru")
-                {
-                    if (GameStrings.GameStringsRussian.available)
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.russianFlag;
-                        gameManager.options.languageRussian = true;
-                    }
-                    else
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                        gameManager.options.languageEnglish = true;
-                    }
-                }
-                else if (Utils.GetPreferredSystemLanguage() == "zh")
-                {
-                    if (GameStrings.GameStringsChinese.available)
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.chineseFlag;
-                        gameManager.options.languageChinese = true;
-                    }
-                    else
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                        gameManager.options.languageEnglish = true;
-                    }
-                }
-                else if (Utils.GetPreferredSystemLanguage() == "ja")
-                {
-                    if (GameStrings.GameStringsJapanese.available)
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.japaneseFlag;
-                        gameManager.options.languageJapanese = true;
-                    }
-                    else
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                        gameManager.options.languageEnglish = true;
-                    }
-                }
-                else if (Utils.GetPreferredSystemLanguage() == "pt")
-                {
-                    if (GameStrings.GameStringsBrazilian.available)
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.brazilFlag;
-                        gameManager.options.languageBrazilian = true;
-                    }
-                    else
-                    {
-                        splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                        gameManager.options.languageEnglish = true;
-                    }
-                }
-                else
-                {
-                    splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                    Debug.Log("No compatible languages detected, defaulted to English.");
+
+                    splashLanguageSelectObject.SetActive(true);                    
                 }
 
                 gameManager.cursor = true;
@@ -184,21 +187,18 @@ public class LoadGame : MonoBehaviour
 
         if (gameManager.inSplashScreen && gameManager.loadingGame)
         {
-            if (splashLanguageSelectObject.activeSelf)
-            {
-                splashLanguageSelectObject.SetActive(false);
-            }            
+            gameManager.cursor = false;
+            gameManager.loadingGame = false;
+            gameManager.viewingSaveWarning = false;
+            splashLanguageSelectObject.SetActive(false);
 
             if (!splashGameName.activeSelf)
             {
                 splashGameName.SetActive(true);
+                gameManager.localizeLanguage = true;
             }
             
-            StartCoroutine(LoadTheGame());
-            gameManager.localizeLanguage = true;
-            gameManager.cursor = false;
-            gameManager.inSplashScreen = false;
-            gameManager.loadingGame = false;
+            StartCoroutine(LoadTheGame());              
         }
 
         if (gameManager.skipScreen)
@@ -207,10 +207,12 @@ public class LoadGame : MonoBehaviour
             if (epilepsyWarningObject)
             {
                 UnityEngine.Object.Destroy(epilepsyWarningObject);
+                gameManager.viewingEpilepsyWarning = false;
             }
             if (autosaveWarning)
             {
                 UnityEngine.Object.Destroy(autosaveWarning);
+                gameManager.viewingSaveWarning = false;
             }
             if (bootCanvasObject)
             {
@@ -255,21 +257,29 @@ public class LoadGame : MonoBehaviour
         if (epilepsyWarningObject)
         {
             epilepsyWarningObject.SetActive(true);
-        }
+            gameManager.viewingEpilepsyWarning = true;
+            gameManager.localizeLanguage = true;                       
+        }   
+        
         yield return Times.seven;
         if (epilepsyWarningObject)
         {
             UnityEngine.Object.Destroy(epilepsyWarningObject);
+            gameManager.viewingEpilepsyWarning = false;
         }
         canSkip = true;
         if (autosaveWarning)
         {
             autosaveWarning.SetActive(true);
+            gameManager.viewingSaveWarning = true;
+            gameManager.localizeLanguage = true;            
         }
+        
         yield return Times.four;
         if (autosaveWarning)
         {
             UnityEngine.Object.Destroy(autosaveWarning);
+            gameManager.viewingSaveWarning = false;
         }
         if (bootCanvasObject)
         {
@@ -296,6 +306,7 @@ public class LoadGame : MonoBehaviour
 
         Utils.ClearMemory();
         gameManager.MainMenu();
+        gameManager.Localize();
         gameManager.Notification();
         gameManager.cursor = true;
         playerInput.KeyboardControls.Disable();
@@ -343,7 +354,7 @@ public class LoadGame : MonoBehaviour
     }
     public void ApplyAfrican()
     {
-        splashLanguageSelectedImage.sprite = gameManager.uiManager.africanFlag;
+        splashLanguageSelectedImage.sprite = gameManager.uiManager.americanFlag;
         gameManager.uiManager.splashLanguageDropdownObject.SetActive(false);
     }
     public void ApplyRussian()
