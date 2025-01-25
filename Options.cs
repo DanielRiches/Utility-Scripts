@@ -1,6 +1,6 @@
 using UnityEngine;
 using Unity.Cinemachine;
-using TMPro;
+using UnityEngine.UI;
 using UnityEngine.Profiling;
 
 public class Options : MonoBehaviour
@@ -10,8 +10,7 @@ public class Options : MonoBehaviour
     private Display mainDisplay;
     private Resolution currentResolution;
     private Resolution[] resolutions;
-    private float fpsDisplay;
-    
+    private float fpsDisplay;    
     private float accum = 0; // FPS accumulated over the interval
     private int frames = 0; // Frames drawn over the interval
     private float timeleft; // Left time for current interval
@@ -25,21 +24,24 @@ public class Options : MonoBehaviour
     [HideInInspector] public float mouseVerticalSensitivity = 1f;
     [HideInInspector] public bool invertControllerVertical;
     [HideInInspector] public float controllerHorizontalSensitivity = 1f;
-    [HideInInspector] public float controllerVerticalSensitivity = 1f;
-    
-    
+    [HideInInspector] public float controllerVerticalSensitivity = 1f;   
     
     [Header("---- Apply -----")]
     [Space(5)]
     public bool applySettings;
     [Header("---- SELECTED ------------------------------------------------------------")]
     [Space(5)]
+    [SerializeField] private bool selectedAutosaves;
+    [SerializeField] private int selectedMaximumAutosaves;
+    [SerializeField] private int selectedMaximumQuicksaves;
+    [SerializeField] private bool selectedGore;
+
     [Tooltip("Unlimited FPS Cap")]
-    [SerializeField] private bool selectedUncapFPS = false;
+    [SerializeField] private bool selectedUncapFPS;
     [Tooltip("Desired FPS Cap")]
-    [SerializeField, Range(30, 1000)] private int fps = 90;
+    [SerializeField, Range(30, 1000)] private int fps;
     [Tooltip("Desired Field of View on players camera")]
-    [SerializeField, Range(65, 120)] private int fov = 90;
+    [SerializeField, Range(65, 120)] private int fov;
     [Header("---- Controls ------------------------------------------------------------")]
     [Space(5)]
     [SerializeField] private bool invertMouseY;
@@ -50,12 +52,12 @@ public class Options : MonoBehaviour
     [SerializeField] private float controllerYSensitivity = 1f;
     [Header("---- Diagnostics ------------------------------------------------------------")]
     [Space(5)]
-    [SerializeField] private float updateInterval = 0f;
+    [SerializeField] private float updateInterval = 0.1f;
     public bool selectedShowFPS;    
     public bool selectedShowPing;    
     public bool selectedShowMemory;
     
-    [Header("[Localization")]
+    [Header("[Localization]")]
     [Space(5)]
     public bool languageEnglish;
     public bool languageFrench;
@@ -69,135 +71,127 @@ public class Options : MonoBehaviour
     public bool languageBrazilian;
 
     [Header("---- APPLIED ------------------------------------------------------------")]
-    [Space(5)]
-    [HideInInspector] public bool appliedUncapFPS;
-    [HideInInspector] public int appliedFPS;
+    [Header("Gameplay")]
+    public bool appliedAutosaves;
+    public int appliedAutosavesAmount;
+    public int appliedQuicksavesAmount;
+    public bool appliedGore;
+    public bool appliedUncapFPS;
+    public int appliedFPS;
+    public bool appliedLanguageEnglish;
+    public bool appliedLanguageFrench;
+    public bool appliedLanguageGerman;
+    public bool appliedLanguageItalian;
+    public bool appliedLanguageSpanish;
+    public bool appliedLanguageAmerican;
+    public bool appliedLanguageRussian;
+    public bool appliedLanguageChinese;
+    public bool appliedLanguageJapanese;
+    public bool appliedLanguageBrazilian;
 
-    [HideInInspector] public bool appliedPing;
+
+
+
+
+
+
+
+
+
     [HideInInspector] public bool appliedMemory;
     private void Awake()
     {
         gameManager = GameObject.FindWithTag(Strings.gameManagerTag).GetComponent<GameManager>();
         timeleft = updateInterval;
+        gameManager.options = this;
     }
 
     private void Start()
-    {
-        gameManager.options = this;
+    {        
+        selectedAutosaves = true;
+        selectedMaximumAutosaves = 10;
+        selectedMaximumQuicksaves = 10;
+        selectedGore = true;
+        selectedUncapFPS = false;
+        
+
         totalSystemMemory = SystemInfo.systemMemorySize;
         totalSystemMemoryGB = totalSystemMemory / 1024f;
         mainDisplay = Display.main;
-        currentResolution = Screen.currentResolution;
-        resolutions = Screen.resolutions;
-        float maxRefreshRate = mainDisplay.systemWidth / mainDisplay.systemHeight; // Display ratio, you might need an alternative approach       
-
-        /*
-        foreach (Resolution resolution in resolutions)
-        {
-            Debug.Log("Resolution: " + resolution.width + "x" + resolution.height + " @ " + resolution.refreshRateRatio + "Hz");
-        }
-        Debug.Log("Maximum Monitor Refresh Rate Ratio: " + currentResolution.refreshRateRatio);
-        */
     }
 
-    void ApplySettings()
+    public void ApplySettings()
     {
         if (Application.isPlaying)
         {
-            if (selectedUncapFPS)
+            // GAMEPLAY--------------
+            if (selectedAutosaves)
             {
-                appliedUncapFPS = true;                
-                Application.targetFrameRate = 0; // Uncap the frame rate
-                appliedFPS = fps;
+                appliedAutosaves = true;
             }
-            else if (fps != appliedFPS)
+            else if(!selectedAutosaves)
             {
-                appliedUncapFPS = false;
-
-                if (fps > currentResolution.refreshRateRatio.value)
-                {
-                    fps = (int)currentResolution.refreshRateRatio.value;
-                    Debug.Log("Monitor is set @ " + currentResolution.refreshRateRatio + "Hz, FPS will be capped to this value");                    
-                }
-                
-                Application.targetFrameRate = fps;
-                Debug.Log(Application.targetFrameRate);
-                appliedFPS = fps;
-            }
-            else
-            {
-                appliedUncapFPS = false;
-                Application.targetFrameRate = fps;
-                appliedFPS = fps;
-                Debug.Log(Application.targetFrameRate);
+                appliedAutosaves = false;
             }
 
-            if (playerCinemachineCamera)
+            appliedAutosavesAmount = selectedMaximumAutosaves;
+            appliedQuicksavesAmount = selectedMaximumQuicksaves;
+
+            if (selectedGore)
             {
-                playerCinemachineCamera.Lens.FieldOfView = fov;
+                appliedGore = true;
+            }
+            else if (!selectedGore)
+            {
+                appliedGore = false;
             }
 
-            if (selectedShowFPS)
+            if (languageEnglish)
             {
-                gameManager.uiManager.diagnosticsFPSCounterText.enabled = true;
-                appliedUncapFPS = true;
-                gameManager.viewingFPS = true;
+                appliedLanguageEnglish = true;
             }
-            else
+            if (languageFrench)
             {
-                appliedUncapFPS = false;
-                gameManager.viewingFPS = false;
-                gameManager.uiManager.diagnosticsFPSCounterText.enabled = false;
+                appliedLanguageFrench = true;
+            }
+            if (languageGerman)
+            {
+                appliedLanguageGerman = true;
+            }
+            if (languageItalian)
+            {
+                appliedLanguageItalian = true;
+            }
+            if (languageSpanish)
+            {
+                appliedLanguageSpanish = true;
+            }
+            if (languageAmerican)
+            {
+                appliedLanguageAmerican = true;
+            }
+            if (languageRussian)
+            {
+                appliedLanguageRussian = true;
+            }
+            if (languageChinese)
+            {
+                appliedLanguageChinese = true;
+            }
+            if (languageJapanese)
+            {
+                appliedLanguageJapanese = true;
+            }
+            if (languageBrazilian)
+            {
+                appliedLanguageBrazilian = true;
             }
 
-            if (selectedShowPing)
-            {
-                gameManager.uiManager.diagnosticsPingCounterText.enabled = true;                
-                gameManager.viewingPing = true;
-                appliedPing = true;
-            }
-            else
-            {
-                appliedPing = false;
-                gameManager.viewingPing = false;
-                gameManager.uiManager.diagnosticsPingCounterText.enabled = false;                
-            }
+            OptionsRevertModifications();
+            gameManager.uiManager.OptionsUpdateUIValues();
+            gameManager.saveManager.SaveOptionsAsync();
 
-            if (selectedShowMemory)
-            {
-                gameManager.uiManager.diagnosticsMemoryCounterText.enabled = true;                
-                gameManager.viewingMemory = true;
-                appliedMemory = true;
-            }
-            else
-            {
-                appliedMemory = false;
-                gameManager.viewingMemory = false;
-                gameManager.uiManager.diagnosticsMemoryCounterText.enabled = false;                
-            }
-
-            if (invertMouseY)
-            {
-                invertMouseVertical = true;
-            }
-            else
-            {
-                invertMouseVertical = false;
-            }
-            mouseHorizontalSensitivity = mouseXSensitivity;
-            mouseVerticalSensitivity = mouseYSensitivity;
-
-            if (invertControllerY)
-            {
-                invertControllerVertical = true;
-            }
-            else
-            {
-                invertControllerVertical = false;
-            }
-            controllerHorizontalSensitivity = controllerXSensitivity;
-            controllerVerticalSensitivity = controllerYSensitivity;
-
+            gameManager.optionsValuesModified = false;
             Utils.ClearMemory();
         }
     }
@@ -211,51 +205,157 @@ public class Options : MonoBehaviour
                 ApplySettings();
                 applySettings = false;
             }
+        }
+    }
 
-            // DIAGNOSTICS ----------------------------------------
-            if (appliedUncapFPS)
-            {
-                timeleft -= Time.deltaTime;
-                accum += Time.timeScale / Time.deltaTime;
-                frames++;
-
-                if (timeleft <= 0.0f)
-                {      
-                    fpsDisplay = Mathf.RoundToInt(accum / frames);
-
-                    timeleft = updateInterval;// Reset counters
-                    accum = 0;
-                    frames = 0;                   
-
-                    if (fpsDisplay < 40)
-                    {
-                        gameManager.uiManager.diagnosticsFPSCounterText.color = Color.red;
+    public void OptionsModifiedValueCheck(Toggle toggle, bool toggleCheck, Slider slider, float sliderCheck, ref GameObject modifiedValueImageObject)
+    {
+        if (toggle && slider)
+        {
+            Debug.LogError("referenced toggle AND slider, please do one or the other.");
+            return;
+        }
+        if (toggle)
+        {            
+            if (toggle.isOn && toggleCheck != true || !toggle.isOn && toggleCheck == true)
+            {                
+                if (modifiedValueImageObject)
+                {                    
+                    if (!modifiedValueImageObject.activeSelf)
+                    {                        
+                        modifiedValueImageObject.SetActive(true);
                     }
-                    else if (fpsDisplay >= 40 && fpsDisplay <= 70)
-                    {
-                        gameManager.uiManager.diagnosticsFPSCounterText.color = Color.yellow;
-                    }
-                    else
-                    {
-                        gameManager.uiManager.diagnosticsFPSCounterText.color = Color.green;
-                    }
-
-                    gameManager.uiManager.diagnosticsFPSCounterText.text = $"<color=white>FPS:</color> {fpsDisplay}";
                 }
             }
-
-            if (appliedPing)
+            else
             {
-                // Ping display logic
+                if (modifiedValueImageObject)
+                {                    
+                    if (modifiedValueImageObject.activeSelf)
+                    {                        
+                        modifiedValueImageObject.SetActive(false);
+                    }
+                }
             }
+        }
 
-            if (appliedMemory)
+        if(slider)
+        {
+            if (slider.value != sliderCheck)
             {
-                allocatedMemory = Profiler.GetTotalAllocatedMemoryLong();
-                allocatedMemoryGB = allocatedMemory / (1024f * 1024f * 1024f);
-                gameManager.uiManager.diagnosticsMemoryCounterText.color = Color.white;
-                gameManager.uiManager.diagnosticsMemoryCounterText.text = $"Mem: {allocatedMemoryGB:F2} GB / {totalSystemMemoryGB:F2} GB";
+                if (modifiedValueImageObject)
+                {
+                    if (!modifiedValueImageObject.activeSelf)
+                    {
+                        modifiedValueImageObject.SetActive(true);
+                    }
+                }
             }
+            else
+            {
+                if (modifiedValueImageObject)
+                {
+                    if (modifiedValueImageObject.activeSelf)
+                    {
+                        modifiedValueImageObject.SetActive(false);
+                    }
+                }
+            }
+        }
+        Utils.ClearMemory();
+    }
+
+    public void OptionsRevertModifications()
+    {
+        // GAMEPLAY--------------
+        if (appliedAutosaves)
+        {
+            selectedAutosaves = true;
+            gameManager.uiManager.autosavesToggle.isOn = true;
+        }
+        else if (!appliedAutosaves)
+        {
+            selectedAutosaves = false;
+            gameManager.uiManager.autosavesToggle.isOn = false;
+        }
+        gameManager.uiManager.autosavesToggleModifiedGameobject.SetActive(false);
+
+        selectedMaximumAutosaves = appliedAutosavesAmount;
+        gameManager.uiManager.maximumAutosavesSlider.value = appliedAutosavesAmount;
+        gameManager.uiManager.maximumAutosavesSliderModifiedGameobject.SetActive(false);
+
+        selectedMaximumQuicksaves = appliedQuicksavesAmount;
+        gameManager.uiManager.maximumQuicksavesSlider.value = appliedQuicksavesAmount;
+        gameManager.uiManager.maximumQuicksavesSliderModifiedGameobject.SetActive(false);
+
+        if (appliedGore)
+        {
+            selectedGore = true;
+            gameManager.uiManager.goreToggle.isOn = true;
+        }
+        else if (!appliedGore)
+        {
+            selectedGore = false;
+            gameManager.uiManager.goreToggle.isOn = false;
+        }
+        gameManager.uiManager.goreToggleModifiedGameobject.SetActive(false);
+
+        if (appliedLanguageEnglish)
+        {
+            languageEnglish = true;
+        }
+        if (appliedLanguageFrench == true)
+        {
+            languageFrench = true;
+        }
+        if (appliedLanguageGerman == true)
+        {
+            languageGerman = true;
+        }
+        if (appliedLanguageItalian == true)
+        {
+            languageItalian = true;
+        }
+        if (appliedLanguageSpanish == true)
+        {
+            languageSpanish = true;
+        }
+        if (appliedLanguageAmerican == true)
+        {
+            languageAmerican = true;
+        }
+        if (appliedLanguageRussian == true)
+        {
+            languageRussian = true;
+        }
+        if (appliedLanguageChinese == true)
+        {
+            languageChinese = true;
+        }
+        if (appliedLanguageJapanese == true)
+        {
+            languageJapanese = true;
+        }
+        if (appliedLanguageBrazilian == true)
+        {
+            languageBrazilian = true;
+        }
+
+
+        gameManager.optionsValuesModified = false;
+        Utils.ClearMemory();
+    }
+
+    public void CheckOptionsSaved()
+    {
+        if (gameManager.optionsValuesModified)
+        {
+            gameManager.viewingWarningNotification = true;
+            gameManager.localizeLanguage = true;
+        }
+        else
+        {
+            gameManager.MainMenu();
         }
     }
 
@@ -291,6 +391,85 @@ public class Options : MonoBehaviour
         {
             selectedShowMemory = false;
         }
+    }
+
+    public void OptionsSelectedAutosaves()
+    {
+        if (gameManager.uiManager.autosavesToggle.isOn)
+        {
+            selectedAutosaves = true;
+        }
+        else if (!gameManager.uiManager.autosavesToggle.isOn)
+        {
+            selectedAutosaves = false;
+        }        
+        OptionsModifiedValueCheck(gameManager.uiManager.autosavesToggle, appliedAutosaves, null, 0, ref gameManager.uiManager.autosavesToggleModifiedGameobject);// ACTIVATE VALUE MODIFIED IMAGE
+    }
+    public void OptionsSelectedGore()
+    {
+        if (gameManager.uiManager.goreToggle.isOn)
+        {
+            selectedGore = true;
+        }
+        else if (!gameManager.uiManager.autosavesToggle.isOn)
+        {
+            selectedGore = false;
+        }
+        OptionsModifiedValueCheck(gameManager.uiManager.goreToggle, appliedGore, null, 0, ref gameManager.uiManager.goreToggleModifiedGameobject);// ACTIVATE VALUE MODIFIED IMAGE        
+    }
+
+    public void OptionsMaximumAutosavesSliderChanged()
+    {
+        selectedMaximumAutosaves = (int)gameManager.uiManager.maximumAutosavesSlider.value;
+        
+        gameManager.uiManager.OptionsUpdateUIValues();
+        gameManager.localizeLanguage = true;
+        OptionsModifiedValueCheck(null, false, gameManager.uiManager.maximumAutosavesSlider, appliedAutosavesAmount, ref gameManager.uiManager.maximumAutosavesSliderModifiedGameobject);// ACTIVATE VALUE MODIFIED IMAGE
+    }
+    public void OptionsMaximumAutosavesSliderIncreased()
+    {
+        gameManager.uiManager.maximumAutosavesSlider.value = gameManager.uiManager.maximumAutosavesSlider.value + 1;
+        selectedMaximumAutosaves = (int)gameManager.uiManager.maximumAutosavesSlider.value;
+        
+        gameManager.uiManager.OptionsUpdateUIValues();
+        gameManager.localizeLanguage = true;
+        OptionsModifiedValueCheck(null, false, gameManager.uiManager.maximumAutosavesSlider, appliedAutosavesAmount, ref gameManager.uiManager.maximumAutosavesSliderModifiedGameobject);// ACTIVATE VALUE MODIFIED IMAGE
+    }
+    public void OptionsMaximumAutosavesSliderDecreased()
+    {
+        gameManager.uiManager.maximumAutosavesSlider.value = gameManager.uiManager.maximumAutosavesSlider.value - 1;
+        selectedMaximumAutosaves = (int)gameManager.uiManager.maximumAutosavesSlider.value;
+        
+        OptionsModifiedValueCheck(null, false, gameManager.uiManager.maximumAutosavesSlider, appliedAutosavesAmount, ref gameManager.uiManager.maximumAutosavesSliderModifiedGameobject);// ACTIVATE VALUE MODIFIED IMAGE
+        gameManager.uiManager.OptionsUpdateUIValues();
+        gameManager.localizeLanguage = true;
+    }
+
+    public void OptionsMaximumQuicksavesSliderChanged()
+    {
+        selectedMaximumQuicksaves = (int)gameManager.uiManager.maximumQuicksavesSlider.value;        
+
+        OptionsModifiedValueCheck(null, false, gameManager.uiManager.maximumQuicksavesSlider, appliedQuicksavesAmount, ref gameManager.uiManager.maximumQuicksavesSliderModifiedGameobject);// ACTIVATE VALUE MODIFIED IMAGE
+        gameManager.uiManager.OptionsUpdateUIValues();
+        gameManager.localizeLanguage = true;
+    }
+    public void OptionsMaximumQuicksavesSliderIncreased()
+    {
+        gameManager.uiManager.maximumQuicksavesSlider.value = gameManager.uiManager.maximumQuicksavesSlider.value + 1;
+        selectedMaximumQuicksaves = (int)gameManager.uiManager.maximumQuicksavesSlider.value;        
+
+        OptionsModifiedValueCheck(null, false, gameManager.uiManager.maximumQuicksavesSlider, appliedQuicksavesAmount, ref gameManager.uiManager.maximumQuicksavesSliderModifiedGameobject);// ACTIVATE VALUE MODIFIED IMAGE
+        gameManager.uiManager.OptionsUpdateUIValues();
+        gameManager.localizeLanguage = true;
+    }
+    public void OptionsMaximumQuicksavesSliderDecreased()
+    {
+        gameManager.uiManager.maximumQuicksavesSlider.value = gameManager.uiManager.maximumQuicksavesSlider.value - 1;
+        selectedMaximumQuicksaves = (int)gameManager.uiManager.maximumQuicksavesSlider.value;        
+
+        OptionsModifiedValueCheck(null, false, gameManager.uiManager.maximumQuicksavesSlider, appliedQuicksavesAmount, ref gameManager.uiManager.maximumQuicksavesSliderModifiedGameobject);// ACTIVATE VALUE MODIFIED IMAGE
+        gameManager.uiManager.OptionsUpdateUIValues();
+        gameManager.localizeLanguage = true;
     }
 
     #region Localization
@@ -465,3 +644,155 @@ public class Options : MonoBehaviour
     }
     #endregion
 }
+
+/*
+             // DIAGNOSTICS ----------------------------------------
+            if (appliedUncapFPS)
+            {
+                timeleft -= Time.deltaTime;
+                accum += Time.timeScale / Time.deltaTime;
+                frames++;
+
+                if (timeleft <= 0.0f)
+                {      
+                    fpsDisplay = Mathf.RoundToInt(accum / frames);
+
+                    timeleft = updateInterval;// Reset counters
+                    accum = 0;
+                    frames = 0;                   
+
+                    if (fpsDisplay < 40)
+                    {
+                        gameManager.uiManager.diagnosticsFPSCounterText.color = Color.red;
+                    }
+                    else if (fpsDisplay >= 40 && fpsDisplay <= 70)
+                    {
+                        gameManager.uiManager.diagnosticsFPSCounterText.color = Color.yellow;
+                    }
+                    else
+                    {
+                        gameManager.uiManager.diagnosticsFPSCounterText.color = Color.green;
+                    }
+
+                    gameManager.uiManager.diagnosticsFPSCounterText.text = $"<color=white>FPS:</color> {fpsDisplay}";
+                }
+            }
+
+            if (appliedMemory)
+            {
+                allocatedMemory = Profiler.GetTotalAllocatedMemoryLong();
+                allocatedMemoryGB = allocatedMemory / (1024f * 1024f * 1024f);
+                gameManager.uiManager.diagnosticsMemoryCounterText.color = Color.white;
+                gameManager.uiManager.diagnosticsMemoryCounterText.text = $"Mem: {allocatedMemoryGB:F2} GB / {totalSystemMemoryGB:F2} GB";
+            }
+
+
+
+
+       currentResolution = Screen.currentResolution;
+        resolutions = Screen.resolutions;
+        float maxRefreshRate = mainDisplay.systemWidth / mainDisplay.systemHeight; // Display ratio, you might need an alternative approach       
+        
+        /*
+        foreach (Resolution resolution in resolutions)
+        {
+            Debug.Log("Resolution: " + resolution.width + "x" + resolution.height + " @ " + resolution.refreshRateRatio + "Hz");
+        }
+        Debug.Log("Maximum Monitor Refresh Rate Ratio: " + currentResolution.refreshRateRatio);
+        
+
+// VIDEO-------------------
+if (selectedUncapFPS)
+{
+    appliedUncapFPS = true;
+    Application.targetFrameRate = 0; // Uncap the frame rate
+    appliedFPS = fps;
+}
+else if (fps != appliedFPS)
+{
+    appliedUncapFPS = false;
+
+    if (fps > currentResolution.refreshRateRatio.value)
+    {
+        fps = (int)currentResolution.refreshRateRatio.value;
+        Debug.Log("Monitor is set @ " + currentResolution.refreshRateRatio + "Hz, FPS will be capped to this value");
+    }
+
+    Application.targetFrameRate = fps;
+    Debug.Log(Application.targetFrameRate);
+    appliedFPS = fps;
+}
+else
+{
+    appliedUncapFPS = false;
+    Application.targetFrameRate = fps;
+    appliedFPS = fps;
+    Debug.Log(Application.targetFrameRate);
+}
+
+if (playerCinemachineCamera)
+{
+    playerCinemachineCamera.Lens.FieldOfView = fov;
+}
+
+if (selectedShowFPS)
+{
+    gameManager.uiManager.diagnosticsFPSCounterText.enabled = true;
+    appliedUncapFPS = true;
+    gameManager.viewingFPS = true;
+}
+else
+{
+    appliedUncapFPS = false;
+    gameManager.viewingFPS = false;
+    gameManager.uiManager.diagnosticsFPSCounterText.enabled = false;
+}
+
+if (selectedShowPing)
+{
+    gameManager.uiManager.diagnosticsPingCounterText.enabled = true;
+    gameManager.viewingPing = true;
+    appliedPing = true;
+}
+else
+{
+    appliedPing = false;
+    gameManager.viewingPing = false;
+    gameManager.uiManager.diagnosticsPingCounterText.enabled = false;
+}
+
+if (selectedShowMemory)
+{
+    gameManager.uiManager.diagnosticsMemoryCounterText.enabled = true;
+    gameManager.viewingMemory = true;
+    appliedMemory = true;
+}
+else
+{
+    appliedMemory = false;
+    gameManager.viewingMemory = false;
+    gameManager.uiManager.diagnosticsMemoryCounterText.enabled = false;
+}
+
+if (invertMouseY)
+{
+    invertMouseVertical = true;
+}
+else
+{
+    invertMouseVertical = false;
+}
+mouseHorizontalSensitivity = mouseXSensitivity;
+mouseVerticalSensitivity = mouseYSensitivity;
+
+if (invertControllerY)
+{
+    invertControllerVertical = true;
+}
+else
+{
+    invertControllerVertical = false;
+}
+controllerHorizontalSensitivity = controllerXSensitivity;
+controllerVerticalSensitivity = controllerYSensitivity;
+*/

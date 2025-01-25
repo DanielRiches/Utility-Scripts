@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 using TMPro;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -42,15 +41,16 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Animator mainMenuAnimator;
     [Header("Issue")]
     [Space(5)]
-    [SerializeField] private GameObject notificationGameobject;
-    [SerializeField] private CanvasGroup notificationCanvasGroup;
-    [SerializeField] private Animator notificationAnimator;
+    [SerializeField] private GameObject issueGameobject;
+
+    [SerializeField] private Animator issueAnimator;
     [Header("---- Options ----------------------------------------------------------------")]
     [Space(5)]
     [SerializeField] private GameObject optionsMenuGameobject;
     [SerializeField] private CanvasGroup optionsMenuCanvasGroup;
     [SerializeField] private Animator optionsBGAnimator;
     [SerializeField] private Animator optionsApplyAnimator;
+    [SerializeField] private Animator optionsRevertAnimator;
     [SerializeField] private Animator optionsExitAnimator;    
     [SerializeField] private Animator optionsSectionTitleAnimator;    
     [Header("Gameplay")]
@@ -58,8 +58,15 @@ public class UIManager : MonoBehaviour
     [SerializeField] private CanvasGroup optionsGameplaySectionCanvasGroup;
     [SerializeField] private Animator optionsGameplayButtonAnimator;
     [SerializeField] private Animator optionsGameplaySectionAnimator;
-    [SerializeField] private EventTrigger optionsOnlineVisibilityDescriptionTrigger;
-    [SerializeField] private EventTrigger optionsAutosavesDescriptionTrigger;
+    public GameObject autosavesToggleModifiedGameobject;// ACCESSED BY OPTIONS
+    public Toggle autosavesToggle;// ACCESSED BY OPTIONS
+    public GameObject maximumAutosavesSliderModifiedGameobject;// ACCESSED BY OPTIONS
+    public Slider maximumAutosavesSlider;// ACCESSED BY OPTIONS
+    public GameObject maximumQuicksavesSliderModifiedGameobject;// ACCESSED BY OPTIONS
+    public Slider maximumQuicksavesSlider;// ACCESSED BY OPTIONS
+    public GameObject goreToggleModifiedGameobject;// ACCESSED BY OPTIONS
+    public Toggle goreToggle;// ACCESSED BY OPTIONS
+
     [Header("Video")]
     [SerializeField] private GameObject optionsVideoSectionObject;
     [SerializeField] private CanvasGroup optionsVideoSectionCanvasGroup;
@@ -107,6 +114,12 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject creditsMenuGameobject;
     [SerializeField] private Animator creditsAnimator;
     private float creditsFadeTimer;
+    [Header("---- Notification ------------------------------------------------------------")]
+    [Space(5)]
+    [SerializeField] private GameObject notificationGameobject;
+    [SerializeField] private CanvasGroup notificationCanvasGroup;
+    [SerializeField] private GameObject notificationPopupGameobject;
+    [SerializeField] private Animator notificationPopupAnimator;
     [Header("---- Version ------------------------------------------------------------------")]
     [Space(5)]
     [SerializeField] private GameObject versionMenuGameobject;
@@ -118,17 +131,17 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Animator versionButtonAnimator;
     [Space(10)]
     [Header("[Localization]")]    
-    public Image selectedLanguageImage;// ACCESSED EXTERNALLY
-    public Sprite englishFlag;// ACCESSED EXTERNALLY
-    public Sprite frenchFlag;// ACCESSED EXTERNALLY
-    public Sprite germanFlag;// ACCESSED EXTERNALLY
-    public Sprite italianFlag;// ACCESSED EXTERNALLY
-    public Sprite spanishFlag;// ACCESSED EXTERNALLY
-    public Sprite americanFlag;// ACCESSED EXTERNALLY
-    public Sprite russianFlag;// ACCESSED EXTERNALLY
-    public Sprite chineseFlag;// ACCESSED EXTERNALLY
-    public Sprite japaneseFlag;// ACCESSED EXTERNALLY
-    public Sprite brazilFlag;// ACCESSED EXTERNALLY
+    public Image selectedLanguageImage;// ACCESSED BY OPTIONS AND SPLASH
+    public Sprite englishFlag;// ACCESSED BY OPTIONS AND SPLASH
+    public Sprite frenchFlag;// ACCESSED BY OPTIONS AND SPLASH
+    public Sprite germanFlag;// ACCESSED BY OPTIONS AND SPLASH
+    public Sprite italianFlag;// ACCESSED BY OPTIONS AND SPLASH
+    public Sprite spanishFlag;// ACCESSED BY OPTIONS AND SPLASH
+    public Sprite americanFlag;// ACCESSED BY OPTIONS AND SPLASH
+    public Sprite russianFlag;// ACCESSED BY OPTIONS AND SPLASH
+    public Sprite chineseFlag;// ACCESSED BY OPTIONS AND SPLASH
+    public Sprite japaneseFlag;// ACCESSED BY OPTIONS AND SPLASH
+    public Sprite brazilFlag;// ACCESSED BY OPTIONS AND SPLASH
     private string languageClassName;
     [SerializeField] private TMP_FontAsset defaultFont;
     [SerializeField] private TMP_FontAsset chineseFont;
@@ -144,12 +157,15 @@ public class UIManager : MonoBehaviour
     [Space(5)]
     [SerializeField] private TextMeshProUGUI mainMenuContinueButtonText;
     [Space(5)]
+    public TextMeshProUGUI maximumAutosavesSliderText;// ACCESSED BY OPTIONS
+    public TextMeshProUGUI maximumQuicksavesSliderText;// ACCESSED BY OPTIONS
+    [Space(5)]
     [SerializeField] private TextMeshProUGUI optionsTitle;
     [SerializeField] private TextMeshProUGUI optionsDescription;
     [Space(5)]
-    public TextMeshProUGUI diagnosticsFPSCounterText;// ACCESSED EXTERNALLY
-    public TextMeshProUGUI diagnosticsPingCounterText;// ACCESSED EXTERNALLY
-    public TextMeshProUGUI diagnosticsMemoryCounterText;// ACCESSED EXTERNALLY
+    public TextMeshProUGUI diagnosticsFPSCounterText;// ACCESSED BY OPTIONS
+    public TextMeshProUGUI diagnosticsPingCounterText;// ACCESSED BY OPTIONS
+    public TextMeshProUGUI diagnosticsMemoryCounterText;// ACCESSED BY OPTIONS
 
     private void Awake()
     {
@@ -183,7 +199,17 @@ public class UIManager : MonoBehaviour
 
         Loading();
 
-        // ACTIVATE
+        // OPTIONS MODIFIED VALUES
+        if (autosavesToggleModifiedGameobject.activeSelf || maximumAutosavesSliderModifiedGameobject.activeSelf || maximumQuicksavesSliderModifiedGameobject.activeSelf || goreToggleModifiedGameobject.activeSelf)
+        {
+            gameManager.optionsValuesModified = true;
+        }
+        else
+        {
+            gameManager.optionsValuesModified = false;
+        }
+
+        //---------------------------------------------------------------- ACTIVATE ----------------------------------------------------------------------------------------------------
         ActivateUI(gameManager.blackScreen, blackScreenCanvasGroup, blackScreenGameobject, null);// BLACKSCREEN
         ActivateUI(gameManager.inMainMenu, mainMenuCanvasGroup, mainMenuGameobject, versionButtonAnimator);// MAIN MENU
 
@@ -202,10 +228,11 @@ public class UIManager : MonoBehaviour
             ActivateUI(gameManager.viewingMemory, diagnosticsMemoryCanvasGroup, diagnosticsMemoryGameobject, diagnosticsMemoryAnimator);
         }        
 
-        ActivateUI(gameManager.viewingNotification, notificationCanvasGroup, notificationGameobject, notificationAnimator);// NOTIFICATION
+        ActivateUI(gameManager.viewingNotification || gameManager.viewingWarningNotification, notificationCanvasGroup, notificationGameobject, null);// NOTIFICATION PARENT OBJECT
+        ActivateUI(gameManager.viewingWarningNotification, null, notificationGameobject, notificationPopupAnimator);// WARNING NOTIFICATION
         ActivateUI(gameManager.viewingCredits, null, creditsMenuGameobject, creditsAnimator);// CREDITS
 
-        // ANIMATE
+        //---------------------------------------------------------------- ANIMATE ---------------------------------------------------------------------------------------------------
         if (mainMenuGameobject.activeSelf)// MAIN MENU
         {            
             AnimateUI(gameManager.inMainMenu, mainMenuAnimator, 1, Strings.animUIOpen);
@@ -215,6 +242,7 @@ public class UIManager : MonoBehaviour
         if (optionsMenuGameobject.activeSelf)// OPTIONS
         {
             AnimateUI(gameManager.inOptionsMenu, optionsApplyAnimator, 2, Strings.animUIOpen);
+            AnimateUI(gameManager.optionsValuesModified, optionsRevertAnimator, 2, Strings.animUIOpen);// OPTIONS MODIFIED VALUES
             AnimateUI(gameManager.inOptionsMenu, optionsExitAnimator, 2, Strings.animUIOpen);
             AnimateUI(gameManager.inOptionsMenu, optionsBGAnimator, 2, Strings.animUIOpen);
             AnimateUI(gameManager.inOptionsMenu, optionsSectionTitleAnimator, 2, Strings.animUIOpen);
@@ -264,7 +292,8 @@ public class UIManager : MonoBehaviour
 
         if (notificationGameobject.activeSelf)// NOTIFICATION
         {
-            AnimateUI(gameManager.viewingNotification, notificationAnimator, 0, Strings.animUIOpen); 
+            AnimateUI(gameManager.viewingNotification, issueAnimator, 0, Strings.animUIOpen);// ISSUE
+            AnimateUI(gameManager.viewingWarningNotification, notificationPopupAnimator, 2, Strings.animUIOpen);
         }
 
         AnimateUI(gameManager.viewingFPS, diagnosticsFPSCanvasAnimator, 1, Strings.animUIOpen);// DIAGNOSTICS FPS
@@ -282,7 +311,7 @@ public class UIManager : MonoBehaviour
             AnimateUI(gameManager.viewingPatchNotes, versionTitleAnimator, 2, Strings.animUIOpen);
         }
 
-        // LOCALIZE
+        //------------------------------------------------------------------------- LOCALIZE --------------------------------------------------------------------------------------------
         if (gameManager.localizeLanguage)
         {
             if (gameManager.inSplashScreen)
@@ -293,15 +322,15 @@ public class UIManager : MonoBehaviour
                 Utils.LocalizeText(gameManager, ref languageClassName, ref splashSelectedLanguageText, "splashSelectedLanguageText", defaultFont, chineseFont, japaneseFont);
                 Utils.LocalizeText(gameManager, ref languageClassName, ref splashSelectLanguageNoticeText, "splashSelectLanguageNoticeText", defaultFont, chineseFont, japaneseFont);
                 Utils.LocalizeText(gameManager, ref languageClassName, ref splashSelectLanguageConfirmButtonText, "splashSelectLanguageConfirmButtonText", defaultFont, chineseFont, japaneseFont);
+            }
 
-                if (splashEpilepsyWarningObject && gameManager.viewingEpilepsyWarning)
-                {                    
-                    Utils.LocalizeText(gameManager, ref languageClassName, ref splashEpilepsyWarningText, "splashEpilepsyWarningText", defaultFont, chineseFont, japaneseFont);
-                }
-                if (splashSaveWarningObject && gameManager.viewingSaveWarning)
-                {
-                    Utils.LocalizeText(gameManager, ref languageClassName, ref splashSaveWarningText, "splashSaveWarningText", defaultFont, chineseFont, japaneseFont);
-                }
+            if (splashEpilepsyWarningObject && gameManager.viewingEpilepsyWarning)
+            {
+                Utils.LocalizeText(gameManager, ref languageClassName, ref splashEpilepsyWarningText, "splashEpilepsyWarningText", defaultFont, chineseFont, japaneseFont);
+            }
+            if (splashSaveWarningObject && gameManager.viewingSaveWarning)
+            {
+                Utils.LocalizeText(gameManager, ref languageClassName, ref splashSaveWarningText, "splashSaveWarningText", defaultFont, chineseFont, japaneseFont);
             }
 
             if (gameManager.inMainMenu)
@@ -311,7 +340,7 @@ public class UIManager : MonoBehaviour
 
             if (gameManager.inOptionsGameplayMenu)
             {
-                Utils.LocalizeText(gameManager, ref languageClassName, ref optionsTitle, "optionsGameplaySectionTitle", defaultFont, chineseFont, japaneseFont);
+                Utils.LocalizeText(gameManager, ref languageClassName, ref optionsTitle, "optionsGameplaySectionTitle", defaultFont, chineseFont, japaneseFont);                
             }
             else if(gameManager.inOptionsVideoMenu)
             {
@@ -372,15 +401,30 @@ public class UIManager : MonoBehaviour
             {
                 if (!parentObject.activeSelf)
                 {
-                    parentObject.SetActive(true);
-                    Utils.ClearMemory();
+                    parentObject.SetActive(true);                    
                 }
             }
 
             if (canvasGroup)
             {
-                canvasGroup.interactable = true;
-                canvasGroup.blocksRaycasts = true;
+                if (gameManager.viewingWarningNotification)
+                {
+                    if (gameManager.inOptionsMenu && canvasGroup == optionsMenuCanvasGroup)
+                    {
+                        canvasGroup.interactable = false;
+                        canvasGroup.blocksRaycasts = false;
+                    }
+                    if (canvasGroup == notificationCanvasGroup)
+                    {
+                        canvasGroup.interactable = true;
+                        canvasGroup.blocksRaycasts = true;
+                    }
+                }
+                else
+                {
+                    canvasGroup.interactable = true;
+                    canvasGroup.blocksRaycasts = true;
+                }
             }         
         }
         else
@@ -411,14 +455,20 @@ public class UIManager : MonoBehaviour
                                 parentObject.SetActive(false);                                
                             }
                         }
+                        else if (parentObject == notificationGameobject)
+                        {
+                            if (parentObject.activeSelf && !issueGameobject.activeSelf && !notificationPopupGameobject.activeSelf)
+                            {
+                                parentObject.SetActive(false);
+                            }
+                        }
                         else
                         {
                             if (parentObject.activeSelf)
                             {
                                 parentObject.SetActive(false);                                
                             }
-                        }
-                        Utils.ClearMemory();
+                        }                        
                     }
                 }
             }
@@ -600,6 +650,22 @@ public class UIManager : MonoBehaviour
     #endregion
 
     #region Options Sections
+    public void OptionsUpdateUIValues()
+    {
+        if (gameManager.inOptionsGameplayMenu)
+        {
+            maximumAutosavesSliderText.text = maximumAutosavesSlider.value.ToString();
+            maximumQuicksavesSliderText.text = maximumQuicksavesSlider.value.ToString();
+        }
+        else if (gameManager.inOptionsVideoMenu)
+        {
+
+        }
+
+        gameManager.localizeLanguage = true;
+        Utils.ClearMemory();
+    }
+
     public void OnOptionsDescriptionExit()
     {
         if (optionsDescription.text != null)
@@ -611,48 +677,30 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    public void OnOptionsOnlineVisibilityDescriptionEnter()
+    public void OnOptionsRevertChangesDescriptionEnter()
     {
-        if (optionsDescription.text != "Who is able to see your game in the lobby and join.")
-        {
-            optionsDescription.text = "Who is able to see your game in the lobby and join.";
-        }
+        optionsDescription.text = "Revert all <color=red>Options<color=white> changes to previous state.</color>";
     }
+    public void OnOptionsValueChangedIconDescriptionEnter()
+    {
+        optionsDescription.text = "This setting has been changed.";
+    }
+
     public void OnOptionsAutosaveDescriptionEnter()
     {
-        if (optionsDescription.text != "Allow the game to save at certain points.")
-        {
-            optionsDescription.text = "Allow the game to save at certain points.";
-        }        
+        optionsDescription.text = "Allow the game to save at certain points.";
     }
     public void OnOptionsMaximumAutosaveDescriptionEnter()
     {
-        if (optionsDescription.text != "The maximum number of Autosaves the game will make. The game will then overwrite the oldest Autosave each time.")
-        {
-            optionsDescription.text = "The maximum number of Autosaves the game will make. The game will then overwrite the oldest Autosave each time.";
-        }
+        optionsDescription.text = "The maximum number of Autosaves the game will make. The game will then overwrite the oldest Autosave each time.";
     }
     public void OnOptionsMaximumQuicksaveDescriptionEnter()
     {
-        if (optionsDescription.text != "The maximum number of Quicksaves the game will make. The game will then overwrite the oldest Quicksave each time.")
-        {
-            optionsDescription.text = "The maximum number of Quicksaves the game will make. The game will then overwrite the oldest Quicksave each time.";
-        }
+        optionsDescription.text = "The maximum number of Quicksaves the game will make. The game will then overwrite the oldest Quicksave each time.";
     }
     public void OnOptionsGoreDescriptionEnter()
     {
-        if (optionsDescription.text != "The game will not display blood. This will not affect certain chosen glitches.")
-        {
-            optionsDescription.text = "The game will not display blood. This will not affect certain chosen glitches.";
-        }
-    }
-
-    public void OnOptionsShareCinematicsDescriptionEnter()
-    {
-        if (optionsDescription.text != "Allow other players to view your cinematics if they choose to.")
-        {
-            optionsDescription.text = "Allow other players to view your cinematics if they choose to.";
-        }
+        optionsDescription.text = "Choose if the game will display blood and allow dismemberment. \r\n\r\n\r\n\r\n<color=red>Warning</color>\r\nThis will disable the <color=orange>Decompile<color=white> glitch regardless of whether it has been taken or not.";        
     }
     #endregion
 

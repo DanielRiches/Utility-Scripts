@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 using TMPro;
 using Unity.Jobs;
 using System.Globalization;
+using System.IO;
 
 public static class Utils
 {
@@ -14,9 +15,9 @@ public static class Utils
 
     #if ENABLE_INPUT_SYSTEM
     static bool newInputSystem = true;
-#else
+    #else
     static bool newInputSystem = false;
-#endif
+    #endif
 
     // PLATFORM DETECTION
     //Debug.Log("Running on Windows: " + Utils.Windows);
@@ -407,7 +408,22 @@ public static class Utils
         }
     }
 
-
+    /*if (Utils.CheckForOptionsSave(gameManager.saveManager.optionsFilePath))
+     * {
+     *    //SAVE EXISTS, DO SOMETHING
+     * }*/
+    public static bool CheckForOptionsSave(string filePath)
+    {
+        if (File.Exists(filePath))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    
     // Utils.DontDestroyObjectOnLoad(this.gameObject);
     public static void DontDestroyOnLoad(GameObject gameObject)
     {

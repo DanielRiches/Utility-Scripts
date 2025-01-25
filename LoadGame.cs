@@ -17,40 +17,46 @@ public class LoadGame : MonoBehaviour
     [SerializeField] private Transform menuAnchor;
     [SerializeField] private Transform mainMenuAnchor;
     private PlayerInput playerInput; // Reference Auto-Generated C# Action Map Script
-    private AsyncOperation loadMenus;
-    private AsyncOperation loadTheGame;
+
     private bool canSkip;
     void Awake()
     {
         gameManager = GameObject.FindWithTag(Strings.gameManagerTag).GetComponent<GameManager>();
         playerInput = new PlayerInput();
         playerInput.KeyboardControls.AnyKey.started += onSkipSplash;
-        playerInput.GamePadControls.Start.started += onSkipSplash;        
+        playerInput.GamePadControls.Start.started += onSkipSplash;
+        gameManager.inSplashScreen = true;
     }
 
     
     void Update()
     {
-        if (gameManager.inSplashScreen)
+        if (gameManager.inSplashScreen && !gameManager.startingGame)
         {
-            // CHECK FOR EXISTING GAME SETTINGS FILE TO SEE IF LANGUAGE WAS PREVIOUSLY SELECTED
-            //  IF IT WAS APPLY THE LANGUAGE, APPLY ALL OTHER SETTINGS FOR OPTIONS THEN FINALLY CALL gameManager.LoadGame();
-            // ELSE
-            if (splashLanguageSelectObject && !gameManager.viewingEpilepsyWarning && !gameManager.viewingSaveWarning)
+            if (Utils.CheckForOptionsSave(gameManager.saveManager.optionsFilePath) && !gameManager.saveDetected)
             {
+                //Debug.Log("OPTIONS FILE EXISTS, ATTEMPTING TO LOAD");
+                gameManager.saveDetected = true;
+                gameManager.saveManager.LoadOptionsAsync();
+                gameManager.options.OptionsRevertModifications();
+                gameManager.StartGame();
+            }
+            else if (splashLanguageSelectObject && !gameManager.saveDetected) // SELECT LANGUAGE POPUP
+            {                
                 if (!splashLanguageSelectObject.activeSelf)
                 {
                     if (Utils.GetPreferredSystemLanguage() == "en")
                     {
+                        //Debug.Log("OPTIONS FILE DOESNT EXISTS, ASKING FOR LANGUAGE");
                         if (GameStrings.GameStringsEnglish.available)
-                        {
+                        {                            
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                            gameManager.options.languageEnglish = true;
+                            gameManager.options.ApplyEnglishLanguage();
                         }
                         else
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                            gameManager.options.languageEnglish = true;
+                            gameManager.options.ApplyEnglishLanguage();
                         }
 
                     }
@@ -59,7 +65,7 @@ public class LoadGame : MonoBehaviour
                         if (GameStrings.GameStringsFrench.available)
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.frenchFlag;
-                            gameManager.options.languageFrench = true;
+                            gameManager.options.ApplyFrenchLanguage();
                         }
                         else
                         {
@@ -72,12 +78,12 @@ public class LoadGame : MonoBehaviour
                         if (GameStrings.GameStringsGerman.available)
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.germanFlag;
-                            gameManager.options.languageGerman = true;
+                            gameManager.options.ApplyGermanLanguage();
                         }
                         else
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                            gameManager.options.languageEnglish = true;
+                            gameManager.options.ApplyEnglishLanguage();
                         }
                     }
                     else if (Utils.GetPreferredSystemLanguage() == "it")
@@ -85,12 +91,12 @@ public class LoadGame : MonoBehaviour
                         if (GameStrings.GameStringsItalian.available)
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.italianFlag;
-                            gameManager.options.languageItalian = true;
+                            gameManager.options.ApplyItalianLanguage();
                         }
                         else
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                            gameManager.options.languageEnglish = true;
+                            gameManager.options.ApplyEnglishLanguage();
                         }
                     }
                     else if (Utils.GetPreferredSystemLanguage() == "es")
@@ -98,12 +104,12 @@ public class LoadGame : MonoBehaviour
                         if (GameStrings.GameStringsSpanish.available)
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.spanishFlag;
-                            gameManager.options.languageSpanish = true;
+                            gameManager.options.ApplySpanishLanguage();
                         }
                         else
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                            gameManager.options.languageEnglish = true;
+                            gameManager.options.ApplyEnglishLanguage();
                         }
                     }
                     else if (Utils.GetPreferredSystemLanguage() == "en-US")
@@ -111,12 +117,12 @@ public class LoadGame : MonoBehaviour
                         if (GameStrings.GameStringsAmerican.available)
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.americanFlag;
-                            gameManager.options.languageAmerican = true;
+                            gameManager.options.ApplyAmericanLanguage();
                         }
                         else
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                            gameManager.options.languageEnglish = true;
+                            gameManager.options.ApplyEnglishLanguage();
                         }
                     }
                     else if (Utils.GetPreferredSystemLanguage() == "ru")
@@ -124,12 +130,12 @@ public class LoadGame : MonoBehaviour
                         if (GameStrings.GameStringsRussian.available)
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.russianFlag;
-                            gameManager.options.languageRussian = true;
+                            gameManager.options.ApplyRussianLanguage();
                         }
                         else
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                            gameManager.options.languageEnglish = true;
+                            gameManager.options.ApplyEnglishLanguage();
                         }
                     }
                     else if (Utils.GetPreferredSystemLanguage() == "zh")
@@ -137,12 +143,12 @@ public class LoadGame : MonoBehaviour
                         if (GameStrings.GameStringsChinese.available)
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.chineseFlag;
-                            gameManager.options.languageChinese = true;
+                            gameManager.options.ApplyChineseLanguage();
                         }
                         else
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                            gameManager.options.languageEnglish = true;
+                            gameManager.options.ApplyEnglishLanguage();
                         }
                     }
                     else if (Utils.GetPreferredSystemLanguage() == "ja")
@@ -150,12 +156,12 @@ public class LoadGame : MonoBehaviour
                         if (GameStrings.GameStringsJapanese.available)
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.japaneseFlag;
-                            gameManager.options.languageJapanese = true;
+                            gameManager.options.ApplyJapaneseLanguage();
                         }
                         else
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                            gameManager.options.languageEnglish = true;
+                            gameManager.options.ApplyEnglishLanguage();
                         }
                     }
                     else if (Utils.GetPreferredSystemLanguage() == "pt")
@@ -163,34 +169,44 @@ public class LoadGame : MonoBehaviour
                         if (GameStrings.GameStringsBrazilian.available)
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.brazilFlag;
-                            gameManager.options.languageBrazilian = true;
+                            gameManager.options.ApplyBrazilianLanguage();
                         }
                         else
                         {
                             splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                            gameManager.options.languageEnglish = true;
+                            gameManager.options.ApplyEnglishLanguage();
                         }
                     }
                     else
                     {
                         splashLanguageSelectedImage.sprite = gameManager.uiManager.englishFlag;
-                        Debug.Log("No compatible languages detected, defaulted to English.");
+                        gameManager.options.ApplyEnglishLanguage();
+                        //Debug.Log("No compatible languages detected, defaulted to English.");
                     }
-
-                    splashLanguageSelectObject.SetActive(true);                    
+                    splashLanguageSelectObject.SetActive(true);
                 }
 
                 gameManager.cursor = true;
-                // ONCE LANGUAGE SELECTED CREATE NEW GAME SETTINGS FILE AND SAVE ALL CURRENT DEFAULTS + SELECTED LANGUAGE
             }
         }
 
-        if (gameManager.inSplashScreen && gameManager.loadingGame)
+        if (gameManager.startingGame)
         {
-            gameManager.cursor = false;
-            gameManager.loadingGame = false;
-            gameManager.viewingSaveWarning = false;
-            splashLanguageSelectObject.SetActive(false);
+            gameManager.cursor = false;            
+            gameManager.startingGame = false;
+
+            if (!Utils.CheckForOptionsSave(gameManager.saveManager.optionsFilePath) && !gameManager.saveDetected)
+            {
+                gameManager.options.ApplySettings(); // APPLY DEFAULTS
+                gameManager.saveManager.SaveOptionsAsync();// THEN SAVE
+
+                Debug.Log("Options savefile wasnt found, language has now been selected, setting default options and SAVING...");
+            }            
+
+            if (splashLanguageSelectObject.activeSelf)
+            {
+                splashLanguageSelectObject.SetActive(false);
+            }
 
             if (!splashGameName.activeSelf)
             {
@@ -230,18 +246,19 @@ public class LoadGame : MonoBehaviour
             gameManager.MainMenu();
             Destroy(this);
         }
+
     }
 
     public IEnumerator LoadTheGame()
     {
         yield return Times.two;
 
-        loadMenus = SceneManager.LoadSceneAsync(Strings.menuSceneName, LoadSceneMode.Additive);
-        loadTheGame = SceneManager.LoadSceneAsync(Strings.loadingSceneName, LoadSceneMode.Additive);
+        gameManager.loadMenus = SceneManager.LoadSceneAsync(Strings.menuSceneName, LoadSceneMode.Additive);
+        gameManager.loadTheGame = SceneManager.LoadSceneAsync(Strings.loadingSceneName, LoadSceneMode.Additive);
 
-        while (!loadMenus.isDone || !loadTheGame.isDone)
+        while (!gameManager.loadMenus.isDone || !gameManager.loadTheGame.isDone)
         {
-            gameManager.uiManager.combinedProgress = (loadMenus.progress + loadTheGame.progress) / 2f;
+            gameManager.uiManager.combinedProgress = (gameManager.loadMenus.progress + gameManager.loadTheGame.progress) / 2f;
 
             // Since progress goes from 0 to 0.9, we scale it to 0 to 1 and ensure it doesn't exceed 0.9
             gameManager.uiManager.combinedProgress = Mathf.Min(gameManager.uiManager.combinedProgress, 0.9f);
