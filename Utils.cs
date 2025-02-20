@@ -1,8 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using TMPro;
 using Unity.Jobs;
-using System.Globalization;
+using System.Globalization;// Works on Steamdeck
 using System.IO;
 
 public static class Utils
@@ -44,7 +43,6 @@ public static class Utils
         XBox = true;
         #endif
     }
-
 
     // Vector3 mouseWorldPosition = Utils.GetCursorWorldPosition3D();
     public static Vector3 GetCursorWorldPosition3D()
@@ -228,13 +226,14 @@ public static class Utils
     }
 
     // Utils.LocalizeText(gameManager, ref languageClassName, ref splashTitleText, "VARIABLENAMEHERE");
+    /*
     public static void LocalizeText(GameManager gameManager, ref string languageClassName, ref TextMeshProUGUI desiredTextField, string fieldName, TMP_FontAsset defaultFontAsset, TMP_FontAsset chineseFontAsset, TMP_FontAsset japaneseFontAsset)
     {
         if (desiredTextField)
         {
             languageClassName = null;
 
-            if (gameManager.options.languageEnglish)
+            if (gameManager.scriptReferences.options.languageEnglish)
             {
                 languageClassName = "GameStringsEnglish";
                 desiredTextField.fontStyle = FontStyles.Normal;
@@ -247,7 +246,7 @@ public static class Utils
                     }
                 }
             }
-            else if (gameManager.options.languageFrench)
+            else if (gameManager.scriptReferences.options.languageFrench)
             {
                 languageClassName = "GameStringsFrench";
                 desiredTextField.fontStyle = FontStyles.Normal;
@@ -260,7 +259,7 @@ public static class Utils
                     }
                 }
             }
-            else if (gameManager.options.languageGerman)
+            else if (gameManager.scriptReferences.options.languageGerman)
             {
                 languageClassName = "GameStringsGerman";
                 desiredTextField.fontStyle = FontStyles.Normal;
@@ -273,7 +272,7 @@ public static class Utils
                     }
                 }
             }
-            else if (gameManager.options.languageItalian)
+            else if (gameManager.scriptReferences.options.languageItalian)
             {
                 languageClassName = "GameStringsItalian";
                 desiredTextField.fontStyle = FontStyles.Normal;
@@ -286,7 +285,7 @@ public static class Utils
                     }
                 }
             }
-            else if (gameManager.options.languageSpanish)
+            else if (gameManager.scriptReferences.options.languageSpanish)
             {
                 languageClassName = "GameStringsSpanish";
                 desiredTextField.fontStyle = FontStyles.Normal;
@@ -299,7 +298,7 @@ public static class Utils
                     }
                 }
             }
-            else if (gameManager.options.languageAmerican)
+            else if (gameManager.scriptReferences.options.languageAmerican)
             {
                 languageClassName = "GameStringsAmerican";
                 desiredTextField.fontStyle = FontStyles.Normal;
@@ -312,7 +311,7 @@ public static class Utils
                     }
                 }
             }
-            else if (gameManager.options.languageRussian)
+            else if (gameManager.scriptReferences.options.languageRussian)
             {
                 languageClassName = "GameStringsRussian";
                 desiredTextField.fontStyle = FontStyles.Bold;
@@ -325,7 +324,7 @@ public static class Utils
                     }
                 }
             }
-            else if (gameManager.options.languageChinese)
+            else if (gameManager.scriptReferences.options.languageChinese)
             {
                 languageClassName = "GameStringsChinese";
                 desiredTextField.fontStyle = FontStyles.Bold;
@@ -338,7 +337,7 @@ public static class Utils
                     }
                 }
             }
-            else if (gameManager.options.languageJapanese)
+            else if (gameManager.scriptReferences.options.languageJapanese)
             {
                 languageClassName = "GameStringsJapanese";
                 desiredTextField.fontStyle = FontStyles.Bold;
@@ -351,7 +350,7 @@ public static class Utils
                     }
                 }
             }
-            else if (gameManager.options.languageBrazilian)
+            else if (gameManager.scriptReferences.options.languageBrazilian)
             {
                 languageClassName = "GameStringsBrazilian";
                 desiredTextField.fontStyle = FontStyles.Normal;
@@ -407,6 +406,7 @@ public static class Utils
             //Debug.Log("desiredTextField not active...");
         }
     }
+    */
 
     /*if (Utils.CheckForOptionsSave(gameManager.saveManager.optionsFilePath))
      * {
@@ -424,6 +424,22 @@ public static class Utils
         }
     }
     
+    public static void ActivateObject(GameObject gameObject)
+    {
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+        }
+    }
+
+    public static void DeActivateObject(GameObject gameObject)
+    {
+        if (gameObject.activeSelf)
+        {
+            gameObject.SetActive(false);
+        }
+    }
+
     // Utils.DontDestroyObjectOnLoad(this.gameObject);
     public static void DontDestroyOnLoad(GameObject gameObject)
     {

@@ -5,6 +5,20 @@ public class Strings
     // CORE
     public static string loadingProgressFormat = "{0}%";
     public static string cameraMain = "MainCamera";
+    public static string numberFormat0 = "F0";// will display 0
+    public static string numberFormat1 = "F1";// will display 0.0
+    public static string numberFormat2 = "F2";// will display 0.00
+
+    // AUDIO
+    public static string audioMaster = "audioMaster";
+    public static string audioMusic = "audioMusic";
+    public static string audioAmbient = "audioAmbient";
+    public static string audioSFX = "audioSFX";
+    public static string audioUI = "audioUI";
+    public static string audioUIPitchShift = "audioUIPitchShift";
+    public static string audioUIPitchShiftVolume = "audioUIPitchShiftVolume";
+    public static string audioVoice = "audioVoice";
+    public static string audioEvent = "audioEvent";
 
     // SCENES
     public const string menuSceneName = "Menus";
