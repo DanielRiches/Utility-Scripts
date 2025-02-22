@@ -1,35 +1,54 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 using System.Collections;// Works on Steamdeck
 using System.Collections.Generic;// Works on Steamdeck
 using System.Linq;// Works on Steamdeck
 using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.UI;
 using TMPro;
+
 public class OptionsManager : MonoBehaviour
 {
     GameManager gameManager;
-    [Header("---- SELECTED ----------------------------------------------------")]
-    public bool requiresTimedConfirmation;
-    [Header("Gameplay")]
-    public bool selectedAutosaves = true;
-    public int selectedMaximumAutosaves = 10;
-    public int selectedMaximumQuicksaves = 10;
-    public bool selectedGore;
-    Display[] displays;// To help automatically detect if someone connects another display.
-    private int lastDisplayCount; // To help automatically detect if someone connects another display, set to detect every 2 seconds at default.
-    [SerializeField] private int selectedDisplayIndex;
+    public Volume postProcess;
+    Fog fog;
+    Bloom bloom;
+    Tonemapping tonemapping;
+    GlobalIllumination globalIllumination;
     private string gpuName;// Graphics card name.
+    Display[] displays;// To help automatically detect if someone connects another display.
+    float refreshRate;
     private Resolution[] resolutions;
     private List<Resolution> filteredResolutions = new List<Resolution>();
     Resolution selectedResolution;
+    int lastDisplayCount; // To help automatically detect if someone connects another display, set to detect every 2 seconds at default.
+    HDRenderPipelineAsset appliedHDRPAsset;
+
+    [Header("---- SELECTED ----------------------------------------------------")]
+    [SerializeField] private List<string> desiredList;
+    [Header("Gameplay")]
+    [SerializeField] private bool selectedAutosaves;
+    [SerializeField] private int selectedMaximumAutosaves;
+    [SerializeField] private int selectedMaximumQuicksaves;
+    [SerializeField] private bool selectedGore;
+    [Header("Video")]
+    [SerializeField] private bool requiresTimedConfirmation;
+    [Space(10)]
+    [SerializeField] private int selectedDisplayIndex;
     [SerializeField] private int selectedResolutionIndex;
     [SerializeField] private int selectedDisplayModeIndex;
-    public bool selectedFrameRateCap = true;
-    public int selectedFrameRateCapValue = 120;
+    [SerializeField] private bool selectedFrameRateCap;
+    [SerializeField] private int selectedFrameRateCapValue;
     [SerializeField] private int selectedVsyncIndex;
-    [SerializeField] private int selectedAntiAliasIndex;
-    [SerializeField] private HDRenderPipelineAsset appliedHDRPAsset;
-    public int selectedQualityAssetIndex;
+    [SerializeField] private int selectedAntiAliasIndex;    
+    [SerializeField] private int selectedQualityAssetIndex;
+    [SerializeField] private int selectedFogIndex;
+    [SerializeField] private int selectedFOV;
+    [SerializeField] private int selectedBloomIndex;
+    [SerializeField] private bool selectedHDR;
+    [SerializeField] private int selectedAnsioIndex;
+    [SerializeField] private int selectedTonemappingIndex;
+    [SerializeField] private int selectedGlobalIlluminationIndex;    
     [Header("Audio")]
     [SerializeField] private float selectedMasterVolume;
     [SerializeField] private float selectedMusicVolume;
@@ -49,6 +68,42 @@ public class OptionsManager : MonoBehaviour
     [SerializeField] private float selectedGamepadCameraZoomDeadzone;
     [SerializeField] private float selectedGamepadCameraMoveDeadzone;
     [SerializeField] private float selectedGamepadCameraPanDeadzone;
+    [Header("---- APPLIED ----------------------------------------------------")] // ACCESSED BY SAVE+LOAD
+    public bool appliedAutosaves;
+    public int appliedMaximumAutosaves;
+    public int appliedMaximumQuicksaves;
+    public bool appliedGore;
+    public int appliedDisplayIndex;
+    public int appliedResolutionIndex;
+    public int appliedDisplayModeIndex;
+    public bool appliedFrameRateCap;
+    public int appliedFrameRateCapValue;
+    public int appliedVsyncIndex;
+    public int appliedAntiAliasIndex;
+    public int appliedQualityAssetIndex;
+    public int appliedFogIndex;
+    public int appliedFOV;
+    public int appliedBloomIndex;
+    public bool appliedHDR;
+    public int appliedAnsioIndex;
+    public int appliedTonemappingIndex;
+    public float appliedMasterVolume;
+    public float appliedMusicVolume;
+    public float appliedAmbientVolume;
+    public float appliedSfxVolume;
+    public float appliedUiVolume;
+    public float appliedVoiceVolume;
+    public float appliedEventVolume;
+    public float appliedCameraZoomSensitivity;
+    public float appliedCameraMoveSensitivity;
+    public float appliedCameraPanSensitivity;
+    public float appliedGamepadCameraZoomSensitivity;
+    public float appliedGamepadCameraMoveSensitivity;
+    public float appliedGamepadCameraPanSensitivity;
+    public float appliedGamepadCameraZoomDeadzone;
+    public float appliedGamepadCameraMoveDeadzone;
+    public float appliedGamepadCameraPanDeadzone;
+
     void Awake()
     {
         gameManager = GameObject.FindWithTag(Strings.gameManagerTag).GetComponent<GameManager>();
@@ -68,15 +123,25 @@ public class OptionsManager : MonoBehaviour
         PopulateDisplayModeDropdown();
         PopulateFrameRateCapSlider();
         PopulateVSyncDropdown();
-        PopulateAntiAliasDropdown();
         PopulateQualityDropdown();
+        PopulateAntiAliasDropdown();        
+        PopulateFogDropdown();
+        PopulateFovSlider();
+        PopulateBloomDropdown();
+        PopulateHDR();
+        PopulateAnsioDropdown();
+        PopulateTonemappingDropdown();
+        PopulateGlobalIlluminationDropdown();
         PopulateAudioSliders();
         PopulateMouseSliders();
         PopulateGamepadSliders();
+
+        desiredList.Clear();
+        Utils.ClearMemory();
     }
 
-    /*
-    void ApplySettings()
+    
+    public void ApplySettings()
     {
         if (Application.isPlaying)
         {
@@ -110,9 +175,8 @@ public class OptionsManager : MonoBehaviour
 
                 // VIDEO--------------
                 if (filteredResolutions.Count > selectedResolutionIndex)
-                {
-                    // Get the corresponding resolution from the filtered list
-                    Resolution selectedResolution = filteredResolutions[selectedResolutionIndex];
+                {                    
+                    selectedResolution = filteredResolutions[selectedResolutionIndex];// Get the corresponding resolution from the filtered list
 
                     if (selectedDisplayModeIndex == 1)
                     {
@@ -122,58 +186,84 @@ public class OptionsManager : MonoBehaviour
                     {
                         Screen.SetResolution(selectedResolution.width, selectedResolution.height, FullScreenMode.FullScreenWindow, selectedResolution.refreshRateRatio);
                     }
-
-
-                    // Update appliedResolutionIndex after applying the selected resolution
+                    
                     appliedResolutionIndex = selectedResolutionIndex;
                     appliedDisplayModeIndex = selectedDisplayModeIndex;
                     //Debug.Log($"Applied resolution: {selectedResolution.width}<color=red>x</color>{selectedResolution.height} {selectedResolution.refreshRateRatio.numerator}/{selectedResolution.refreshRateRatio.denominator}<color=red>Hz</color>");
                 }
 
                 appliedQualityAssetIndex = selectedQualityAssetIndex;
-                if (appliedQualityAssetIndex == 0)
-                {
-                    QualitySettings.SetQualityLevel(0, true);// HIGH FIDELITY
-                }
-                else if (appliedQualityAssetIndex == 1)
-                {
-                    QualitySettings.SetQualityLevel(1, true);// BALANCED
-                }
-                else if (appliedQualityAssetIndex == 2)
-                {
-                    QualitySettings.SetQualityLevel(2, true);// PERFORMANT
-                }
-                appliedHDRPAsset = QualitySettings.renderPipeline as HDRenderPipelineAsset;
 
+                if (selectedVsyncIndex != 0)// If VSync is on
+                {
+                    if (selectedVsyncIndex == 1)
+                    {
+                        Application.targetFrameRate = (int)selectedResolution.refreshRateRatio.value;
+                        gameManager.scripts.uiManager.frameRateCapSliderText.text = "<color=" + Colors.textCyan + ">" + ((int)selectedResolution.refreshRateRatio.value).ToString(Strings.numberFormat0) + " </color>";
+                        gameManager.scripts.uiManager.frameRateCapSlider.value = (int)selectedResolution.refreshRateRatio.value;
+                    }
+                    else if (selectedVsyncIndex == 2)
+                    {
+                        Application.targetFrameRate = (int)(selectedResolution.refreshRateRatio.value / 2);
+                        gameManager.scripts.uiManager.frameRateCapSliderText.text = "<color=" + Colors.textCyan + ">" + ((int)(selectedResolution.refreshRateRatio.value / 2)).ToString(Strings.numberFormat0) + " </color>";
+                        gameManager.scripts.uiManager.frameRateCapSlider.value = (int)selectedResolution.refreshRateRatio.value / 2;
+                    }
+                }
+                else
+                {                    
+                    if(selectedFrameRateCap)// If VSync is off use framerate cap
+                    {                        
+                        if (selectedFrameRateCapValue > selectedResolution.refreshRateRatio.value)// Cap to monitors max refresh rate
+                        {
+                            //Debug.Log("Selected FramerateCap value of " + selectedFrameRateCapValue + " is higher than monitors max refresh of " + selectedResolution.refreshRateRatio + ", clamping to that value");
+                            Application.targetFrameRate = (int)selectedResolution.refreshRateRatio.value;
+                            selectedFrameRateCapValue = (int)selectedResolution.refreshRateRatio.value;
+                            gameManager.scripts.uiManager.frameRateCapSlider.value = selectedFrameRateCapValue;
+                            gameManager.scripts.uiManager.frameRateCapSliderText.text = "<color=" + Colors.textCyan + ">" + gameManager.scripts.uiManager.frameRateCapSlider.value.ToString(Strings.numberFormat0) + " </color>";                            
+                        }
+                        else
+                        {                            
+                            Application.targetFrameRate = selectedFrameRateCapValue;
+                        }
+                    }
+                    else
+                    {
+                        Application.targetFrameRate = -1;
+                    }
+                }
+
+                appliedVsyncIndex = selectedVsyncIndex;
+                appliedFrameRateCap = selectedFrameRateCap;
+                appliedFrameRateCapValue = selectedFrameRateCapValue;
 
                 appliedAntiAliasIndex = selectedAntiAliasIndex;
                 if (appliedAntiAliasIndex == 0)
                 {
                     QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.None;
+                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.None;// TURN OFF FXAA, SMAA, TAA
                 }
                 else if (appliedAntiAliasIndex == 1)
                 {
                     QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.FastApproximateAntialiasing;
+                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.FastApproximateAntialiasing;// TURN ON FXAA
                 }
                 else if (appliedAntiAliasIndex == 2)
                 {
                     QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;
-                    gameManager.scripts.cameraManager.cameraData.SMAAQuality = HDAdditionalCameraData.SMAAQualityLevel.Low;
+                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;// TURN ON SMAA
+                    gameManager.scripts.cameraManager.cameraData.SMAAQuality = HDAdditionalCameraData.SMAAQualityLevel.Low;// SET TO 2X
                 }
                 else if (appliedAntiAliasIndex == 3)
                 {
                     QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;
-                    gameManager.scripts.cameraManager.cameraData.SMAAQuality = HDAdditionalCameraData.SMAAQualityLevel.Medium;
+                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;// TURN ON SMAA
+                    gameManager.scripts.cameraManager.cameraData.SMAAQuality = HDAdditionalCameraData.SMAAQualityLevel.Medium;// SET TO 4X
                 }
                 else if (appliedAntiAliasIndex == 4)
                 {
                     QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;
-                    gameManager.scripts.cameraManager.cameraData.SMAAQuality = HDAdditionalCameraData.SMAAQualityLevel.High;
+                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;// TURN ON SMAA
+                    gameManager.scripts.cameraManager.cameraData.SMAAQuality = HDAdditionalCameraData.SMAAQualityLevel.High;// SET TO 8X
                 }
                 else if (appliedAntiAliasIndex == 5)
                 {
@@ -190,22 +280,139 @@ public class OptionsManager : MonoBehaviour
                     gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.None; // TURN OFF FXAA, SMAA, TAA
                     QualitySettings.antiAliasing = 3; // TURN ON MSAA HIGH
                 }
+                else if (appliedAntiAliasIndex == 8)
+                {
+                    QualitySettings.antiAliasing = 0; // TURN OFF MSAA
+                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing; // TURN ON TAA
+                    gameManager.scripts.cameraManager.cameraData.TAAQuality = HDAdditionalCameraData.TAAQualityLevel.Low;// SET TO 2X
+                }
+                else if (appliedAntiAliasIndex == 9)
+                {
+                    QualitySettings.antiAliasing = 0; // TURN OFF MSAA
+                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing; // TURN ON TAA                 
+                    gameManager.scripts.cameraManager.cameraData.TAAQuality = HDAdditionalCameraData.TAAQualityLevel.Medium;// SET TO 4X
+                }
+                else if (appliedAntiAliasIndex == 10)
+                {
+                    QualitySettings.antiAliasing = 0; // TURN OFF MSAA
+                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing; // TURN ON TAA                
+                    gameManager.scripts.cameraManager.cameraData.TAAQuality = HDAdditionalCameraData.TAAQualityLevel.High;// SET TO 8X
+                }
+
+                if (fog)
+                {
+                    if (selectedFogIndex == 0)
+                    {
+                        fog.enableVolumetricFog.value = false;
+                        fog.active = false;
+                        fog.enabled.value = false;
+                    }
+                    else
+                    {
+                        fog.enabled.value = true;
+                        fog.active = true;
+                        fog.enableVolumetricFog.value = true;
+
+                        if (selectedFogIndex == 1)
+                        {
+                            fog.quality.value = (int)ScalableSettingLevelParameter.Level.Low;
+                        }
+                        else if (selectedFogIndex == 2)
+                        {
+                            fog.quality.value = (int)ScalableSettingLevelParameter.Level.Medium;
+                        }
+                        else if (selectedFogIndex == 3)
+                        {
+                            fog.quality.value = (int)ScalableSettingLevelParameter.Level.High;
+                        }
+                        //Debug.Log("Fog Quality Set to: " + (ScalableSettingLevelParameter.Level)fog.quality.value);
+                    }
+                }
+                appliedFogIndex = selectedFogIndex;
+
+                gameManager.scripts.cameraManager.cinemachineCamera.Lens.FieldOfView = selectedFOV;
+                appliedFOV = selectedFOV;
+
+                if (bloom)
+                {
+                    if (selectedBloomIndex == 0)
+                    {
+                        bloom.active = false;
+                    }
+                    else
+                    {
+                        bloom.active = true;
+
+                        if (selectedBloomIndex == 1)
+                        {
+                            bloom.quality.value = (int)ScalableSettingLevelParameter.Level.Low;
+                        }
+                        else if (selectedBloomIndex == 2)
+                        {
+                            bloom.quality.value = (int)ScalableSettingLevelParameter.Level.Medium;
+                        }
+                        else if (selectedBloomIndex == 3)
+                        {
+                            bloom.quality.value = (int)ScalableSettingLevelParameter.Level.High;
+                        }
+                        //Debug.Log("Bloom Quality Set to: " + (ScalableSettingLevelParameter.Level)bloom.quality.value);
+                    }
+                }
+                appliedBloomIndex = selectedBloomIndex;
+
+
+                if (selectedHDR)
+                {
+                    gameManager.scripts.cameraManager.mainCamera.allowHDR = true;
+                }
+                else
+                {
+                    gameManager.scripts.cameraManager.mainCamera.allowHDR = false;
+                }
+                appliedHDR = selectedHDR;
+
+                SetAnsio(null, true);
+                appliedAnsioIndex = selectedAnsioIndex;
+
+                if (tonemapping)
+                {
+                    if(selectedTonemappingIndex == 0)
+                    {
+                        tonemapping.mode.value = TonemappingMode.Neutral;
+                        tonemapping.neutralHDRRangeReductionMode.value = NeutralRangeReductionMode.Reinhard;
+                    }
+                    else if (selectedTonemappingIndex == 1)
+                    {
+                        tonemapping.mode.value = TonemappingMode.Neutral;
+                        tonemapping.neutralHDRRangeReductionMode.value = NeutralRangeReductionMode.BT2390;
+                    }
+                    else if (selectedTonemappingIndex == 2)
+                    {
+                        tonemapping.mode.value = TonemappingMode.ACES;
+                        tonemapping.acesPreset.value = HDRACESPreset.ACES1000Nits;
+                    }
+                    else if (selectedTonemappingIndex == 3)
+                    {
+                        tonemapping.mode.value = TonemappingMode.ACES;
+                        tonemapping.acesPreset.value = HDRACESPreset.ACES2000Nits;
+                    }
+                    else if (selectedTonemappingIndex == 4)
+                    {
+                        tonemapping.mode.value = TonemappingMode.ACES;
+                        tonemapping.acesPreset.value = HDRACESPreset.ACES4000Nits;
+                    }
+
+                    appliedTonemappingIndex = selectedTonemappingIndex;
+                }
             }
         }
     }
     
     void RevertChanges()
     {
-        selectedDisplayIndex = appliedDisplayIndex;
-        selectedResolutionIndex = appliedResolutionIndex;
-        selectedDisplayModeIndex = appliedDisplayModeIndex;
-        selectedVsyncIndex = appliedVsyncIndex;
-        selectedAntiAliasIndex = appliedAntiAliasIndex;
-        selectedMaximumAutosaves = appliedMaximumAutosaves;
-        selectedMaximumQuicksaves = appliedMaximumQuicksaves;
-        requiresTimedConfirmation = false;
+
     }
-    */
+    
 
     #region Setup
     void PopulateSavesSliders()
@@ -334,11 +541,14 @@ public class OptionsManager : MonoBehaviour
     void PopulateDisplayModeDropdown()
     {
         gameManager.scripts.uiManager.displayModeDropdown.ClearOptions();
-        gameManager.scripts.uiManager.displayModeDropdown.AddOptions(new System.Collections.Generic.List<string>
+
+        desiredList.Clear();
+        desiredList = new List<string>
         {
             "Fullscreen",
             "Windowed",
-        });
+        };
+        gameManager.scripts.uiManager.displayModeDropdown.AddOptions(desiredList);
 
         gameManager.scripts.uiManager.displayModeDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.displayModeDropdown.onValueChanged.AddListener(OnDisplayModeChanged);
@@ -351,20 +561,35 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.frameRateCapToggle.onValueChanged.AddListener(OnFrameRateCapToggleChanged);
 
         selectedFrameRateCapValue = 120;
-        gameManager.scripts.uiManager.frameRateCapSlider.value = selectedFrameRateCapValue;
-        gameManager.scripts.uiManager.frameRateCapSliderText.text = gameManager.scripts.uiManager.frameRateCapSlider.value.ToString();
+        refreshRate = (Screen.currentResolution.refreshRateRatio.denominator != 0) ? Screen.currentResolution.refreshRateRatio.numerator / (float)Screen.currentResolution.refreshRateRatio.denominator : 0f;
+                     
+        if (selectedFrameRateCapValue > refreshRate)
+        {
+            gameManager.scripts.uiManager.frameRateCapSliderText.text = "<color=" + Colors.textCyan + ">" + refreshRate.ToString(Strings.numberFormat0) + "</color>";
+            selectedFrameRateCapValue = (int)refreshRate;
+            gameManager.scripts.uiManager.frameRateCapSlider.value = selectedFrameRateCapValue;
+        }
+        else
+        {
+            gameManager.scripts.uiManager.frameRateCapSliderText.text = gameManager.scripts.uiManager.frameRateCapSlider.value.ToString();
+            gameManager.scripts.uiManager.frameRateCapSlider.value = selectedFrameRateCapValue;
+        }        
         gameManager.scripts.uiManager.frameRateCapSlider.onValueChanged.AddListener(OnframeRateCapSliderChanged);
     }
     void PopulateVSyncDropdown()
     {
         gameManager.scripts.uiManager.vSyncDropdown.ClearOptions();
-        gameManager.scripts.uiManager.vSyncDropdown.AddOptions(new System.Collections.Generic.List<string>
+
+        desiredList.Clear();
+        desiredList = new List<string>
         {
             "Off",
             "V<color=red>-</color>Blank",
             "Second V<color=red>-</color>Blank",
-        });
-
+        };
+        gameManager.scripts.uiManager.vSyncDropdown.AddOptions(desiredList);
+        selectedVsyncIndex = 1;
+        gameManager.scripts.uiManager.vSyncDropdown.value = selectedVsyncIndex;
         gameManager.scripts.uiManager.vSyncDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.vSyncDropdown.onValueChanged.AddListener(OnVSyncChanged);
         gameManager.scripts.uiManager.vSyncDropdown.RefreshShownValue();// Update the dropdown to reflect the selected VSync
@@ -372,7 +597,9 @@ public class OptionsManager : MonoBehaviour
     void PopulateAntiAliasDropdown()
     {
         gameManager.scripts.uiManager.antiAliasDropdown.ClearOptions();
-        gameManager.scripts.uiManager.antiAliasDropdown.AddOptions(new System.Collections.Generic.List<string>
+
+        desiredList.Clear();
+        desiredList = new List<string>
         {
             "Off",
             "FXAA",
@@ -385,7 +612,8 @@ public class OptionsManager : MonoBehaviour
             "TAA <color=red>-</color> 2 <color=red>x</color>",
             "TAA <color=red>-</color> 4 <color=red>x</color>",
             "TAA <color=red>-</color> 8 <color=red>x</color>",
-        });
+        };
+        gameManager.scripts.uiManager.antiAliasDropdown.AddOptions(desiredList);
 
         gameManager.scripts.uiManager.antiAliasDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.antiAliasDropdown.onValueChanged.AddListener(OnAntiAliasChanged);
@@ -397,12 +625,15 @@ public class OptionsManager : MonoBehaviour
     {
         selectedQualityAssetIndex = 1;
         gameManager.scripts.uiManager.qualityDropdown.ClearOptions();
-        gameManager.scripts.uiManager.qualityDropdown.AddOptions(new System.Collections.Generic.List<string>
+
+        desiredList.Clear();
+        desiredList = new List<string>
         {
             "High",
             "Medium",
             "Low",
-        });
+        };
+        gameManager.scripts.uiManager.qualityDropdown.AddOptions(desiredList);
 
         gameManager.scripts.uiManager.qualityDropdown.value = 1;
         gameManager.scripts.uiManager.qualityDropdown.onValueChanged.RemoveAllListeners();
@@ -414,7 +645,134 @@ public class OptionsManager : MonoBehaviour
             Debug.Log($"Quality Level {i}: {QualitySettings.names[i]}");
         }
         */
+    }    
+    void PopulateFogDropdown()
+    {
+        if (postProcess.profile.TryGet(out fog)){}
+
+        selectedFogIndex = 2;
+        gameManager.scripts.uiManager.fogDropdown.ClearOptions();
+
+        desiredList.Clear();
+        desiredList = new List<string>
+        {
+            "Off",
+            "Low",
+            "Medium",
+            "High"
+        };
+        gameManager.scripts.uiManager.fogDropdown.AddOptions(desiredList);
+
+        gameManager.scripts.uiManager.fogDropdown.value = selectedFogIndex;
+        gameManager.scripts.uiManager.fogDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.fogDropdown.onValueChanged.AddListener(OnFogChanged);
+        gameManager.scripts.uiManager.fogDropdown.RefreshShownValue();
     }
+    void PopulateFovSlider()
+    {
+        selectedFOV = 90;
+        gameManager.scripts.uiManager.fovSlider.value = selectedFOV;
+        gameManager.scripts.uiManager.fovSlider.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.fovSlider.onValueChanged.AddListener(OnFOVChanged);
+    }
+    void PopulateBloomDropdown()
+    {
+        if (postProcess.profile.TryGet(out bloom)) { }
+
+        selectedBloomIndex = 2;
+        gameManager.scripts.uiManager.bloomDropdown.ClearOptions();
+
+        desiredList.Clear();
+        desiredList = new List<string>
+        {
+            "Off",
+            "Low",
+            "Medium",
+            "High"
+        };
+        gameManager.scripts.uiManager.bloomDropdown.AddOptions(desiredList);
+
+        gameManager.scripts.uiManager.bloomDropdown.value = selectedBloomIndex;
+        gameManager.scripts.uiManager.bloomDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.bloomDropdown.onValueChanged.AddListener(OnBloomChanged);
+        gameManager.scripts.uiManager.bloomDropdown.RefreshShownValue();
+    }
+    void PopulateHDR()
+    {
+        selectedHDR = false;
+        gameManager.scripts.uiManager.hdrToggle.isOn = false;
+        gameManager.scripts.uiManager.hdrToggle.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.hdrToggle.onValueChanged.AddListener(OnHDRChanged);
+    }
+    void PopulateAnsioDropdown()
+    {
+        QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
+        selectedAnsioIndex = 2;
+        gameManager.scripts.uiManager.ansioDropdown.ClearOptions();
+
+        desiredList.Clear();
+        desiredList = new List<string>
+        {
+            "Off",
+            "x2",
+            "x4",
+            "x8",
+            "x16",
+        };
+        gameManager.scripts.uiManager.ansioDropdown.AddOptions(desiredList);
+
+        gameManager.scripts.uiManager.ansioDropdown.value = selectedAnsioIndex;
+        gameManager.scripts.uiManager.ansioDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.ansioDropdown.onValueChanged.AddListener(OnAnsioChanged);
+        gameManager.scripts.uiManager.ansioDropdown.RefreshShownValue();
+        SetAnsio(null, true);
+    }
+    void PopulateTonemappingDropdown()
+    {
+        if (postProcess.profile.TryGet(out tonemapping)){}
+
+        selectedTonemappingIndex = 2;
+        gameManager.scripts.uiManager.tonemappingDropdown.ClearOptions();
+
+        desiredList.Clear();
+        desiredList = new List<string>
+        {            
+            "Neutral Reinhard",
+            "Neutral BT2390",
+            "ACES 1000",
+            "ACES 2000",
+            "ACES 4000"
+        };
+        gameManager.scripts.uiManager.tonemappingDropdown.AddOptions(desiredList);
+
+        gameManager.scripts.uiManager.tonemappingDropdown.value = selectedTonemappingIndex;
+        gameManager.scripts.uiManager.tonemappingDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.tonemappingDropdown.onValueChanged.AddListener(OnTonemappingChanged);
+        gameManager.scripts.uiManager.tonemappingDropdown.RefreshShownValue();
+    }
+    void PopulateGlobalIlluminationDropdown()
+    {
+        if (postProcess.profile.TryGet(out globalIllumination)) { }
+
+        selectedGlobalIlluminationIndex = 1;
+        gameManager.scripts.uiManager.giDropdown.ClearOptions();
+
+        desiredList.Clear();
+        desiredList = new List<string>
+        {
+            "Realtime",
+            "SSGI Low",
+            "SSGI Medium",
+            "SSGI High"
+        };
+        gameManager.scripts.uiManager.giDropdown.AddOptions(desiredList);
+
+        gameManager.scripts.uiManager.giDropdown.value = selectedTonemappingIndex;
+        gameManager.scripts.uiManager.giDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.giDropdown.onValueChanged.AddListener(OnGlobalIlluminationChanged);
+        gameManager.scripts.uiManager.giDropdown.RefreshShownValue();
+    }
+
     void PopulateAudioSliders()
     {
         ChangeAudioSliderValue(ref selectedMasterVolume, Strings.audioMaster, gameManager.scripts.uiManager.audioMasterSlider, gameManager.scripts.uiManager.audioMasterNumberText, false, false, true);
@@ -496,7 +854,6 @@ public class OptionsManager : MonoBehaviour
 
 
     #region Runtime
-
     void OnAutosavesToggleChanged(bool autosavesChanged)
     {
         if (gameManager.scripts.uiManager.autosavesToggle.isOn)
@@ -614,8 +971,20 @@ public class OptionsManager : MonoBehaviour
     }
     void OnframeRateCapSliderChanged(float sliderValue)
     {
-        selectedFrameRateCapValue = (int)gameManager.scripts.uiManager.frameRateCapSlider.value;
-        gameManager.scripts.uiManager.frameRateCapSliderText.text = gameManager.scripts.uiManager.frameRateCapSlider.value.ToString();
+        refreshRate = (Screen.currentResolution.refreshRateRatio.denominator != 0) ? Screen.currentResolution.refreshRateRatio.numerator / (float)Screen.currentResolution.refreshRateRatio.denominator : 0f;
+
+        if (gameManager.scripts.uiManager.frameRateCapSlider.value >= refreshRate)
+        {
+            gameManager.scripts.uiManager.frameRateCapSliderText.text = "<color=" + Colors.textCyan + ">" + refreshRate.ToString(Strings.numberFormat0) + "</color>";
+            selectedFrameRateCapValue = (int)refreshRate;
+            gameManager.scripts.uiManager.frameRateCapSlider.value = (int)refreshRate;
+        }
+        else if(gameManager.scripts.uiManager.frameRateCapSlider.value < refreshRate)
+        {
+            gameManager.scripts.uiManager.frameRateCapSliderText.text = gameManager.scripts.uiManager.frameRateCapSlider.value.ToString(Strings.numberFormat0);
+            selectedFrameRateCapValue = (int)gameManager.scripts.uiManager.frameRateCapSlider.value;
+        }        
+        gameManager.scripts.uiManager.frameRateCapSliderText.text = gameManager.scripts.uiManager.frameRateCapSlider.value.ToString(Strings.numberFormat0);
         //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseFrameRateCap()
@@ -645,11 +1014,158 @@ public class OptionsManager : MonoBehaviour
         //ACTIVATE MODIFIED VALUE BUTTON
     }
 
+    void OnFogChanged(int fogIndex)
+    {
+        selectedFogIndex = gameManager.scripts.uiManager.fogDropdown.value;
+        //ACTIVATE MODIFIED VALUE BUTTON
+    }
+
     void OnQualitySettingsChanged(int qualityIndex)
     {
         selectedQualityAssetIndex = gameManager.scripts.uiManager.qualityDropdown.value;
         //ACTIVATE MODIFIED VALUE BUTTON
     }
+
+    public void OnFOVChanged(float sliderValue)
+    {
+        selectedFOV = (int)gameManager.scripts.uiManager.fovSlider.value;
+        gameManager.scripts.uiManager.fovSliderText.text = gameManager.scripts.uiManager.fovSlider.value.ToString();
+        //ACTIVATE MODIFIED VALUE BUTTON
+    }
+    public void IncreaseFOV()
+    {
+        gameManager.scripts.uiManager.fovSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.fovSlider.value + 1, gameManager.scripts.uiManager.fovSlider.minValue, gameManager.scripts.uiManager.fovSlider.maxValue);
+        selectedFOV = (int)gameManager.scripts.uiManager.fovSlider.value;
+        gameManager.scripts.uiManager.fovSliderText.text = gameManager.scripts.uiManager.fovSlider.value.ToString();
+        //ACTIVATE MODIFIED VALUE BUTTON
+    }
+    public void DecreaseFOV()
+    {
+        gameManager.scripts.uiManager.fovSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.fovSlider.value - 1, gameManager.scripts.uiManager.fovSlider.minValue, gameManager.scripts.uiManager.fovSlider.maxValue);
+        selectedFOV = (int)gameManager.scripts.uiManager.fovSlider.value;
+        gameManager.scripts.uiManager.fovSliderText.text = gameManager.scripts.uiManager.fovSlider.value.ToString();
+        //ACTIVATE MODIFIED VALUE BUTTON
+    }
+
+    void OnBloomChanged(int bloomIndex)
+    {
+        selectedBloomIndex = gameManager.scripts.uiManager.bloomDropdown.value;
+        //ACTIVATE MODIFIED VALUE BUTTON
+    }
+
+    void OnHDRChanged(bool hdrChanged)
+    {
+        if (gameManager.scripts.uiManager.hdrToggle.isOn)
+        {
+            selectedHDR = true;
+        }
+        else if (!gameManager.scripts.uiManager.hdrToggle.isOn)
+        {
+            selectedHDR = false;
+        }
+        //ACTIVATE MODIFIED VALUE BUTTON
+    }
+
+    void OnAnsioChanged(int ansioIndex)
+    {
+        selectedAnsioIndex = gameManager.scripts.uiManager.ansioDropdown.value;        
+        //ACTIVATE MODIFIED VALUE BUTTON
+    }
+
+    public void SetAnsio(Material material, bool scan)
+    {
+        if (material && material.mainTexture)
+        {
+            if (selectedAnsioIndex == 0) // Set desired anisotropic level
+            {
+                material.mainTexture.anisoLevel = 0;
+            }
+            else if (selectedAnsioIndex == 1)
+            {
+                material.mainTexture.anisoLevel = 2;
+            }
+            else if (selectedAnsioIndex == 2)
+            {
+                material.mainTexture.anisoLevel = 4;
+            }
+            else if (selectedAnsioIndex == 3)
+            {
+                material.mainTexture.anisoLevel = 8;
+            }
+            else if (selectedAnsioIndex == 4)
+            {
+                material.mainTexture.anisoLevel = 16;
+            }
+        }
+        else
+        {
+            if (scan)
+            {                
+                Renderer[] renderers = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
+
+                foreach (Renderer renderer in renderers)
+                {
+                    foreach (Material mat in renderer.sharedMaterials)
+                    {
+                        //Debug.Log("Renderer Found....");
+                        if (mat && mat.mainTexture)
+                        {
+                            //Debug.Log("Material and mainTexture present..");
+                            if (selectedAnsioIndex == 0) // Set desired anisotropic level
+                            {
+                                //Debug.Log("Texture Set to OFF!");
+                                mat.mainTexture.anisoLevel = 0;
+                            }
+                            else if (selectedAnsioIndex == 1)
+                            {
+                                //Debug.Log("Texture Set to 2x!");
+                                mat.mainTexture.anisoLevel = 2;
+                            }
+                            else if (selectedAnsioIndex == 2)
+                            {
+                                //Debug.Log("Texture Set to 4x!");
+                                mat.mainTexture.anisoLevel = 4;
+                            }
+                            else if (selectedAnsioIndex == 3)
+                            {
+                                //Debug.Log("Texture Set to 8x!");
+                                mat.mainTexture.anisoLevel = 8;
+                            }
+                            else if (selectedAnsioIndex == 4)
+                            {
+                                //Debug.Log("Texture Set to 16x!");
+                                mat.mainTexture.anisoLevel = 16;
+                            }
+                        }
+                        else
+                        {
+                            if (!mat)
+                            {
+                                //Debug.Log("Material NOT present on " + renderer.name);
+                            }
+                            else if (!mat.mainTexture)
+                            {
+                                //Debug.Log("Material Texture NOT present on " + renderer.name);
+                            }
+                        }
+                    }
+                }
+            }            
+        }
+        Utils.ClearMemory();
+    }
+
+    void OnTonemappingChanged(int tonemappingIndex)
+    {
+        selectedTonemappingIndex = gameManager.scripts.uiManager.tonemappingDropdown.value;        
+        //ACTIVATE MODIFIED VALUE BUTTON
+    }
+    void OnGlobalIlluminationChanged(int globalIlluminationIndex)
+    {
+        selectedGlobalIlluminationIndex = gameManager.scripts.uiManager.giDropdown.value;
+        //ACTIVATE MODIFIED VALUE BUTTON
+    }
+
 
     public void SetMasterVolume(float sliderValue)
     {
@@ -928,7 +1444,6 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.cameraGamepadPanSensitivitySliderText.text = gameManager.scripts.uiManager.cameraGamepadPanSensitivitySlider.value.ToString(Strings.numberFormat1);
         //ACTIVATE MODIFIED VALUE BUTTON
     }
-    #endregion
 
     void OnGamepadCameraZoomDeadzoneChanged(float sliderValue)
     {
@@ -992,6 +1507,9 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.cameraGamepadPanDeadzoneSliderText.text = gameManager.scripts.uiManager.cameraGamepadPanDeadzoneSlider.value.ToString(Strings.numberFormat1);
         //ACTIVATE MODIFIED VALUE BUTTON
     }
+    #endregion
+
+
 
     // Descriptions
     public void OnActivateSettingHover()
@@ -1054,10 +1572,48 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsFramerateCapDesc;
         gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsFramerateCapDescAdditional;
     }
+    public void OnFramerateCapInfoHover()
+    {
+        refreshRate = (Screen.currentResolution.refreshRateRatio.denominator != 0) ? Screen.currentResolution.refreshRateRatio.numerator / (float)Screen.currentResolution.refreshRateRatio.denominator : 0f;
+
+        gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsFramerateCapInfoDesc + "<color=" + Colors.textCyan + ">" + refreshRate.ToString("F0") + " Hz</color>.";
+    }
+    public void OnQualityHover()
+    {
+        gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsQualityDesc;
+        gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsQualityDescAdditional;
+    }
     public void OnAntiAliasHover()
     {
         gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsAntiAliasDesc;
         gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsAntiAliasDescAdditional;
+    }
+    public void OnVolumetricFogHover()
+    {
+        gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsVolumetricFogDesc;
+    }
+    public void OnFOVHover()
+    {
+        gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsFOVDesc;
+        gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsFOVDescAdditional;
+    }
+    public void OnBloomHover()
+    {
+        gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsBloomDesc;
+    }
+    public void OnHDRHover()
+    {
+        gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsHDRDesc;
+        gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsHDRDescAdditional;
+    }
+    public void OnAnsioHover()
+    {
+        gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsAnsioDesc;
+    }
+    public void OnTonemappingHover()
+    {
+        gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsTonemappingDesc;
+        gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsTonemappingDescAdditional;
     }
 }
 

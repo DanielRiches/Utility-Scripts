@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
 
-public class GameStrings : MonoBehaviour
+public static class GameStrings
 {
     #region English
-    public class GameStringsEnglish : MonoBehaviour
+    public static class GameStringsEnglish
     {
         public static bool available = true;
         public static string gameTitle = "The Last Debug";
@@ -41,10 +41,22 @@ public class GameStrings : MonoBehaviour
         public static string optionsDisplayModeDesc = "Play <color=red>fullscreen</color> or in a seperate <color=red>Window</color>.";
         public static string optionsVSyncDesc = "<color=red>VSync</color> synchronizes the frame rate of a game with the refresh rate of the monitor to prevent <color=red>screen tearing</color>.\r\n\r\n<color=red>Screen tearing</color> happens when your GPU outputs frames faster than your monitor can display them.";
         public static string optionsVSyncDescAdditional = "<color=red>[</color>Off<color=red>]</color>\r\n------------------------------------------\r\nFrames limited to <color=red>Framerate Cap</color>.\r\n\r\n\r\n<color=red>[</color>V<color=red>-</color>Blank<color=red>]</color>\r\n------------------------------------------\r\nFrames limited to monitors <color=red>maximum</color> refresh rate.\r\n\r\n\r\n<color=red>[</color>Second V<color=red>-</color>Blank<color=red>]</color>\r\n------------------------------------------\r\nFrames limited to <color=red>HALF</color> monitors maximum refresh rate.";
-        public static string optionsFramerateCapDesc = "The target <color=red>framerate</color> the game should aim for assuming <color=red>VSync</color> is off and this setting is active.";
-        public static string optionsFramerateCapDescAdditional = "If you experience <color=red>screen tearing</color>, consider activating <color=red>VSync</color>.";
+        public static string optionsFramerateCapDesc = "The target <color=red>framerate</color> the game should aim for assuming <color=red>VSync</color> is off and this setting is active. If you experience <color=red>screen tearing</color>, consider activating <color=red>VSync</color>.";
+        public static string optionsFramerateCapDescAdditional = "<color=red>Warning</color>: This will be capped at your monitors <color=red>max refresh rate</color> if you attempt to go higher.";
+        public static string optionsFramerateCapInfoDesc = "Your currently used display has a <color=red>maximum refresh rate</color> of ";
+        public static string optionsQualityDesc = "A <color=red>global</color> quality setting, affects several settings.";
+        public static string optionsQualityDescAdditional = "Affects the following:\r\n---------------------------------------------\r\n\r\n- <color=red>Anti-Alias</color>\r\n- <color=red>Volumetric Fog</color>\r\n- <color=red>Bloom</color>";
         public static string optionsAntiAliasDesc = "<color=red>Anti-aliasing</color> is a technique used to reduce the appearance of jagged edges. \r\n\r\n<color=red>FXAA</color> is the most performant, <color=red>TAA</color> is the highest quality and least performant.";
-        public static string optionsAntiAliasDescAdditional = "<color=red>[</color>FXAA<color=red>]</color> </color><color=red>[</color><color=green>++</color> Performance<color=red>]</color>\r\n------------------------------------------ \r\n<color=green><b>++</b></color> performance\t\t\t| <color=red><b>--</b></color> Quality\r\n\r\n<color=red>[</color>SMAA<color=red>]</color> </color><color=red>[</color><color=green>+</color> Performance<color=red>]</color>\r\n------------------------------------------ \r\n2x\t| <color=green><b>++</b></color> Performance\t| <color=red><b>--</b></color> Quality\r\n4x\t| <color=green><b>+</b></color> Performance \t| <color=green><b>+</b></color> Quality\r\n8x\t| <color=red><b>--</b></color> Performance\t| <color=green><b>++</b></color> Quality\r\n\r\n<color=red>[</color>MSAA<color=red>]</color> </color><color=red>[</color><color=green>+</color> Quality<color=red>]</color>\r\n------------------------------------------\r\n2x\t| <color=green><b>++</b></color> Performance\t| <color=red><b>--</b></color> Quality\r\n4x\t| <color=green><b>+</b></color> Performance \t| <color=green><b>+</b></color> Quality\r\n8x\t| <color=red><b>--</b></color> Performance\t| <color=green><b>++</b></color> Quality\r\n\r\n<color=red>[</color>TAA<color=red>]</color> </color><color=red>[</color><color=green>++</color> Quality<color=red>]</color>\r\n------------------------------------------\r\n2x\t| <color=green><b>++</b></color> Performance\t| <color=red><b>--</b></color> Quality\r\n4x\t| <color=green><b>+</b></color> Performance \t| <color=green><b>+</b></color> Quality\r\n8x\t| <color=red><b>--</b></color> Performance\t| <color=green><b>++</b></color> Quality";
+        public static string optionsAntiAliasDescAdditional = "<color=red>[</color>FXAA<color=red>]</color> </color><color=red>[</color><color=green>++</color> Performance<color=red>]</color>\r\n------------------------------------------\r\n<color=green><b>++</b></color> performance\\t\\t\\t| <color=red><b>--</b></color> Quality\r\n<color=red>\r\n\r\n[</color>SMAA<color=red>] [</color><color=green>+</color> Performance<color=red>]</color>\r\n<color=red>[</color>MSAA<color=red>]</color> </color><color=red>[</color><color=green>+</color> Quality<color=red>]</color>\r\n<color=red>[</color>TAA<color=red>]</color> </color><color=red>[</color><color=green>++</color> Quality<color=red>]</color>\r\n------------------------------------------ \\r\\n2x\\t| <color=green><b>++</b></color> Performance\\t| <color=red><b>--</b></color> Quality\\r\\n4x\\t| <color=green><b>+</b></color> Performance \\t| <color=green><b>+</b></color> Quality\\r\\n8x\\t| <color=red><b>--</b></color> Performance\\t| <color=green><b>++</b></color> Quality";
+        public static string optionsVolumetricFogDesc = "The quality of the <color=red>Volumetric Fog</color>.";
+        public static string optionsFOVDesc = "The <color=red>Field of View</color> of cameras.";
+        public static string optionsFOVDescAdditional = "<color=red>Warning</color>: This may be capped in certain circumstances, if the game releases on a handheld for example.";
+        public static string optionsBloomDesc = "The intensity of the <color=red>Bloom</color> (glow) of emissive objects.";
+        public static string optionsHDRDesc = "<color=red>HDR</color> (High Dynamic Range) is a rendering technique that improves brightness, contrast, and color depth, allowing for more realistic and visually striking images..";
+        public static string optionsHDRDescAdditional = "<color=red>[</color>On<color=red>]</color>\r\n---------------------------------------------\r\n<color=green>+</color> Lighting and Shadow Quality\r\n<color=green>+</color> Color Realism\r\n<color=green>+</color> Reduced detail loss in dark / bright areas\r\n<color=red>--</color> Performance";
+        public static string optionsAnsioDesc = "<color=red>Anisotropic Filtering</color> (<color=red>AF</color>) enhances texture quality, especially for surfaces that are far away from the camera, making them appear sharper and more detailed without excessive blurring.";
+        public static string optionsTonemappingDesc = "Tonemapping converts High Dynamic Range (HDR) colors into a displayable range for SDR / HDR screens. It helps maintain details in bright and dark areas.";
+        public static string optionsTonemappingDescAdditional = "<color=red>Warning</color>: will apply Neutral or Aces but will not apply specific tiers unless HDR is active.";
     }
     #endregion
 
@@ -69,43 +81,43 @@ public class GameStrings : MonoBehaviour
     #endregion
 
 
-    public class GameStringsGerman : MonoBehaviour
+    public static class GameStringsGerman
     {
         public static bool available = false;
     }
 
-    public class GameStringsItalian : MonoBehaviour
+    public static class GameStringsItalian
     {
         public static bool available = false;
 
     }
 
-    public class GameStringsSpanish : MonoBehaviour
+    public static class GameStringsSpanish
     {
         public static bool available = false;
     }
 
-    public class GameStringsAmerican : MonoBehaviour
+    public static class GameStringsAmerican
     {
         public static bool available = false;
     }
 
-    public class GameStringsRussian : MonoBehaviour
+    public static class GameStringsRussian
     {
         public static bool available = false;
     }
 
-    public class GameStringsChinese : MonoBehaviour
+    public static class GameStringsChinese
     {
         public static bool available = false;
     }
 
-    public class GameStringsJapanese : MonoBehaviour
+    public static class GameStringsJapanese
     {
         public static bool available = false;
     }
 
-    public class GameStringsBrazilian : MonoBehaviour
+    public static class GameStringsBrazilian
     {
         public static bool available = false;
     }

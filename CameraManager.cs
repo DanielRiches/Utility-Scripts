@@ -8,7 +8,7 @@ public class CameraManager : MonoBehaviour
     public GameObject mainCameraGameobject;// ACCESSED BY GAME MANAGER
     public Camera mainCamera;
     public HDAdditionalCameraData cameraData;
-    public CinemachineCamera playerCinemachineCamera;
+    public CinemachineCamera cinemachineCamera;
     
     void Awake()
     {

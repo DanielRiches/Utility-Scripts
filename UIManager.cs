@@ -36,8 +36,16 @@ public class UIManager : MonoBehaviour
     public Toggle frameRateCapToggle;// ACCESSED BY OPTIONS
     public Slider frameRateCapSlider;// ACCESSED BY OPTIONS
     public TMP_Dropdown vSyncDropdown;// ACCESSED BY OPTIONS
-    public TMP_Dropdown antiAliasDropdown;// ACCESSED BY OPTIONS
     public TMP_Dropdown qualityDropdown;// ACCESSED BY OPTIONS
+    public TMP_Dropdown antiAliasDropdown;// ACCESSED BY OPTIONS    
+    public TMP_Dropdown fogDropdown;// ACCESSED BY OPTIONS
+    public TextMeshProUGUI fovSliderText;// ACCESSED BY OPTIONS
+    public Slider fovSlider;// ACCESSED BY OPTIONS
+    public TMP_Dropdown bloomDropdown;// ACCESSED BY OPTIONS
+    public TMP_Dropdown ansioDropdown;// ACCESSED BY OPTIONS
+    public Toggle hdrToggle;// ACCESSED BY OPTIONS
+    public TMP_Dropdown tonemappingDropdown;// ACCESSED BY OPTIONS
+    public TMP_Dropdown giDropdown;// ACCESSED BY OPTIONS
     [Header("---- Audio ----")]
     public TextMeshProUGUI audioMasterNumberText;// ACCESSED BY OPTIONS
     public Slider audioMasterSlider;// ACCESSED BY OPTIONS
