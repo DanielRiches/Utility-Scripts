@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -18,6 +19,13 @@ public class GameManager : MonoBehaviour
     public bool splashScreen;
     public bool inMainMenu;
     public bool inOptionsMenu;
+
+    /*  Muscle(Strength)
+        Awareness(Perception)
+        Tolerance(Endurance)
+        Resonance(Charisma)
+        Input(Intelligence)
+        X-Factor(Luck)  */
 
     void Update()
     {
@@ -41,6 +49,7 @@ public class GameManager : MonoBehaviour
         inMainMenu = false;
 
         inOptionsMenu = true;
+        scripts.uiManager.ClickedGameplayOptions();
     }
 
     public void QuitGame()

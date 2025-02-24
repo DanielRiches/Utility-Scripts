@@ -17,6 +17,9 @@ public class UIManager : MonoBehaviour
     [SerializeField] public GameObject optionsInterfaceMenu;
     [SerializeField] public GameObject optionsAccessibilityMenu;
     [Space(10)]
+    public TextMeshProUGUI confirmOptionsChangesTimerText;// ACCESSED BY OPTIONS
+    [SerializeField] public GameObject confirmOptionsChanges;
+    [Space(10)]
     public TextMeshProUGUI optionsDescription;// ACCESSED BY OPTIONS
     public TextMeshProUGUI optionsDescriptionAdditional;// ACCESSED BY OPTIONS
     [Header("---- Gameplay ----")]
@@ -28,6 +31,10 @@ public class UIManager : MonoBehaviour
     public Slider maximumQuicksavesSlider;// ACCESSED BY OPTIONS
     public Toggle goreToggle;// ACCESSED BY OPTIONS
     [Header("---- Video ----")]
+    [SerializeField] public GameObject optionsVideoPage1;
+    [SerializeField] public GameObject optionsVideoPage1Tab;
+    [SerializeField] public GameObject optionsVideoPage2;
+    [SerializeField] public GameObject optionsVideoPage2Tab;
     public TextMeshProUGUI gpuName;// ACCESSED BY OPTIONS
     public TMP_Dropdown displayDevicesDropdown;// ACCESSED BY OPTIONS
     public TMP_Dropdown resolutionsDropdown;// ACCESSED BY OPTIONS
@@ -93,6 +100,8 @@ public class UIManager : MonoBehaviour
     {
         EventSystem.current.SetSelectedGameObject(gameplayButton);
         Utils.DeActivateObject(mainMenu);
+        gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDescInitial;
+        gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescInitialAdditional;
         Utils.ActivateObject(optionsMenu);        
     }
     public void ExitOptions()
@@ -126,6 +135,11 @@ public class UIManager : MonoBehaviour
         Utils.DeActivateObject(optionsKeyboardMenu);
         Utils.DeActivateObject(optionsGamepadMenu);
         Utils.DeActivateObject(optionsAccessibilityMenu);
+        Utils.DeActivateObject(optionsVideoPage2);
+        Utils.DeActivateObject(optionsVideoPage2Tab);
+
+        Utils.ActivateObject(optionsVideoPage1Tab);
+        Utils.ActivateObject(optionsVideoPage1);        
         Utils.ActivateObject(optionsVideoMenu);
     }
 

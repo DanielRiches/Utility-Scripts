@@ -6,9 +6,12 @@ using System.Linq;// Works on Steamdeck
 using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.UI;
 using TMPro;
+using System;
 
 public class OptionsManager : MonoBehaviour
 {
+    // MAKE SURE ALL SPAWNED OBJECTS WITH RENDERERS CALL gameManager.scripts.optionsManager.SetAnsio
+
     GameManager gameManager;
     public Volume postProcess;
     Fog fog;
@@ -17,12 +20,16 @@ public class OptionsManager : MonoBehaviour
     GlobalIllumination globalIllumination;
     private string gpuName;// Graphics card name.
     Display[] displays;// To help automatically detect if someone connects another display.
+    FullScreenMode screenMode;
     float refreshRate;
     private Resolution[] resolutions;
     private List<Resolution> filteredResolutions = new List<Resolution>();
     Resolution selectedResolution;
     int lastDisplayCount; // To help automatically detect if someone connects another display, set to detect every 2 seconds at default.
     HDRenderPipelineAsset appliedHDRPAsset;
+    RayCastingMode rayMode;
+    bool rayTracingSupported;
+    TimeSpan timeSpan; // for keep settings timer
 
     [Header("---- SELECTED ----------------------------------------------------")]
     [SerializeField] private List<string> desiredList;
@@ -33,6 +40,7 @@ public class OptionsManager : MonoBehaviour
     [SerializeField] private bool selectedGore;
     [Header("Video")]
     [SerializeField] private bool requiresTimedConfirmation;
+    [SerializeField] private float requiresTimedConfirmationTimer = 25;
     [Space(10)]
     [SerializeField] private int selectedDisplayIndex;
     [SerializeField] private int selectedResolutionIndex;
@@ -111,15 +119,12 @@ public class OptionsManager : MonoBehaviour
     }
 
     void Start()
-    {
-        appliedHDRPAsset = QualitySettings.renderPipeline as HDRenderPipelineAsset;
-        lastDisplayCount = Display.displays.Length;// DISPLAY DEVICE
-        gpuName = SystemInfo.graphicsDeviceName;// DISPLAY ADAPTER
-        gameManager.scripts.uiManager.gpuName.text = gpuName;// DISPLAY ADAPTER 
+    {          
         PopulateSavesSliders();
         PopulateGore();
         DetectDisplays();// DISPLAY DEVICE
         StartCoroutine(RuntimeMonitorDisplays());// WILL UPDATE DISPLAY DEVICE DROPDOWN AT RUNTIME IF MONITORS ARE ADDED / REMOVED
+        PopulateDisplayAdapter();
         PopulateDisplayModeDropdown();
         PopulateFrameRateCapSlider();
         PopulateVSyncDropdown();
@@ -140,60 +145,81 @@ public class OptionsManager : MonoBehaviour
         Utils.ClearMemory();
     }
 
-    
+    private void Update()
+    {
+        if (gameManager.scripts.uiManager.confirmOptionsChanges.activeSelf)
+        {            
+            requiresTimedConfirmationTimer -= Time.deltaTime;
+            timeSpan = TimeSpan.FromSeconds(requiresTimedConfirmationTimer);
+            gameManager.scripts.uiManager.confirmOptionsChangesTimerText.text = string.Format("{0:D2} <color=" + Colors.textRed + ">:</color> {1:D2} <color=" + Colors.textRed + ">:</color> {2:D2}", timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds);
+
+            if (requiresTimedConfirmationTimer <= 0f)
+            {
+                RevertChanges();
+                requiresTimedConfirmation = false;
+                Utils.DeActivateObject(gameManager.scripts.uiManager.confirmOptionsChanges);
+            }
+        }
+        else if (requiresTimedConfirmationTimer != 25f)
+        {
+            requiresTimedConfirmationTimer = 25f;
+        }
+    }
+
+
     public void ApplySettings()
     {
         if (Application.isPlaying)
         {
-            if (requiresTimedConfirmation)
+            // GAMEPLAY--------------
+
+
+            // VIDEO--------------
+            if (selectedDisplayIndex != appliedDisplayIndex)
             {
-                // ISSUE WARNING
+                Display.displays[selectedDisplayIndex].Activate();
+                requiresTimedConfirmation = true;
+            }
+
+            if (selectedDisplayModeIndex != appliedDisplayModeIndex)
+            {
+                if (selectedDisplayModeIndex == 1)
+                {
+                    screenMode = FullScreenMode.Windowed;
+                }
+                else
+                {
+                    screenMode = FullScreenMode.FullScreenWindow;
+                }
+                requiresTimedConfirmation = true;
+            }
+
+
+
+            if (filteredResolutions.Count > selectedResolutionIndex)
+            {
+                selectedResolution = filteredResolutions[selectedResolutionIndex];// Get the chosen resolution from the filtered list
+
+                if (selectedResolutionIndex != appliedResolutionIndex)
+                {
+                    Screen.SetResolution(selectedResolution.width, selectedResolution.height, screenMode, selectedResolution.refreshRateRatio);
+                    //Debug.Log($"Applied resolution: {selectedResolution.width}<color=red>x</color>{selectedResolution.height} {selectedResolution.refreshRateRatio.numerator}/{selectedResolution.refreshRateRatio.denominator}<color=red>Hz</color>");
+                    requiresTimedConfirmation = true;
+                }
+                else if (selectedDisplayModeIndex != appliedDisplayModeIndex)
+                {
+                    Screen.SetResolution(selectedResolution.width, selectedResolution.height, screenMode, selectedResolution.refreshRateRatio);
+                    //Debug.Log($"Applied resolution: {selectedResolution.width}<color=red>x</color>{selectedResolution.height} {selectedResolution.refreshRateRatio.numerator}/{selectedResolution.refreshRateRatio.denominator}<color=red>Hz</color>");
+                    requiresTimedConfirmation = true;
+                }
             }
             else
             {
-                // GAMEPLAY--------------
-                if (selectedAutosaves)
-                {
-                    appliedAutosaves = true;
-                }
-                else if (!selectedAutosaves)
-                {
-                    appliedAutosaves = false;
-                }
+                Debug.Log("Tried to switch to a resolution index that doesn't exist.");
+            }
 
-                appliedMaximumAutosaves = selectedMaximumAutosaves;
-                appliedMaximumQuicksaves = selectedMaximumQuicksaves;
-
-                if (selectedGore)
-                {
-                    appliedGore = true;
-                }
-                else if (!selectedGore)
-                {
-                    appliedGore = false;
-                }
-
-                // VIDEO--------------
-                if (filteredResolutions.Count > selectedResolutionIndex)
-                {                    
-                    selectedResolution = filteredResolutions[selectedResolutionIndex];// Get the corresponding resolution from the filtered list
-
-                    if (selectedDisplayModeIndex == 1)
-                    {
-                        Screen.SetResolution(selectedResolution.width, selectedResolution.height, FullScreenMode.Windowed, selectedResolution.refreshRateRatio);
-                    }
-                    else
-                    {
-                        Screen.SetResolution(selectedResolution.width, selectedResolution.height, FullScreenMode.FullScreenWindow, selectedResolution.refreshRateRatio);
-                    }
-                    
-                    appliedResolutionIndex = selectedResolutionIndex;
-                    appliedDisplayModeIndex = selectedDisplayModeIndex;
-                    //Debug.Log($"Applied resolution: {selectedResolution.width}<color=red>x</color>{selectedResolution.height} {selectedResolution.refreshRateRatio.numerator}/{selectedResolution.refreshRateRatio.denominator}<color=red>Hz</color>");
-                }
-
-                appliedQualityAssetIndex = selectedQualityAssetIndex;
-
+            if (selectedVsyncIndex != appliedVsyncIndex)
+            {
                 if (selectedVsyncIndex != 0)// If VSync is on
                 {
                     if (selectedVsyncIndex == 1)
@@ -209,20 +235,24 @@ public class OptionsManager : MonoBehaviour
                         gameManager.scripts.uiManager.frameRateCapSlider.value = (int)selectedResolution.refreshRateRatio.value / 2;
                     }
                 }
-                else
-                {                    
-                    if(selectedFrameRateCap)// If VSync is off use framerate cap
-                    {                        
+            }
+
+            if (selectedFrameRateCapValue != appliedFrameRateCapValue)
+            {
+                if (selectedVsyncIndex != 0)
+                {
+                    if (selectedFrameRateCap)// If VSync is off use framerate cap
+                    {
                         if (selectedFrameRateCapValue > selectedResolution.refreshRateRatio.value)// Cap to monitors max refresh rate
                         {
                             //Debug.Log("Selected FramerateCap value of " + selectedFrameRateCapValue + " is higher than monitors max refresh of " + selectedResolution.refreshRateRatio + ", clamping to that value");
                             Application.targetFrameRate = (int)selectedResolution.refreshRateRatio.value;
                             selectedFrameRateCapValue = (int)selectedResolution.refreshRateRatio.value;
                             gameManager.scripts.uiManager.frameRateCapSlider.value = selectedFrameRateCapValue;
-                            gameManager.scripts.uiManager.frameRateCapSliderText.text = "<color=" + Colors.textCyan + ">" + gameManager.scripts.uiManager.frameRateCapSlider.value.ToString(Strings.numberFormat0) + " </color>";                            
+                            gameManager.scripts.uiManager.frameRateCapSliderText.text = "<color=" + Colors.textCyan + ">" + gameManager.scripts.uiManager.frameRateCapSlider.value.ToString(Strings.numberFormat0) + " </color>";
                         }
                         else
-                        {                            
+                        {
                             Application.targetFrameRate = selectedFrameRateCapValue;
                         }
                     }
@@ -231,186 +261,330 @@ public class OptionsManager : MonoBehaviour
                         Application.targetFrameRate = -1;
                     }
                 }
+            }
 
-                appliedVsyncIndex = selectedVsyncIndex;
-                appliedFrameRateCap = selectedFrameRateCap;
-                appliedFrameRateCapValue = selectedFrameRateCapValue;
+            if (selectedAntiAliasIndex == 0)
+            {
+                QualitySettings.antiAliasing = 0; // TURN OFF MSAA
+                gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.None;// TURN OFF FXAA, SMAA, TAA
+            }
+            else if (selectedAntiAliasIndex == 1)
+            {
+                QualitySettings.antiAliasing = 0; // TURN OFF MSAA
+                gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.FastApproximateAntialiasing;// TURN ON FXAA
+            }
+            else if (selectedAntiAliasIndex == 2)
+            {
+                QualitySettings.antiAliasing = 0; // TURN OFF MSAA
+                gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;// TURN ON SMAA
+                gameManager.scripts.cameraManager.cameraData.SMAAQuality = HDAdditionalCameraData.SMAAQualityLevel.Low;// SET TO 2X
+            }
+            else if (selectedAntiAliasIndex == 3)
+            {
+                QualitySettings.antiAliasing = 0; // TURN OFF MSAA
+                gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;// TURN ON SMAA
+                gameManager.scripts.cameraManager.cameraData.SMAAQuality = HDAdditionalCameraData.SMAAQualityLevel.Medium;// SET TO 4X
+            }
+            else if (selectedAntiAliasIndex == 4)
+            {
+                QualitySettings.antiAliasing = 0; // TURN OFF MSAA
+                gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;// TURN ON SMAA
+                gameManager.scripts.cameraManager.cameraData.SMAAQuality = HDAdditionalCameraData.SMAAQualityLevel.High;// SET TO 8X
+            }
+            else if (selectedAntiAliasIndex == 5)
+            {
+                gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.None; // TURN OFF FXAA, SMAA, TAA
+                QualitySettings.antiAliasing = 1; // TURN ON MSAA LOW
+            }
+            else if (selectedAntiAliasIndex == 6)
+            {
+                gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.None; // TURN OFF FXAA, SMAA, TAA
+                QualitySettings.antiAliasing = 2; // TURN ON MSAA MEDIUM
+            }
+            else if (selectedAntiAliasIndex == 7)
+            {
+                gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.None; // TURN OFF FXAA, SMAA, TAA
+                QualitySettings.antiAliasing = 3; // TURN ON MSAA HIGH
+            }
+            else if (selectedAntiAliasIndex == 8)
+            {
+                QualitySettings.antiAliasing = 0; // TURN OFF MSAA
+                gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing; // TURN ON TAA
+                gameManager.scripts.cameraManager.cameraData.TAAQuality = HDAdditionalCameraData.TAAQualityLevel.Low;// SET TO 2X
+            }
+            else if (selectedAntiAliasIndex == 9)
+            {
+                QualitySettings.antiAliasing = 0; // TURN OFF MSAA
+                gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing; // TURN ON TAA                 
+                gameManager.scripts.cameraManager.cameraData.TAAQuality = HDAdditionalCameraData.TAAQualityLevel.Medium;// SET TO 4X
+            }
+            else if (selectedAntiAliasIndex == 10)
+            {
+                QualitySettings.antiAliasing = 0; // TURN OFF MSAA
+                gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing; // TURN ON TAA                
+                gameManager.scripts.cameraManager.cameraData.TAAQuality = HDAdditionalCameraData.TAAQualityLevel.High;// SET TO 8X
+            }
 
-                appliedAntiAliasIndex = selectedAntiAliasIndex;
-                if (appliedAntiAliasIndex == 0)
+            if (fog)
+            {
+                if (selectedFogIndex == 0)
                 {
-                    QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.None;// TURN OFF FXAA, SMAA, TAA
-                }
-                else if (appliedAntiAliasIndex == 1)
-                {
-                    QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.FastApproximateAntialiasing;// TURN ON FXAA
-                }
-                else if (appliedAntiAliasIndex == 2)
-                {
-                    QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;// TURN ON SMAA
-                    gameManager.scripts.cameraManager.cameraData.SMAAQuality = HDAdditionalCameraData.SMAAQualityLevel.Low;// SET TO 2X
-                }
-                else if (appliedAntiAliasIndex == 3)
-                {
-                    QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;// TURN ON SMAA
-                    gameManager.scripts.cameraManager.cameraData.SMAAQuality = HDAdditionalCameraData.SMAAQualityLevel.Medium;// SET TO 4X
-                }
-                else if (appliedAntiAliasIndex == 4)
-                {
-                    QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.SubpixelMorphologicalAntiAliasing;// TURN ON SMAA
-                    gameManager.scripts.cameraManager.cameraData.SMAAQuality = HDAdditionalCameraData.SMAAQualityLevel.High;// SET TO 8X
-                }
-                else if (appliedAntiAliasIndex == 5)
-                {
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.None; // TURN OFF FXAA, SMAA, TAA
-                    QualitySettings.antiAliasing = 1; // TURN ON MSAA LOW
-                }
-                else if (appliedAntiAliasIndex == 6)
-                {
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.None; // TURN OFF FXAA, SMAA, TAA
-                    QualitySettings.antiAliasing = 2; // TURN ON MSAA MEDIUM
-                }
-                else if (appliedAntiAliasIndex == 7)
-                {
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.None; // TURN OFF FXAA, SMAA, TAA
-                    QualitySettings.antiAliasing = 3; // TURN ON MSAA HIGH
-                }
-                else if (appliedAntiAliasIndex == 8)
-                {
-                    QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing; // TURN ON TAA
-                    gameManager.scripts.cameraManager.cameraData.TAAQuality = HDAdditionalCameraData.TAAQualityLevel.Low;// SET TO 2X
-                }
-                else if (appliedAntiAliasIndex == 9)
-                {
-                    QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing; // TURN ON TAA                 
-                    gameManager.scripts.cameraManager.cameraData.TAAQuality = HDAdditionalCameraData.TAAQualityLevel.Medium;// SET TO 4X
-                }
-                else if (appliedAntiAliasIndex == 10)
-                {
-                    QualitySettings.antiAliasing = 0; // TURN OFF MSAA
-                    gameManager.scripts.cameraManager.cameraData.antialiasing = HDAdditionalCameraData.AntialiasingMode.TemporalAntialiasing; // TURN ON TAA                
-                    gameManager.scripts.cameraManager.cameraData.TAAQuality = HDAdditionalCameraData.TAAQualityLevel.High;// SET TO 8X
-                }
-
-                if (fog)
-                {
-                    if (selectedFogIndex == 0)
-                    {
-                        fog.enableVolumetricFog.value = false;
-                        fog.active = false;
-                        fog.enabled.value = false;
-                    }
-                    else
-                    {
-                        fog.enabled.value = true;
-                        fog.active = true;
-                        fog.enableVolumetricFog.value = true;
-
-                        if (selectedFogIndex == 1)
-                        {
-                            fog.quality.value = (int)ScalableSettingLevelParameter.Level.Low;
-                        }
-                        else if (selectedFogIndex == 2)
-                        {
-                            fog.quality.value = (int)ScalableSettingLevelParameter.Level.Medium;
-                        }
-                        else if (selectedFogIndex == 3)
-                        {
-                            fog.quality.value = (int)ScalableSettingLevelParameter.Level.High;
-                        }
-                        //Debug.Log("Fog Quality Set to: " + (ScalableSettingLevelParameter.Level)fog.quality.value);
-                    }
-                }
-                appliedFogIndex = selectedFogIndex;
-
-                gameManager.scripts.cameraManager.cinemachineCamera.Lens.FieldOfView = selectedFOV;
-                appliedFOV = selectedFOV;
-
-                if (bloom)
-                {
-                    if (selectedBloomIndex == 0)
-                    {
-                        bloom.active = false;
-                    }
-                    else
-                    {
-                        bloom.active = true;
-
-                        if (selectedBloomIndex == 1)
-                        {
-                            bloom.quality.value = (int)ScalableSettingLevelParameter.Level.Low;
-                        }
-                        else if (selectedBloomIndex == 2)
-                        {
-                            bloom.quality.value = (int)ScalableSettingLevelParameter.Level.Medium;
-                        }
-                        else if (selectedBloomIndex == 3)
-                        {
-                            bloom.quality.value = (int)ScalableSettingLevelParameter.Level.High;
-                        }
-                        //Debug.Log("Bloom Quality Set to: " + (ScalableSettingLevelParameter.Level)bloom.quality.value);
-                    }
-                }
-                appliedBloomIndex = selectedBloomIndex;
-
-
-                if (selectedHDR)
-                {
-                    gameManager.scripts.cameraManager.mainCamera.allowHDR = true;
+                    fog.enableVolumetricFog.value = false;
+                    fog.active = false;
+                    fog.enabled.value = false;
                 }
                 else
                 {
-                    gameManager.scripts.cameraManager.mainCamera.allowHDR = false;
+                    fog.enabled.value = true;
+                    fog.active = true;
+                    fog.enableVolumetricFog.value = true;
+
+                    if (selectedFogIndex == 1)
+                    {
+                        fog.quality.value = (int)ScalableSettingLevelParameter.Level.Low;
+                    }
+                    else if (selectedFogIndex == 2)
+                    {
+                        fog.quality.value = (int)ScalableSettingLevelParameter.Level.Medium;
+                    }
+                    else if (selectedFogIndex == 3)
+                    {
+                        fog.quality.value = (int)ScalableSettingLevelParameter.Level.High;
+                    }
+                    //Debug.Log("Fog Quality Set to: " + (ScalableSettingLevelParameter.Level)fog.quality.value);
                 }
-                appliedHDR = selectedHDR;
+            }            
 
-                SetAnsio(null, true);
-                appliedAnsioIndex = selectedAnsioIndex;
+            gameManager.scripts.cameraManager.cinemachineCamera.Lens.FieldOfView = selectedFOV;
 
-                if (tonemapping)
+            if (bloom)
+            {
+                if (selectedBloomIndex == 0)
                 {
-                    if(selectedTonemappingIndex == 0)
-                    {
-                        tonemapping.mode.value = TonemappingMode.Neutral;
-                        tonemapping.neutralHDRRangeReductionMode.value = NeutralRangeReductionMode.Reinhard;
-                    }
-                    else if (selectedTonemappingIndex == 1)
-                    {
-                        tonemapping.mode.value = TonemappingMode.Neutral;
-                        tonemapping.neutralHDRRangeReductionMode.value = NeutralRangeReductionMode.BT2390;
-                    }
-                    else if (selectedTonemappingIndex == 2)
-                    {
-                        tonemapping.mode.value = TonemappingMode.ACES;
-                        tonemapping.acesPreset.value = HDRACESPreset.ACES1000Nits;
-                    }
-                    else if (selectedTonemappingIndex == 3)
-                    {
-                        tonemapping.mode.value = TonemappingMode.ACES;
-                        tonemapping.acesPreset.value = HDRACESPreset.ACES2000Nits;
-                    }
-                    else if (selectedTonemappingIndex == 4)
-                    {
-                        tonemapping.mode.value = TonemappingMode.ACES;
-                        tonemapping.acesPreset.value = HDRACESPreset.ACES4000Nits;
-                    }
-
-                    appliedTonemappingIndex = selectedTonemappingIndex;
+                    bloom.active = false;
                 }
+                else
+                {
+                    bloom.active = true;
+
+                    if (selectedBloomIndex == 1)
+                    {
+                        bloom.quality.value = (int)ScalableSettingLevelParameter.Level.Low;
+                    }
+                    else if (selectedBloomIndex == 2)
+                    {
+                        bloom.quality.value = (int)ScalableSettingLevelParameter.Level.Medium;
+                    }
+                    else if (selectedBloomIndex == 3)
+                    {
+                        bloom.quality.value = (int)ScalableSettingLevelParameter.Level.High;
+                    }
+                    //Debug.Log("Bloom Quality Set to: " + (ScalableSettingLevelParameter.Level)bloom.quality.value);
+                }
+            }
+
+            if (selectedHDR)
+            {
+                gameManager.scripts.cameraManager.mainCamera.allowHDR = true;
+            }
+            else
+            {
+                gameManager.scripts.cameraManager.mainCamera.allowHDR = false;
+            }
+
+            SetAnsio(null, true);
+
+            if (tonemapping)
+            {
+                if (selectedTonemappingIndex == 0)
+                {
+                    tonemapping.mode.value = TonemappingMode.Neutral;
+                    tonemapping.neutralHDRRangeReductionMode.value = NeutralRangeReductionMode.Reinhard;
+                }
+                else if (selectedTonemappingIndex == 1)
+                {
+                    tonemapping.mode.value = TonemappingMode.Neutral;
+                    tonemapping.neutralHDRRangeReductionMode.value = NeutralRangeReductionMode.BT2390;
+                }
+                else if (selectedTonemappingIndex == 2)
+                {
+                    tonemapping.mode.value = TonemappingMode.ACES;
+                    tonemapping.acesPreset.value = HDRACESPreset.ACES1000Nits;
+                }
+                else if (selectedTonemappingIndex == 3)
+                {
+                    tonemapping.mode.value = TonemappingMode.ACES;
+                    tonemapping.acesPreset.value = HDRACESPreset.ACES2000Nits;
+                }
+                else if (selectedTonemappingIndex == 4)
+                {
+                    tonemapping.mode.value = TonemappingMode.ACES;
+                    tonemapping.acesPreset.value = HDRACESPreset.ACES4000Nits;
+                }
+
+            }
+
+            if (globalIllumination)
+            {
+                if (selectedGlobalIlluminationIndex == 0)
+                {
+                    globalIllumination.active = false;
+                    globalIllumination.enable.value = false;
+                }
+                else if (selectedGlobalIlluminationIndex == 1)
+                {
+                    globalIllumination.active = true;
+                    globalIllumination.enable.value = true;
+                    globalIllumination.quality.value = (int)ScalableSettingLevelParameter.Level.Low;
+                    globalIllumination.tracing.value = RayCastingMode.RayMarching;
+                }
+                else if (selectedGlobalIlluminationIndex == 2)
+                {
+                    globalIllumination.active = true;
+                    globalIllumination.enable.value = true;
+                    globalIllumination.quality.value = (int)ScalableSettingLevelParameter.Level.Medium;
+                    globalIllumination.tracing.value = RayCastingMode.RayMarching;
+                }
+                else if (selectedGlobalIlluminationIndex == 3)
+                {
+                    globalIllumination.active = true;
+                    globalIllumination.enable.value = true;
+                    globalIllumination.quality.value = (int)ScalableSettingLevelParameter.Level.High;
+                    globalIllumination.tracing.value = RayCastingMode.RayMarching;
+                }
+                else if (selectedGlobalIlluminationIndex == 4)
+                {
+                    globalIllumination.active = true;
+                    globalIllumination.enable.value = true;
+                    globalIllumination.quality.value = (int)ScalableSettingLevelParameter.Level.Low;
+                    
+                    if (!rayTracingSupported)
+                    {
+                        rayMode = RayCastingMode.RayMarching;
+                        selectedGlobalIlluminationIndex = 1;
+                        gameManager.scripts.uiManager.giDropdown.value = selectedGlobalIlluminationIndex;
+                        globalIllumination.tracing.value = rayMode;
+                    }
+                    else
+                    {
+                        rayMode = RayCastingMode.RayTracing;
+                        globalIllumination.tracing.value = rayMode;
+                    }   
+                }
+                else if (selectedGlobalIlluminationIndex == 5)
+                {
+                    globalIllumination.active = true;
+                    globalIllumination.enable.value = true;
+                    globalIllumination.quality.value = (int)ScalableSettingLevelParameter.Level.Medium;
+
+                    if (!rayTracingSupported)
+                    {
+                        rayMode = RayCastingMode.RayMarching;
+                        selectedGlobalIlluminationIndex = 2;
+                        gameManager.scripts.uiManager.giDropdown.value = selectedGlobalIlluminationIndex;
+                        globalIllumination.tracing.value = rayMode;
+                    }
+                    else
+                    {
+                        rayMode = RayCastingMode.RayTracing;
+                        globalIllumination.tracing.value = rayMode;
+                    }
+                }
+                else if (selectedGlobalIlluminationIndex == 6)
+                {
+                    globalIllumination.active = true;
+                    globalIllumination.enable.value = true;
+                    globalIllumination.quality.value = (int)ScalableSettingLevelParameter.Level.High;
+
+                    if (!rayTracingSupported)
+                    {
+                        rayMode = RayCastingMode.RayMarching;
+                        selectedGlobalIlluminationIndex = 3;
+                        gameManager.scripts.uiManager.giDropdown.value = selectedGlobalIlluminationIndex;
+                        globalIllumination.tracing.value = rayMode;
+                    }
+                    else
+                    {
+                        rayMode = RayCastingMode.RayTracing;
+                        globalIllumination.tracing.value = rayMode;
+                    }
+                }
+            }
+
+            if (requiresTimedConfirmation)
+            {
+                // ACTIVATE UI
+                requiresTimedConfirmationTimer -= Time.deltaTime;
+
+                if (requiresTimedConfirmationTimer <= 0)
+                {
+                    RevertChanges();
+                    requiresTimedConfirmationTimer = 24f;
+                }
+                Utils.ActivateObject(gameManager.scripts.uiManager.confirmOptionsChanges);
+            }
+            else
+            {
+                ApplySettingsPermanent();
+                requiresTimedConfirmationTimer = 24f;
             }
         }
     }
-    
-    void RevertChanges()
-    {
+    public void ApplySettingsPermanent()
+    {        
+        if (selectedAutosaves)
+        {
+            appliedAutosaves = true;
+        }
+        else
+        {
+            appliedAutosaves = false;
+        }
 
+        appliedMaximumAutosaves = selectedMaximumAutosaves;
+        appliedMaximumQuicksaves = selectedMaximumQuicksaves;
+
+        if (selectedGore)
+        {
+            appliedGore = true;
+        }
+        else
+        {
+            appliedGore = false;
+        }
+
+        appliedResolutionIndex = selectedResolutionIndex;
+        appliedDisplayModeIndex = selectedDisplayModeIndex;
+        appliedQualityAssetIndex = selectedQualityAssetIndex;
+        appliedVsyncIndex = selectedVsyncIndex;
+        appliedFrameRateCap = selectedFrameRateCap;
+        appliedFrameRateCapValue = selectedFrameRateCapValue;
+        appliedAntiAliasIndex = selectedAntiAliasIndex;
+        appliedFogIndex = selectedFogIndex;
+        appliedFOV = selectedFOV;
+        appliedBloomIndex = selectedBloomIndex;
+        appliedHDR = selectedHDR;
+        appliedAnsioIndex = selectedAnsioIndex;
+        appliedTonemappingIndex = selectedTonemappingIndex;
+
+        appliedMasterVolume = selectedMasterVolume;
+        appliedMusicVolume = selectedMusicVolume;
+        appliedAmbientVolume = selectedAmbientVolume;
+        appliedSfxVolume = selectedSfxVolume;
+        appliedUiVolume = selectedUiVolume;
+        appliedVoiceVolume = selectedVoiceVolume;
+        appliedEventVolume = selectedEventVolume;
+
+        requiresTimedConfirmation = false;
+        Utils.DeActivateObject(gameManager.scripts.uiManager.confirmOptionsChanges);
+    }
+    public void RevertChanges()
+    {
+        // SELECTED = APPLIED
+        // UPDATE UI
+
+        requiresTimedConfirmation = false;
+        Utils.DeActivateObject(gameManager.scripts.uiManager.confirmOptionsChanges);
     }
     
 
@@ -441,6 +615,8 @@ public class OptionsManager : MonoBehaviour
     }
     void DetectDisplays()
     {
+        lastDisplayCount = Display.displays.Length;// DISPLAY DEVICE
+        rayTracingSupported = SystemInfo.supportsRayTracing;
         selectedDisplayIndex = 0;
         gameManager.scripts.uiManager.displayDevicesDropdown.ClearOptions();// Clear existing options
 
@@ -464,6 +640,11 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.displayDevicesDropdown.onValueChanged.AddListener(PopulateResolutionsDropdown);
         gameManager.scripts.uiManager.displayDevicesDropdown.onValueChanged.AddListener(OnDisplayDeviceChanged);
         //OptionsModifiedValueCheck(null, false, null, 0, gameManager.scripts.uiManager.displayDevicesDropdown, appliedDisplayIndex, ref gameManager.scripts.uiManager.resolutionsModifiedGameobject);// ACTIVATE VALUE MODIFIED IMAGE
+    }
+    void PopulateDisplayAdapter()
+    {
+        gpuName = SystemInfo.graphicsDeviceName;// DISPLAY ADAPTER
+        gameManager.scripts.uiManager.gpuName.text = gpuName;// DISPLAY ADAPTER
     }
     void PopulateResolutionsDropdown(int displayIndex)
     {
@@ -623,6 +804,7 @@ public class OptionsManager : MonoBehaviour
     }
     void PopulateQualityDropdown()
     {
+        appliedHDRPAsset = QualitySettings.renderPipeline as HDRenderPipelineAsset;
         selectedQualityAssetIndex = 1;
         gameManager.scripts.uiManager.qualityDropdown.ClearOptions();
 
@@ -698,7 +880,7 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.bloomDropdown.RefreshShownValue();
     }
     void PopulateHDR()
-    {
+    {        
         selectedHDR = false;
         gameManager.scripts.uiManager.hdrToggle.isOn = false;
         gameManager.scripts.uiManager.hdrToggle.onValueChanged.RemoveAllListeners();
@@ -737,8 +919,8 @@ public class OptionsManager : MonoBehaviour
         desiredList.Clear();
         desiredList = new List<string>
         {            
-            "Neutral Reinhard",
-            "Neutral BT2390",
+            "Reinhard",
+            "BT2390",
             "ACES 1000",
             "ACES 2000",
             "ACES 4000"
@@ -752,9 +934,9 @@ public class OptionsManager : MonoBehaviour
     }
     void PopulateGlobalIlluminationDropdown()
     {
-        if (postProcess.profile.TryGet(out globalIllumination)) { }
-
-        selectedGlobalIlluminationIndex = 1;
+        if (postProcess.profile.TryGet(out globalIllumination)){}
+        
+        selectedGlobalIlluminationIndex = 2;
         gameManager.scripts.uiManager.giDropdown.ClearOptions();
 
         desiredList.Clear();
@@ -763,14 +945,26 @@ public class OptionsManager : MonoBehaviour
             "Realtime",
             "SSGI Low",
             "SSGI Medium",
-            "SSGI High"
+            "SSGI High",
+            "RTGI Low",
+            "RTGI Medium",
+            "RTGI High"
         };
         gameManager.scripts.uiManager.giDropdown.AddOptions(desiredList);
 
-        gameManager.scripts.uiManager.giDropdown.value = selectedTonemappingIndex;
+        gameManager.scripts.uiManager.giDropdown.value = selectedGlobalIlluminationIndex;
         gameManager.scripts.uiManager.giDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.giDropdown.onValueChanged.AddListener(OnGlobalIlluminationChanged);
         gameManager.scripts.uiManager.giDropdown.RefreshShownValue();
+
+        /*if (rayTracingSupported)
+        {
+            Debug.Log("Ray Tracing is supported, Ray Tracing available.");
+        }
+        else
+        {
+            Debug.Log("Ray Tracing is not supported, defaulting to Ray Marching.");
+        }*/
     }
 
     void PopulateAudioSliders()
@@ -920,6 +1114,36 @@ public class OptionsManager : MonoBehaviour
         }
         //ACTIVATE MODIFIED VALUE BUTTON
     }
+
+    public void VideoPage1()
+    {
+        Utils.DeActivateObject(gameManager.scripts.uiManager.optionsVideoPage2);
+        Utils.DeActivateObject(gameManager.scripts.uiManager.optionsVideoPage2Tab);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsVideoPage1Tab);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsVideoPage1);
+    }
+    public void VideoPage2()
+    {
+        Utils.DeActivateObject(gameManager.scripts.uiManager.optionsVideoPage1);
+        Utils.DeActivateObject(gameManager.scripts.uiManager.optionsVideoPage1Tab);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsVideoPage2Tab);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsVideoPage2);
+    }
+    public void VideoPageIncrease()
+    {
+        if (gameManager.scripts.uiManager.optionsVideoPage1.activeSelf)
+        {
+            VideoPage2();
+        }
+    }
+    public void VideoPageDecrease()
+    {
+        if (gameManager.scripts.uiManager.optionsVideoPage2.activeSelf)
+        {
+            VideoPage1();
+        }
+    }
+
 
     IEnumerator RuntimeMonitorDisplays()
     {
@@ -1529,6 +1753,16 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDescClear;
         gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
     }
+    public void OnPageIncreaseHover()
+    {
+        gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsNextPage;
+        gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+    public void OnPageDecreaseHover()
+    {
+        gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsPreviousPage;
+        gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
 
     public void OnAutosavesHover()
     {
@@ -1591,6 +1825,7 @@ public class OptionsManager : MonoBehaviour
     public void OnVolumetricFogHover()
     {
         gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsVolumetricFogDesc;
+        gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsVolumetricFogDescAdditional;
     }
     public void OnFOVHover()
     {
@@ -1600,6 +1835,7 @@ public class OptionsManager : MonoBehaviour
     public void OnBloomHover()
     {
         gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsBloomDesc;
+        gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsBloomDescAdditional;
     }
     public void OnHDRHover()
     {
@@ -1609,11 +1845,30 @@ public class OptionsManager : MonoBehaviour
     public void OnAnsioHover()
     {
         gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsAnsioDesc;
+        gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsAnsioDescAdditional;
     }
     public void OnTonemappingHover()
     {
         gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsTonemappingDesc;
         gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsTonemappingDescAdditional;
+    }
+    public void OnGlobalIlluminationHover()
+    {
+        gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDesc;
+        gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDescAdditional;
+    }
+    public void OnGlobalIlluminationInfoHover()
+    {
+        gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDesc;
+
+        if (rayTracingSupported)
+        {
+            gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDescAdditional3;
+        }
+        else
+        {
+            gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDescAdditional2;
+        }
     }
 }
 
