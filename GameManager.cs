@@ -18,7 +18,17 @@ public class GameManager : MonoBehaviour
     [Header("---- Game States ----------------------------------------------------")]
     public bool splashScreen;
     public bool inMainMenu;
+    [Space(10)]
     public bool inOptionsMenu;
+    [Space(5)]
+    public bool inOptionsGameplayMenu;    
+    public bool inOptionsAudioMenu;
+    public bool inOptionsKeyboardMenu;
+    public bool inOptionsGamepadMenu;
+    public bool inOptionsInterfaceMenu;
+    public bool inOptionsAccessibilityMenu;
+    public bool inOptionsVideoMenu;
+    public bool inOptionsVideoMenu2;
 
     /*  Muscle(Strength)
         Awareness(Perception)

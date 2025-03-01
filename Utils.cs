@@ -424,19 +424,21 @@ public static class Utils
         }
     }
     
-    public static void ActivateObject(GameObject gameObject)
+    public static void ActivateObject(GameObject gameObject, bool activate)
     {
-        if (!gameObject.activeSelf)
+        if (activate)
         {
-            gameObject.SetActive(true);
+            if (!gameObject.activeSelf)
+            {
+                gameObject.SetActive(true);
+            }
         }
-    }
-
-    public static void DeActivateObject(GameObject gameObject)
-    {
-        if (gameObject.activeSelf)
+        else
         {
-            gameObject.SetActive(false);
+            if (gameObject.activeSelf)
+            {
+                gameObject.SetActive(false);
+            }
         }
     }
 

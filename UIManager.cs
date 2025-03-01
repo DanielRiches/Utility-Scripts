@@ -6,87 +6,131 @@ using UnityEngine.UI;
 public class UIManager : MonoBehaviour
 {
     GameManager gameManager;
-    [SerializeField] public GameObject mainMenu;
+    public GameObject mainMenu;
     [Header("---- Options ----------------------------------------------------")]
-    [SerializeField] public GameObject optionsMenu;
-    [SerializeField] public GameObject optionsGameplayMenu;
-    [SerializeField] public GameObject optionsVideoMenu;
-    [SerializeField] public GameObject optionsAudioMenu;
-    [SerializeField] public GameObject optionsKeyboardMenu;
-    [SerializeField] public GameObject optionsGamepadMenu;
-    [SerializeField] public GameObject optionsInterfaceMenu;
-    [SerializeField] public GameObject optionsAccessibilityMenu;
+    public GameObject optionsMenu;
+    public GameObject optionsGameplayMenu;
+    public GameObject optionsVideoMenu;
+    public GameObject optionsAudioMenu;
+    public GameObject optionsKeyboardMenu;
+    public GameObject optionsGamepadMenu;
+    public GameObject optionsInterfaceMenu;
+    public GameObject optionsAccessibilityMenu;
     [Space(10)]
     public TextMeshProUGUI confirmOptionsChangesTimerText;// ACCESSED BY OPTIONS
-    [SerializeField] public GameObject confirmOptionsChanges;
+    public GameObject confirmOptionsChanges;
     [Space(10)]
     public TextMeshProUGUI optionsDescription;// ACCESSED BY OPTIONS
     public TextMeshProUGUI optionsDescriptionAdditional;// ACCESSED BY OPTIONS
     [Header("---- Gameplay ----")]
-    [SerializeField] public GameObject gameplayButton;
+    public GameObject gameplayButton;
+    [Space(5)]
     public Toggle autosavesToggle;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI maximumAutosavesSliderText;// ACCESSED BY OPTIONS
     public Slider maximumAutosavesSlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI maximumQuicksavesSliderText;// ACCESSED BY OPTIONS
     public Slider maximumQuicksavesSlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public Toggle goreToggle;// ACCESSED BY OPTIONS
     [Header("---- Video ----")]
-    [SerializeField] public GameObject optionsVideoPage1;
-    [SerializeField] public GameObject optionsVideoPage1Tab;
-    [SerializeField] public GameObject optionsVideoPage2;
-    [SerializeField] public GameObject optionsVideoPage2Tab;
+    public GameObject optionsVideoPage1;
+    public GameObject optionsVideoPage1Tab;
+    [Space(5)]
+    public GameObject optionsVideoPage2;
+    public GameObject optionsVideoPage2Tab;
+    [Space(5)]
     public TextMeshProUGUI gpuName;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TMP_Dropdown displayDevicesDropdown;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TMP_Dropdown resolutionsDropdown;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TMP_Dropdown displayModeDropdown;// ACCESSED BY OPTIONS
+    [Space(5)]
+    public GameObject framerateCapEffect;
     public TextMeshProUGUI frameRateCapSliderText;// ACCESSED BY OPTIONS
     public Toggle frameRateCapToggle;// ACCESSED BY OPTIONS
     public Slider frameRateCapSlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TMP_Dropdown vSyncDropdown;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TMP_Dropdown qualityDropdown;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TMP_Dropdown antiAliasDropdown;// ACCESSED BY OPTIONS    
+    public TMP_Dropdown taaQualityDropdown;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TMP_Dropdown fogDropdown;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI fovSliderText;// ACCESSED BY OPTIONS
     public Slider fovSlider;// ACCESSED BY OPTIONS
+    [Space(5)]
+    public TextMeshProUGUI renderDistanceSliderText;// ACCESSED BY OPTIONS
+    public Slider renderDistanceSlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TMP_Dropdown bloomDropdown;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TMP_Dropdown ansioDropdown;// ACCESSED BY OPTIONS
+    [Space(5)]
     public Toggle hdrToggle;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TMP_Dropdown tonemappingDropdown;// ACCESSED BY OPTIONS
+    [Space(5)]
+    public GameObject globalIlluminationEffect;
     public TMP_Dropdown giDropdown;// ACCESSED BY OPTIONS
+    public GameObject giCandleImage;// ACCESSED BY OPTIONS
+    public Toggle giResolutionToggle;// ACCESSED BY OPTIONS
+    [Space(5)]
+    public GameObject planarReflectionEffect;
+    public TMP_Dropdown reflectionsDropdown;// ACCESSED BY OPTIONS
+    public Toggle planarReflectionsToggle;// ACCESSED BY OPTIONS
     [Header("---- Audio ----")]
     public TextMeshProUGUI audioMasterNumberText;// ACCESSED BY OPTIONS
     public Slider audioMasterSlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI audioMusicNumberText;// ACCESSED BY OPTIONS
     public Slider audioMusicSlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI audioAmbientNumberText;// ACCESSED BY OPTIONS
     public Slider audioAmbientSlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI audioSFXNumberText;// ACCESSED BY OPTIONS
     public Slider audioSFXSlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI audioUINumberText;// ACCESSED BY OPTIONS
     public Slider audioUISlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI audioVoiceNumberText;// ACCESSED BY OPTIONS
     public Slider audioVoiceSlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI audioEventNumberText;// ACCESSED BY OPTIONS
     public Slider audioEventSlider;// ACCESSED BY OPTIONS
     [Header("---- Keyboard ----")]
     public TextMeshProUGUI cameraZoomSensitivitySliderText;// ACCESSED BY OPTIONS
     public Slider cameraZoomSensitivitySlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI cameraMoveSensitivitySliderText;// ACCESSED BY OPTIONS
     public Slider cameraMoveSensitivitySlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI cameraPanSensitivitySliderText;// ACCESSED BY OPTIONS
     public Slider cameraPanSensitivitySlider;// ACCESSED BY OPTIONS
     [Header("---- Gamepad ----")]
     public TextMeshProUGUI cameraGamepadZoomSensitivitySliderText;// ACCESSED BY OPTIONS
     public Slider cameraGamepadZoomSensitivitySlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI cameraGamepadMoveSensitivitySliderText;// ACCESSED BY OPTIONS
     public Slider cameraGamepadMoveSensitivitySlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI cameraGamepadPanSensitivitySliderText;// ACCESSED BY OPTIONS
     public Slider cameraGamepadPanSensitivitySlider;// ACCESSED BY OPTIONS
-
+    [Space(5)]
     public TextMeshProUGUI cameraGamepadZoomDeadzoneSliderText;// ACCESSED BY OPTIONS
     public Slider cameraGamepadZoomDeadzoneSlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI cameraGamepadMoveDeadzoneSliderText;// ACCESSED BY OPTIONS
     public Slider cameraGamepadMoveDeadzoneSlider;// ACCESSED BY OPTIONS
+    [Space(5)]
     public TextMeshProUGUI cameraGamepadPanDeadzoneSliderText;// ACCESSED BY OPTIONS
     public Slider cameraGamepadPanDeadzoneSlider;// ACCESSED BY OPTIONS
 
@@ -99,100 +143,163 @@ public class UIManager : MonoBehaviour
     public void ClickedOptions()
     {
         EventSystem.current.SetSelectedGameObject(gameplayButton);
-        Utils.DeActivateObject(mainMenu);
+        Utils.ActivateObject(mainMenu, false);
         gameManager.scripts.uiManager.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDescInitial;
         gameManager.scripts.uiManager.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescInitialAdditional;
-        Utils.ActivateObject(optionsMenu);        
+        Utils.ActivateObject(optionsMenu, true);        
     }
     public void ExitOptions()
     {        
-        Utils.DeActivateObject(optionsVideoMenu);
-        Utils.DeActivateObject(optionsAudioMenu);
-        Utils.DeActivateObject(optionsKeyboardMenu);
-        Utils.DeActivateObject(optionsGamepadMenu);
-        Utils.DeActivateObject(optionsInterfaceMenu);
-        Utils.DeActivateObject(optionsAccessibilityMenu);
+        Utils.ActivateObject(optionsVideoMenu, false);
+        Utils.ActivateObject(optionsAudioMenu, false);
+        Utils.ActivateObject(optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsInterfaceMenu, false);
+        Utils.ActivateObject(optionsAccessibilityMenu, false);
+        gameManager.inOptionsGameplayMenu = false;
+        gameManager.inOptionsVideoMenu = false;
+        gameManager.inOptionsAudioMenu = false;
+        gameManager.inOptionsKeyboardMenu = false;
+        gameManager.inOptionsGamepadMenu = false;
+        gameManager.inOptionsInterfaceMenu = false;
+        gameManager.inOptionsAccessibilityMenu = false;
 
-        Utils.ActivateObject(optionsGameplayMenu);
-        Utils.DeActivateObject(optionsMenu);
-        Utils.ActivateObject(mainMenu);
+        Utils.ActivateObject(optionsGameplayMenu, true);
+        Utils.ActivateObject(optionsMenu, false);
+        gameManager.inOptionsMenu = false;
+        Utils.ActivateObject(mainMenu, true);
     }
 
     public void ClickedGameplayOptions()
     {
-        Utils.DeActivateObject(optionsVideoMenu);
-        Utils.DeActivateObject(optionsAudioMenu);
-        Utils.DeActivateObject(optionsKeyboardMenu);
-        Utils.DeActivateObject(optionsGamepadMenu);
-        Utils.DeActivateObject(optionsInterfaceMenu);
-        Utils.DeActivateObject(optionsAccessibilityMenu);
-        Utils.ActivateObject(optionsGameplayMenu);
+        Utils.ActivateObject(optionsVideoMenu, false);        
+        Utils.ActivateObject(optionsAudioMenu, false);        
+        Utils.ActivateObject(optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsInterfaceMenu, false);
+        Utils.ActivateObject(optionsAccessibilityMenu, false);
+        gameManager.inOptionsVideoMenu = false;
+        gameManager.inOptionsAudioMenu = false;
+        gameManager.inOptionsKeyboardMenu = false;
+        gameManager.inOptionsGamepadMenu = false;
+        gameManager.inOptionsInterfaceMenu = false;
+        gameManager.inOptionsAccessibilityMenu = false;
+
+        Utils.ActivateObject(optionsGameplayMenu, true);
+        gameManager.inOptionsGameplayMenu = true;
     }
     public void ClickedVideoOptions()
     {
-        Utils.DeActivateObject(optionsGameplayMenu);
-        Utils.DeActivateObject(optionsAudioMenu);
-        Utils.DeActivateObject(optionsKeyboardMenu);
-        Utils.DeActivateObject(optionsGamepadMenu);
-        Utils.DeActivateObject(optionsAccessibilityMenu);
-        Utils.DeActivateObject(optionsVideoPage2);
-        Utils.DeActivateObject(optionsVideoPage2Tab);
+        Utils.ActivateObject(optionsGameplayMenu, false);
+        Utils.ActivateObject(optionsAudioMenu, false);
+        Utils.ActivateObject(optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsAccessibilityMenu, false);
+        Utils.ActivateObject(optionsVideoPage2, false);
+        Utils.ActivateObject(optionsVideoPage2Tab, false);
+        gameManager.inOptionsGameplayMenu = false;        
+        gameManager.inOptionsAudioMenu = false;
+        gameManager.inOptionsKeyboardMenu = false;
+        gameManager.inOptionsGamepadMenu = false;
+        gameManager.inOptionsInterfaceMenu = false;
+        gameManager.inOptionsAccessibilityMenu = false;
 
-        Utils.ActivateObject(optionsVideoPage1Tab);
-        Utils.ActivateObject(optionsVideoPage1);        
-        Utils.ActivateObject(optionsVideoMenu);
+        Utils.ActivateObject(optionsVideoPage1Tab, true);
+        Utils.ActivateObject(optionsVideoPage1, true);        
+        Utils.ActivateObject(optionsVideoMenu, true);
+        gameManager.inOptionsVideoMenu = true;
     }
 
     public void ClickedAudioOptions()
     {
-        Utils.DeActivateObject(optionsGameplayMenu);
-        Utils.DeActivateObject(optionsVideoMenu);
-        Utils.DeActivateObject(optionsKeyboardMenu);
-        Utils.DeActivateObject(optionsGamepadMenu);
-        Utils.DeActivateObject(optionsInterfaceMenu);
-        Utils.DeActivateObject(optionsAccessibilityMenu);
-        Utils.ActivateObject(optionsAudioMenu);
+        Utils.ActivateObject(optionsGameplayMenu, false);
+        Utils.ActivateObject(optionsVideoMenu, false);
+        Utils.ActivateObject(optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsInterfaceMenu, false);
+        Utils.ActivateObject(optionsAccessibilityMenu, false);
+        gameManager.inOptionsGameplayMenu = false;
+        gameManager.inOptionsVideoMenu = false;        
+        gameManager.inOptionsKeyboardMenu = false;
+        gameManager.inOptionsGamepadMenu = false;
+        gameManager.inOptionsInterfaceMenu = false;
+        gameManager.inOptionsAccessibilityMenu = false;
+
+        Utils.ActivateObject(optionsAudioMenu, true);
+        gameManager.inOptionsAudioMenu = true;
     }
     public void ClickedKeyboardOptions()
     {
-        Utils.DeActivateObject(optionsGameplayMenu);
-        Utils.DeActivateObject(optionsVideoMenu);
-        Utils.DeActivateObject(optionsAudioMenu);
-        Utils.DeActivateObject(optionsGamepadMenu);
-        Utils.DeActivateObject(optionsInterfaceMenu);
-        Utils.DeActivateObject(optionsAccessibilityMenu);
-        Utils.ActivateObject(optionsKeyboardMenu);
+        Utils.ActivateObject(optionsGameplayMenu, false);
+        Utils.ActivateObject(optionsVideoMenu, false);
+        Utils.ActivateObject(optionsAudioMenu, false);
+        Utils.ActivateObject(optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsInterfaceMenu, false);
+        Utils.ActivateObject(optionsAccessibilityMenu, false);
+        gameManager.inOptionsGameplayMenu = false;
+        gameManager.inOptionsVideoMenu = false;
+        gameManager.inOptionsAudioMenu = false;        
+        gameManager.inOptionsGamepadMenu = false;
+        gameManager.inOptionsInterfaceMenu = false;
+        gameManager.inOptionsAccessibilityMenu = false;
+
+        Utils.ActivateObject(optionsKeyboardMenu, true);
+        gameManager.inOptionsKeyboardMenu = true;
     }
     public void ClickedGamepadOptions()
     {
-        Utils.DeActivateObject(optionsGameplayMenu);
-        Utils.DeActivateObject(optionsVideoMenu);
-        Utils.DeActivateObject(optionsAudioMenu);
-        Utils.DeActivateObject(optionsKeyboardMenu);
-        Utils.DeActivateObject(optionsInterfaceMenu);
-        Utils.DeActivateObject(optionsAccessibilityMenu);
-        Utils.ActivateObject(optionsGamepadMenu);
+        Utils.ActivateObject(optionsGameplayMenu, false);
+        Utils.ActivateObject(optionsVideoMenu, false);
+        Utils.ActivateObject(optionsAudioMenu, false);
+        Utils.ActivateObject(optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsInterfaceMenu, false);
+        Utils.ActivateObject(optionsAccessibilityMenu, false);
+        gameManager.inOptionsGameplayMenu = false;
+        gameManager.inOptionsVideoMenu = false;
+        gameManager.inOptionsAudioMenu = false;
+        gameManager.inOptionsKeyboardMenu = false;        
+        gameManager.inOptionsInterfaceMenu = false;
+        gameManager.inOptionsAccessibilityMenu = false;
+
+        Utils.ActivateObject(optionsGamepadMenu, true);
+        gameManager.inOptionsGamepadMenu = true;
     }
 
     public void ClickedInterfaceOptions()
     {
-        Utils.DeActivateObject(optionsGameplayMenu);
-        Utils.DeActivateObject(optionsVideoMenu);
-        Utils.DeActivateObject(optionsAudioMenu);
-        Utils.DeActivateObject(optionsKeyboardMenu);
-        Utils.DeActivateObject(optionsGamepadMenu);
-        Utils.DeActivateObject(optionsAccessibilityMenu);
-        Utils.ActivateObject(optionsInterfaceMenu);
+        Utils.ActivateObject(optionsGameplayMenu, false);
+        Utils.ActivateObject(optionsVideoMenu, false);
+        Utils.ActivateObject(optionsAudioMenu, false);
+        Utils.ActivateObject(optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsAccessibilityMenu, false);
+        gameManager.inOptionsGameplayMenu = false;
+        gameManager.inOptionsVideoMenu = false;
+        gameManager.inOptionsAudioMenu = false;
+        gameManager.inOptionsKeyboardMenu = false;
+        gameManager.inOptionsGamepadMenu = false;        
+        gameManager.inOptionsAccessibilityMenu = false;
+
+        Utils.ActivateObject(optionsInterfaceMenu, true);
+        gameManager.inOptionsInterfaceMenu = true;
     }
 
     public void ClickedAccessibilityOptions()
     {
-        Utils.DeActivateObject(optionsGameplayMenu);
-        Utils.DeActivateObject(optionsVideoMenu);
-        Utils.DeActivateObject(optionsAudioMenu);
-        Utils.DeActivateObject(optionsKeyboardMenu);
-        Utils.DeActivateObject(optionsGamepadMenu);
-        Utils.DeActivateObject(optionsInterfaceMenu);
-        Utils.ActivateObject(optionsAccessibilityMenu);
+        Utils.ActivateObject(optionsGameplayMenu, false);
+        Utils.ActivateObject(optionsVideoMenu, false);
+        Utils.ActivateObject(optionsAudioMenu, false);
+        Utils.ActivateObject(optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsInterfaceMenu, false);
+        gameManager.inOptionsGameplayMenu = false;
+        gameManager.inOptionsVideoMenu = false;
+        gameManager.inOptionsAudioMenu = false;
+        gameManager.inOptionsKeyboardMenu = false;
+        gameManager.inOptionsGamepadMenu = false;
+        gameManager.inOptionsInterfaceMenu = false;        
+
+        Utils.ActivateObject(optionsAccessibilityMenu, true);
+        gameManager.inOptionsAccessibilityMenu = true;
     }
 }
