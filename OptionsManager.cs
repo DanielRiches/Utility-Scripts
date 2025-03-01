@@ -20,7 +20,7 @@ public class OptionsManager : MonoBehaviour
     [SerializeField] private Tonemapping tonemapping;
     [SerializeField] private GlobalIllumination globalIllumination;
     [SerializeField] private ScreenSpaceReflection reflections;
-    //[SerializeField] private HDAdditionalReflectionData planarReflection;
+    //[SerializeField] private HDAdditionalReflectionData planarReflection; // possibly needed to determine Planar Reflection resolution based on camera distance at runtime
     private string gpuName;// Graphics card name.
     Display[] displays;// To help automatically detect if someone connects another display.
     FullScreenMode screenMode;
@@ -33,18 +33,17 @@ public class OptionsManager : MonoBehaviour
     RayCastingMode rayMode;
     bool rayTracingSupported;
     TimeSpan timeSpan; // for keep settings timer
-
+    [HideInInspector] public List<string> desiredList;// ACCESSED BY POPULATE METHODS BELOW
     [Header("---- SELECTED ----------------------------------------------------")]
-    public List<string> desiredList;// ACCESSED BY POPULATE METHODS BELOW
+    [SerializeField] private bool requiresTimedConfirmation;
+    [SerializeField] private float requiresTimedConfirmationTimer = 25;
+    [Space(5)]
     [Header("Gameplay")]
     [SerializeField] private bool selectedAutosaves;
     [SerializeField] private int selectedMaximumAutosaves;
     [SerializeField] private int selectedMaximumQuicksaves;
     [SerializeField] private bool selectedGore;
-    [Header("Video")]
-    [SerializeField] private bool requiresTimedConfirmation;
-    [SerializeField] private float requiresTimedConfirmationTimer = 25;
-    [Space(10)]
+    [Header("Video")]    
     [SerializeField] private int selectedDisplayIndex;
     [SerializeField] private int selectedResolutionIndex;
     [SerializeField] private int selectedDisplayModeIndex;
@@ -89,6 +88,7 @@ public class OptionsManager : MonoBehaviour
     public int appliedMaximumAutosaves;
     public int appliedMaximumQuicksaves;
     public bool appliedGore;
+    [Header("Video")]
     public int appliedDisplayIndex;
     public int appliedResolutionIndex;
     public int appliedDisplayModeIndex;
@@ -109,6 +109,7 @@ public class OptionsManager : MonoBehaviour
     public int appliedGlobalIlluminationIndex;
     public int appliedReflectionsIndex;
     public bool appliedPlanarReflections;
+    [Header("Audio")]
     public float appliedMasterVolume;
     public float appliedMusicVolume;
     public float appliedAmbientVolume;
@@ -116,9 +117,11 @@ public class OptionsManager : MonoBehaviour
     public float appliedUiVolume;
     public float appliedVoiceVolume;
     public float appliedEventVolume;
+    [Header("Keyboard")]
     public float appliedCameraZoomSensitivity;
     public float appliedCameraMoveSensitivity;
     public float appliedCameraPanSensitivity;
+    [Header("Gamepad")]
     public float appliedGamepadCameraZoomSensitivity;
     public float appliedGamepadCameraMoveSensitivity;
     public float appliedGamepadCameraPanSensitivity;
@@ -158,8 +161,8 @@ public class OptionsManager : MonoBehaviour
         PopulateMouseSliders();
         PopulateGamepadSliders();
 
+        ApplySettings();
         desiredList.Clear();
-        Utils.ClearMemory();
     }
 
     private void Update()
@@ -189,8 +192,6 @@ public class OptionsManager : MonoBehaviour
         if (Application.isPlaying)
         {
             // GAMEPLAY--------------
-
-
             // VIDEO--------------
             if (selectedDisplayIndex != appliedDisplayIndex)
             {
@@ -211,19 +212,11 @@ public class OptionsManager : MonoBehaviour
                 requiresTimedConfirmation = true;
             }
 
-
-
             if (filteredResolutions.Count > selectedResolutionIndex)
             {
                 selectedResolution = filteredResolutions[selectedResolutionIndex];// Get the chosen resolution from the filtered list
 
-                if (selectedResolutionIndex != appliedResolutionIndex)
-                {
-                    Screen.SetResolution(selectedResolution.width, selectedResolution.height, screenMode, selectedResolution.refreshRateRatio);
-                    //Debug.Log($"Applied resolution: {selectedResolution.width}<color=red>x</color>{selectedResolution.height} {selectedResolution.refreshRateRatio.numerator}/{selectedResolution.refreshRateRatio.denominator}<color=red>Hz</color>");
-                    requiresTimedConfirmation = true;
-                }
-                else if (selectedDisplayModeIndex != appliedDisplayModeIndex)
+                if (selectedResolutionIndex != appliedResolutionIndex || selectedDisplayModeIndex != appliedDisplayModeIndex)
                 {
                     Screen.SetResolution(selectedResolution.width, selectedResolution.height, screenMode, selectedResolution.refreshRateRatio);
                     //Debug.Log($"Applied resolution: {selectedResolution.width}<color=red>x</color>{selectedResolution.height} {selectedResolution.refreshRateRatio.numerator}/{selectedResolution.refreshRateRatio.denominator}<color=red>Hz</color>");
@@ -233,6 +226,11 @@ public class OptionsManager : MonoBehaviour
             else
             {
                 Debug.Log("Tried to switch to a resolution index that doesn't exist.");
+                if (selectedDisplayModeIndex != appliedDisplayModeIndex)// If Display Mode has changed
+                {
+                    Screen.SetResolution(Screen.width, Screen.height, screenMode, selectedResolution.refreshRateRatio);
+                    requiresTimedConfirmation = true;
+                }                
             }
 
             if (selectedVsyncIndex != appliedVsyncIndex)
@@ -682,28 +680,11 @@ public class OptionsManager : MonoBehaviour
         }
     }
     public void ApplySettingsPermanent()
-    {        
-        if (selectedAutosaves)
-        {
-            appliedAutosaves = true;
-        }
-        else
-        {
-            appliedAutosaves = false;
-        }
-
+    {  
+        appliedAutosaves = selectedAutosaves;
         appliedMaximumAutosaves = selectedMaximumAutosaves;
         appliedMaximumQuicksaves = selectedMaximumQuicksaves;
-
-        if (selectedGore)
-        {
-            appliedGore = true;
-        }
-        else
-        {
-            appliedGore = false;
-        }
-
+        appliedGore = selectedGore;
         appliedResolutionIndex = selectedResolutionIndex;
         appliedDisplayModeIndex = selectedDisplayModeIndex;
         appliedQualityAssetIndex = selectedQualityAssetIndex;
@@ -731,17 +712,108 @@ public class OptionsManager : MonoBehaviour
         appliedVoiceVolume = selectedVoiceVolume;
         appliedEventVolume = selectedEventVolume;
 
-        requiresTimedConfirmation = false;
-        Utils.ActivateObject(gameManager.scripts.uiManager.confirmOptionsChanges, false);
-    }
-    public void RevertChanges()
-    {
-        // SELECTED = APPLIED
-        // UPDATE UI
+        appliedCameraZoomSensitivity = selectedCameraZoomSensitivity;
+        appliedCameraMoveSensitivity = selectedCameraMoveSensitivity;
+        appliedCameraPanSensitivity = selectedCameraPanSensitivity;
+        appliedGamepadCameraZoomSensitivity = selectedGamepadCameraZoomSensitivity;
+        appliedGamepadCameraMoveSensitivity = selectedGamepadCameraMoveSensitivity;
+        appliedGamepadCameraPanSensitivity = selectedGamepadCameraPanSensitivity;
+        appliedGamepadCameraZoomDeadzone = selectedGamepadCameraZoomDeadzone;
+        appliedGamepadCameraMoveDeadzone = selectedGamepadCameraMoveDeadzone;
+        appliedGamepadCameraPanDeadzone = selectedGamepadCameraPanDeadzone;        
 
         requiresTimedConfirmation = false;
         Utils.ActivateObject(gameManager.scripts.uiManager.confirmOptionsChanges, false);
-        //ApplySettings();// RE-APPLY PREVIOUS SETTINGS
+        Utils.ClearMemory();
+    }
+    public void RevertChanges()
+    {
+        selectedAutosaves = appliedAutosaves;
+        gameManager.scripts.uiManager.autosavesToggle.isOn = selectedAutosaves;
+        selectedMaximumAutosaves = appliedMaximumAutosaves;
+        gameManager.scripts.uiManager.maximumAutosavesSlider.value = selectedMaximumAutosaves;
+        selectedMaximumQuicksaves = appliedMaximumQuicksaves;
+        gameManager.scripts.uiManager.maximumQuicksavesSlider.value = selectedMaximumQuicksaves;
+        selectedGore = appliedGore;
+
+        gameManager.scripts.uiManager.goreToggle.isOn = selectedGore;
+        selectedResolutionIndex = appliedResolutionIndex;
+        gameManager.scripts.uiManager.resolutionsDropdown.value = selectedResolutionIndex;
+        selectedDisplayModeIndex = appliedDisplayModeIndex;
+        gameManager.scripts.uiManager.displayModeDropdown.value = selectedDisplayModeIndex;
+        selectedQualityAssetIndex = appliedQualityAssetIndex;
+        gameManager.scripts.uiManager.qualityDropdown.value = selectedQualityAssetIndex;
+        selectedVsyncIndex = appliedVsyncIndex;
+        gameManager.scripts.uiManager.vSyncDropdown.value = selectedVsyncIndex;
+        selectedFrameRateCap = appliedFrameRateCap;
+        gameManager.scripts.uiManager.frameRateCapToggle.isOn = selectedFrameRateCap;
+        selectedFrameRateCapValue = appliedFrameRateCapValue;
+        gameManager.scripts.uiManager.frameRateCapSlider.value = selectedFrameRateCapValue;
+        gameManager.scripts.uiManager.frameRateCapSliderText.text = gameManager.scripts.uiManager.frameRateCapSlider.value.ToString();
+        selectedAntiAliasIndex = appliedAntiAliasIndex;
+        gameManager.scripts.uiManager.antiAliasDropdown.value = selectedAntiAliasIndex;
+        selectedTaaQualityIndex = appliedTaaQualityIndex;
+        gameManager.scripts.uiManager.taaQualityDropdown.value = selectedTaaQualityIndex;
+        selectedFogIndex = appliedFogIndex;
+        gameManager.scripts.uiManager.fogDropdown.value = selectedFogIndex;
+        selectedFOV = appliedFOV;
+        gameManager.scripts.uiManager.fovSlider.value = selectedFOV;
+        selectedRenderDistance = appliedRenderDistance;
+        gameManager.scripts.uiManager.renderDistanceSlider.value = selectedRenderDistance;
+        selectedBloomIndex = appliedBloomIndex;
+        gameManager.scripts.uiManager.bloomDropdown.value = selectedBloomIndex;
+        selectedHDR = appliedHDR;
+        gameManager.scripts.uiManager.hdrToggle.isOn = selectedHDR;
+        selectedAnsioIndex = appliedAnsioIndex;
+        gameManager.scripts.uiManager.ansioDropdown.value = selectedAnsioIndex;
+        selectedTonemappingIndex = appliedTonemappingIndex;
+        gameManager.scripts.uiManager.tonemappingDropdown.value = selectedTonemappingIndex;
+        selectedGlobalIlluminationFullRes = appliedGlobalIlluminationFullRes;
+        gameManager.scripts.uiManager.giResolutionToggle.isOn = selectedGlobalIlluminationFullRes;
+        selectedGlobalIlluminationIndex = appliedGlobalIlluminationIndex;
+        gameManager.scripts.uiManager.giDropdown.value = selectedGlobalIlluminationIndex;
+        selectedReflectionsIndex = appliedReflectionsIndex;
+        gameManager.scripts.uiManager.reflectionsDropdown.value = selectedReflectionsIndex;
+        selectedPlanarReflections = appliedPlanarReflections;
+        gameManager.scripts.uiManager.planarReflectionsToggle.isOn = selectedPlanarReflections;
+
+        selectedMasterVolume = appliedMasterVolume;
+        gameManager.scripts.uiManager.audioMasterSlider.value = selectedMasterVolume;
+        selectedMusicVolume = appliedMusicVolume;
+        gameManager.scripts.uiManager.audioMusicSlider.value = selectedMusicVolume;
+        selectedAmbientVolume = appliedAmbientVolume;
+        gameManager.scripts.uiManager.audioAmbientSlider.value = selectedAmbientVolume;
+        selectedSfxVolume = appliedSfxVolume;
+        gameManager.scripts.uiManager.audioSFXSlider.value = selectedSfxVolume;
+        selectedUiVolume = appliedUiVolume;
+        gameManager.scripts.uiManager.audioUISlider.value = selectedUiVolume;
+        selectedVoiceVolume = appliedVoiceVolume;
+        gameManager.scripts.uiManager.audioVoiceSlider.value = selectedVoiceVolume;
+        selectedEventVolume = appliedEventVolume;
+        gameManager.scripts.uiManager.audioEventSlider.value = selectedEventVolume;
+
+        selectedCameraZoomSensitivity = appliedCameraZoomSensitivity;
+        gameManager.scripts.uiManager.cameraZoomSensitivitySlider.value = selectedCameraZoomSensitivity;
+        selectedCameraMoveSensitivity = appliedCameraMoveSensitivity;
+        gameManager.scripts.uiManager.cameraMoveSensitivitySlider.value = selectedCameraMoveSensitivity;
+        selectedCameraPanSensitivity = appliedCameraPanSensitivity;
+        gameManager.scripts.uiManager.cameraPanSensitivitySlider.value = selectedCameraPanSensitivity;
+        selectedGamepadCameraZoomSensitivity = appliedGamepadCameraZoomSensitivity;
+        gameManager.scripts.uiManager.cameraGamepadZoomSensitivitySlider.value = selectedGamepadCameraZoomSensitivity;
+        selectedGamepadCameraMoveSensitivity = appliedGamepadCameraMoveSensitivity;
+        gameManager.scripts.uiManager.cameraGamepadMoveSensitivitySlider.value = selectedGamepadCameraMoveSensitivity;
+        selectedGamepadCameraPanSensitivity = appliedGamepadCameraPanSensitivity;
+        gameManager.scripts.uiManager.cameraGamepadPanSensitivitySlider.value = selectedGamepadCameraPanSensitivity;
+        selectedGamepadCameraZoomDeadzone = appliedGamepadCameraZoomDeadzone;
+        gameManager.scripts.uiManager.cameraGamepadZoomDeadzoneSlider.value = selectedGamepadCameraZoomDeadzone;
+        selectedGamepadCameraMoveDeadzone = appliedGamepadCameraMoveDeadzone;
+        gameManager.scripts.uiManager.cameraGamepadMoveDeadzoneSlider.value = selectedGamepadCameraMoveDeadzone;
+        selectedGamepadCameraPanDeadzone = appliedGamepadCameraPanDeadzone;
+        gameManager.scripts.uiManager.cameraGamepadPanDeadzoneSlider.value = selectedGamepadCameraPanDeadzone;
+
+        requiresTimedConfirmation = false;
+        Utils.ActivateObject(gameManager.scripts.uiManager.confirmOptionsChanges, false);
+        ApplySettings();// RE-APPLY PREVIOUS SETTINGS
     }
     
 
@@ -887,14 +959,15 @@ public class OptionsManager : MonoBehaviour
             "Windowed",
         };
         gameManager.scripts.uiManager.displayModeDropdown.AddOptions(desiredList);
-
+        selectedDisplayModeIndex = 0;
+        gameManager.scripts.uiManager.displayModeDropdown.value = selectedDisplayModeIndex;
         gameManager.scripts.uiManager.displayModeDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.displayModeDropdown.onValueChanged.AddListener(OnDisplayModeChanged);
     }
     void PopulateFrameRateCapSlider()
     {
         selectedFrameRateCap = true;
-        gameManager.scripts.uiManager.frameRateCapToggle.isOn = true;
+        gameManager.scripts.uiManager.frameRateCapToggle.isOn = selectedFrameRateCap;
         gameManager.scripts.uiManager.frameRateCapToggle.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.frameRateCapToggle.onValueChanged.AddListener(OnFrameRateCapToggleChanged);
 
@@ -911,15 +984,15 @@ public class OptionsManager : MonoBehaviour
         refreshRate = (Screen.currentResolution.refreshRateRatio.denominator != 0) ? Screen.currentResolution.refreshRateRatio.numerator / (float)Screen.currentResolution.refreshRateRatio.denominator : 0f;
                      
         if (selectedFrameRateCapValue > refreshRate)
-        {
-            gameManager.scripts.uiManager.frameRateCapSliderText.text = refreshRate.ToString(Strings.numberFormat0);
+        {            
             selectedFrameRateCapValue = (int)refreshRate;
             gameManager.scripts.uiManager.frameRateCapSlider.value = selectedFrameRateCapValue;
+            gameManager.scripts.uiManager.frameRateCapSliderText.text = refreshRate.ToString(Strings.numberFormat0);
         }
         else
-        {
-            gameManager.scripts.uiManager.frameRateCapSliderText.text = gameManager.scripts.uiManager.frameRateCapSlider.value.ToString();
+        {            
             gameManager.scripts.uiManager.frameRateCapSlider.value = selectedFrameRateCapValue;
+            gameManager.scripts.uiManager.frameRateCapSliderText.text = gameManager.scripts.uiManager.frameRateCapSlider.value.ToString();
         }        
         gameManager.scripts.uiManager.frameRateCapSlider.onValueChanged.AddListener(OnframeRateCapSliderChanged);
     }
@@ -943,6 +1016,7 @@ public class OptionsManager : MonoBehaviour
     }
     void PopulateAntiAliasDropdown()
     {
+        selectedAntiAliasIndex = 3;
         gameManager.scripts.uiManager.antiAliasDropdown.ClearOptions();
 
         desiredList.Clear();
@@ -964,8 +1038,7 @@ public class OptionsManager : MonoBehaviour
 
         gameManager.scripts.uiManager.antiAliasDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.antiAliasDropdown.onValueChanged.AddListener(OnAntiAliasChanged);
-        gameManager.scripts.uiManager.antiAliasDropdown.value = 3;
-        selectedAntiAliasIndex = gameManager.scripts.uiManager.antiAliasDropdown.value;
+        gameManager.scripts.uiManager.antiAliasDropdown.value = selectedAntiAliasIndex;
         gameManager.scripts.uiManager.antiAliasDropdown.RefreshShownValue();// Update the dropdown to reflect the selected aa
     }
     void PopulateTAAQualityDropdown()
@@ -1002,7 +1075,7 @@ public class OptionsManager : MonoBehaviour
         };
         gameManager.scripts.uiManager.qualityDropdown.AddOptions(desiredList);
 
-        gameManager.scripts.uiManager.qualityDropdown.value = 1;
+        gameManager.scripts.uiManager.qualityDropdown.value = selectedQualityAssetIndex;
         gameManager.scripts.uiManager.qualityDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.qualityDropdown.onValueChanged.AddListener(OnQualitySettingsChanged);
         gameManager.scripts.uiManager.qualityDropdown.RefreshShownValue();// Update the dropdown to reflect the selected Quality
@@ -1076,7 +1149,7 @@ public class OptionsManager : MonoBehaviour
     void PopulateHDR()
     {        
         selectedHDR = false;
-        gameManager.scripts.uiManager.hdrToggle.isOn = false;
+        gameManager.scripts.uiManager.hdrToggle.isOn = selectedHDR;
         gameManager.scripts.uiManager.hdrToggle.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.hdrToggle.onValueChanged.AddListener(OnHDRChanged);
     }
@@ -1129,7 +1202,7 @@ public class OptionsManager : MonoBehaviour
     void PopulateGlobalIlluminationDropdown()
     {
         selectedGlobalIlluminationFullRes = true;
-        gameManager.scripts.uiManager.giResolutionToggle.isOn = true;
+        gameManager.scripts.uiManager.giResolutionToggle.isOn = selectedGlobalIlluminationFullRes;
         gameManager.scripts.uiManager.giResolutionToggle.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.giResolutionToggle.onValueChanged.AddListener(OnGiResolutionChanged);
 
@@ -1167,8 +1240,8 @@ public class OptionsManager : MonoBehaviour
     }
     void PopulateReflectionsDropdown()
     {
-        selectedPlanarReflections = true;
-        gameManager.scripts.uiManager.planarReflectionsToggle.isOn = true;
+        selectedPlanarReflections = false;
+        gameManager.scripts.uiManager.planarReflectionsToggle.isOn = selectedPlanarReflections;
         gameManager.scripts.uiManager.planarReflectionsToggle.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.planarReflectionsToggle.onValueChanged.AddListener(OnPlanarRelectionsChanged);
 
