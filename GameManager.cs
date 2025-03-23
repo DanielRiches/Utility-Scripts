@@ -16,7 +16,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] float lastGCTime = 0f;
     [SerializeField] private float gcInterval = 5f; // Run GC every 5 seconds
     [Header("---- Game States ----------------------------------------------------")]
-    public bool splashScreen;
+    public bool inSplashScreen;
     public bool inMainMenu;
     [Space(10)]
     public bool inOptionsMenu;
@@ -48,7 +48,7 @@ public class GameManager : MonoBehaviour
 
     public void MainMenu()
     {
-        splashScreen = false;
+        inSplashScreen = false;
         inOptionsMenu = false;
 
         inMainMenu = true;

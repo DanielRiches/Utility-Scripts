@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using Unity.Jobs;
 using System.Globalization;// Works on Steamdeck
@@ -98,7 +99,7 @@ public static class Utils
         }
     }
 
-    // if (Utils.RayCastIn3DTagSpecific(uiLayer, Strings.uiLayerName, out hitPoint))
+    // if (Utils.RayCastIn3DTagSpecific(tagString, out hitPoint))
     public static bool RayCastIn3DTagSpecific(string tag, out Vector3 hitPoint)
     {
         Ray ray = CursorRay3D();
@@ -454,18 +455,22 @@ public static class Utils
         System.GC.Collect();
     }
 
-    // Utils.ClearMemoryThreaded();
-    public static void ClearMemoryThreaded()
+    // Utils.TintUI(image, onColor);
+    public static void TintUI(Image image, Color32 desiredColor)
     {
-        var memoryCleanupJob = new MemoryCleanupJob();
-        JobHandle memoryCleanupHandle = memoryCleanupJob.Schedule();
+        image.color = desiredColor;
     }
 
-    public struct MemoryCleanupJob : IJob
+    // Utils.TintUIScriptTrigger(uiScript, on);
+    public static void TintUIScriptTrigger(UI uiScript, bool on)
     {
-        public void Execute()
+        if (on)
         {
-            System.GC.Collect();
+            uiScript.UIMouseOver();
+        }
+        else
+        {
+            uiScript.UIMouseExit();
         }
     }
 

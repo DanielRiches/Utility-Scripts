@@ -33,10 +33,8 @@ public class Strings
     public const string environmentLayer = "Environment";
 
     // ANIMATION
-    public static readonly int animUISpeed = Animator.StringToHash("UISpeed");
-    public static readonly int animUIAlphaSpeed = Animator.StringToHash("UIAlphaSpeed");
-    public static readonly int animUIScaleSpeed = Animator.StringToHash("UIScaleSpeed");
-    public static readonly int animUIOpen = Animator.StringToHash("OpenUI");
+    public static readonly int on = Animator.StringToHash("On");
+    public static readonly int off = Animator.StringToHash("Off");
 
     public static readonly int animGrounded = Animator.StringToHash("grounded");
     public static readonly int animIdle = Animator.StringToHash("idle");
