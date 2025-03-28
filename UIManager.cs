@@ -1,12 +1,21 @@
-using UnityEngine;
+﻿using UnityEngine;
 using TMPro;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.InputSystem.UI;
+using UnityEngine.InputSystem;
 
 public class UIManager : MonoBehaviour
 {
-    GameManager gameManager;
-    public GameObject mainMenu;
+    [SerializeField] GameManager gameManager;
+    [SerializeField] private InputSystemUIInputModule uiInput;
+    [SerializeField] private Scrollbar activeScrollbar;
+    public InputAction scrollAction; // Accessed by inputManager
+    private Vector2 scrollDelta;
+    private float scrollAmount = 0f;
+    private string inputText;
+    [Header("-------------------------------------------------------------------")]
+    [SerializeField] private GameObject mainMenu;
 
     [System.Serializable]
     public class OptionsUI
@@ -17,6 +26,7 @@ public class UIManager : MonoBehaviour
         public TextMeshProUGUI confirmOptionsChangesTimerText;
         public GameObject confirmOptionsChanges;
         [Space(10)]
+        public TextMeshProUGUI optionsTitle;
         public TextMeshProUGUI optionsDescription;
         public TextMeshProUGUI optionsDescriptionAdditional;
         [Header("---- Gameplay ----")]
@@ -58,25 +68,31 @@ public class UIManager : MonoBehaviour
         public Toggle frameRateCapToggle;
         public Slider frameRateCapSlider;
         [Space(5)]
+        public GameObject vSyncEffect;
         public TMP_Dropdown vSyncDropdown;
         [Space(5)]
         public TMP_Dropdown qualityDropdown;
         [Space(5)]
+        public GameObject antiAliasEffect;
         public TMP_Dropdown antiAliasDropdown;
         public TMP_Dropdown taaQualityDropdown;
         [Space(5)]
+        public GameObject fogEffect;
         public TMP_Dropdown fogDropdown;
         [Space(5)]
         public TextMeshProUGUI fovSliderText;
         public Slider fovSlider;
         [Space(5)]
-        public TextMeshProUGUI renderDistanceSliderText;
+        public TMP_InputField renderDistanceSliderText;
         public Slider renderDistanceSlider;
         [Space(5)]
+        public GameObject bloomEffect;
         public TMP_Dropdown bloomDropdown;
         [Space(5)]
+        public GameObject ansioEffect;
         public TMP_Dropdown ansioDropdown;
         [Space(5)]
+        public GameObject hdrEffect;
         public Toggle hdrToggle;
         [Space(5)]
         public TMP_Dropdown tonemappingDropdown;
@@ -94,12 +110,15 @@ public class UIManager : MonoBehaviour
         public TextMeshProUGUI shadowDistanceSliderText;
         public Slider shadowDistanceSlider;
         [Space(5)]
+        public GameObject diagnosticsEffect;
+        public GameObject fpsEffect;
         public GameObject fpsCounter;
         public TextMeshProUGUI fpsCounterText;
         public Animator fpsCounterAnimator;
         public GameObject fpsCounterEffect;
         public Toggle fpsCounterToggle;
         [Space(5)]
+        public GameObject memoryEffect;
         public GameObject memoryCounter;
         public TextMeshProUGUI memoryCounterText;
         public Animator memoryCounterAnimator;
@@ -186,6 +205,12 @@ public class UIManager : MonoBehaviour
 
     private void Update()
     {
+        OptionsScrollbar();
+        Options();
+    }    
+
+    private void Options()
+    {
         if (gameManager.inOptionsGameplayMenu)
         {
             if (optionsUI.optionsGameplayMenuButtonBG.color != Colors.red)
@@ -197,6 +222,10 @@ public class UIManager : MonoBehaviour
                 Utils.TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
                 Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
                 Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
+            }
+            if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsGameplaySectionTitle)
+            {
+                optionsUI.optionsTitle.text = GameStrings.GameStringsEnglish.optionsGameplaySectionTitle;
             }
         }
         else if (gameManager.inOptionsVideoMenu)
@@ -211,6 +240,100 @@ public class UIManager : MonoBehaviour
                 Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
                 Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
             }
+            if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsVideoSectionTitle)
+            {
+                optionsUI.optionsTitle.text = GameStrings.GameStringsEnglish.optionsVideoSectionTitle;
+            }
+
+            if (gameManager.scripts.optionsManager.selectedFogIndex != 0)
+            {
+                Utils.ActivateObject(optionsUI.fogEffect, true);
+            }
+            else if (optionsUI.fogEffect.activeSelf)
+            {
+                Utils.ActivateObject(optionsUI.fogEffect, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedAnsioIndex != 0)
+            {
+                Utils.ActivateObject(optionsUI.ansioEffect, true);
+            }
+            else if (optionsUI.ansioEffect.activeSelf)
+            {
+                Utils.ActivateObject(optionsUI.ansioEffect, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedAntiAliasIndex != 0)
+            {
+                Utils.ActivateObject(optionsUI.antiAliasEffect, true);
+            }
+            else if (optionsUI.antiAliasEffect.activeSelf)
+            {
+                Utils.ActivateObject(optionsUI.antiAliasEffect, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedVsyncIndex != 0)
+            {
+                Utils.ActivateObject(optionsUI.vSyncEffect, true);
+            }
+            else if (optionsUI.vSyncEffect.activeSelf)
+            {
+                Utils.ActivateObject(optionsUI.vSyncEffect, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedBloomIndex != 0)
+            {
+                Utils.ActivateObject(optionsUI.bloomEffect, true);
+            }
+            else if (optionsUI.bloomEffect.activeSelf)
+            {
+                Utils.ActivateObject(optionsUI.bloomEffect, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedPlanarReflections)
+            {
+                Utils.ActivateObject(optionsUI.planarReflectionEffect, true);
+            }
+            else if (optionsUI.planarReflectionEffect.activeSelf)
+            {
+                Utils.ActivateObject(optionsUI.planarReflectionEffect, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedHDR)
+            {
+                Utils.ActivateObject(optionsUI.hdrEffect, true);
+            }
+            else if (optionsUI.hdrEffect.activeSelf)
+            {
+                Utils.ActivateObject(optionsUI.hdrEffect, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedFPSCounter || gameManager.scripts.optionsManager.selectedMemoryCounter)
+            {
+                Utils.ActivateObject(optionsUI.diagnosticsEffect, true);
+            }
+            else if (optionsUI.diagnosticsEffect.activeSelf)
+            {
+                Utils.ActivateObject(optionsUI.diagnosticsEffect, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedFPSCounter)
+            {
+                Utils.ActivateObject(optionsUI.fpsEffect, true);
+            }
+            else if (optionsUI.fpsEffect.activeSelf)
+            {
+                Utils.ActivateObject(optionsUI.fpsEffect, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedMemoryCounter)
+            {
+                Utils.ActivateObject(optionsUI.memoryEffect, true);
+            }
+            else if (optionsUI.memoryEffect.activeSelf)
+            {
+                Utils.ActivateObject(optionsUI.memoryEffect, false);
+            }
         }
         else if (gameManager.inOptionsAudioMenu)
         {
@@ -223,6 +346,10 @@ public class UIManager : MonoBehaviour
                 Utils.TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
                 Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
                 Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
+            }
+            if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsAudioSectionTitle)
+            {
+                optionsUI.optionsTitle.text = GameStrings.GameStringsEnglish.optionsAudioSectionTitle;
             }
         }
         else if (gameManager.inOptionsKeyboardMenu)
@@ -237,6 +364,10 @@ public class UIManager : MonoBehaviour
                 Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
                 Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
             }
+            if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsKeyboardSectionTitle)
+            {
+                optionsUI.optionsTitle.text = GameStrings.GameStringsEnglish.optionsKeyboardSectionTitle;
+            }
         }
         else if (gameManager.inOptionsGamepadMenu)
         {
@@ -249,6 +380,10 @@ public class UIManager : MonoBehaviour
                 Utils.TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
                 Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
                 Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
+            }
+            if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsGamepadSectionTitle)
+            {
+                optionsUI.optionsTitle.text = GameStrings.GameStringsEnglish.optionsGamepadSectionTitle;
             }
         }
         else if (gameManager.inOptionsInterfaceMenu)
@@ -263,6 +398,10 @@ public class UIManager : MonoBehaviour
                 Utils.TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
                 Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
             }
+            if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsInterfaceSectionTitle)
+            {
+                optionsUI.optionsTitle.text = GameStrings.GameStringsEnglish.optionsInterfaceSectionTitle;
+            }
         }
         else if (gameManager.inOptionsAccessibilityMenu)
         {
@@ -276,9 +415,70 @@ public class UIManager : MonoBehaviour
                 Utils.TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
                 Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
             }
+            if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsAccessibilitySectionTitle)
+            {
+                optionsUI.optionsTitle.text = GameStrings.GameStringsEnglish.optionsAccessibilitySectionTitle;
+            }
         }
     }
 
+    public void OnRenderDistanceInputField(string input)
+    {
+        inputText = input;
+        optionsUI.renderDistanceSliderText.text = inputText;
+    }
+
+
+    public void ScrollbarActive()
+    {
+        Scrollbar[] scrollbars = optionsUI.optionsMenu.GetComponentsInChildren<Scrollbar>(true);
+        foreach (Scrollbar scrollbar in scrollbars)
+        {
+            if (scrollbar.gameObject.activeInHierarchy)
+            {
+                activeScrollbar = scrollbar;
+                scrollbars = null;
+                return;
+            }
+        }
+    }
+    private void OptionsScrollbar()
+    {
+        if (uiInput != null)
+        {
+            if (gameManager.scripts.inputManager.keyboard)
+            {
+                scrollDelta = uiInput.input.mouseScrollDelta;
+
+                if (scrollDelta.y != 0)
+                {
+                    scrollAmount = scrollDelta.y * gameManager.scripts.optionsManager.selectedMouseScrollSensitivity;
+                }
+                else
+                {
+                    scrollAmount = 0f;
+                }
+            }
+            else if (gameManager.scripts.inputManager.gamepad)
+            {
+                scrollDelta = scrollAction.ReadValue<Vector2>();
+
+                if (scrollDelta.y > gameManager.scripts.optionsManager.appliedGamepadCameraZoomDeadzone || scrollDelta.y < -gameManager.scripts.optionsManager.appliedGamepadCameraZoomDeadzone)
+                {
+                    scrollAmount = scrollDelta.y * gameManager.scripts.optionsManager.selectedMouseScrollSensitivity;
+                }
+                else
+                {
+                    scrollAmount = 0f;
+                }
+            }
+
+            if (activeScrollbar)
+            {
+                activeScrollbar.value += scrollAmount;
+            }
+        }
+    }
 
     public void ClickedOptions()
     {        
@@ -288,7 +488,7 @@ public class UIManager : MonoBehaviour
         Utils.ActivateObject(optionsUI.optionsMenu, true);
         optionsUI.optionsMenuAnimator.Play(Strings.on);
     }
-    public void ExitOptions()
+    public void ClickedExitOptions()
     {        
         Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
         Utils.ActivateObject(optionsUI.optionsAudioMenu, false);
@@ -313,7 +513,6 @@ public class UIManager : MonoBehaviour
         gameManager.inOptionsMenu = false;
         Utils.ActivateObject(mainMenu, true);
     }
-
     public void ClickedGameplayOptions()
     {
         Utils.ActivateObject(optionsUI.optionsVideoMenu, false);        
@@ -353,7 +552,6 @@ public class UIManager : MonoBehaviour
         Utils.ActivateObject(optionsUI.optionsVideoMenu, true);
         gameManager.inOptionsVideoMenu = true;
     }
-
     public void ClickedAudioOptions()
     {
         Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
@@ -408,7 +606,6 @@ public class UIManager : MonoBehaviour
         Utils.ActivateObject(optionsUI.optionsGamepadMenu, true);
         gameManager.inOptionsGamepadMenu = true;
     }
-
     public void ClickedInterfaceOptions()
     {
         Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
@@ -427,7 +624,6 @@ public class UIManager : MonoBehaviour
         Utils.ActivateObject(optionsUI.optionsInterfaceMenu, true);
         gameManager.inOptionsInterfaceMenu = true;
     }
-
     public void ClickedAccessibilityOptions()
     {
         Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
@@ -454,5 +650,224 @@ public class UIManager : MonoBehaviour
     public void CloseMemoryCounter()
     {
         Utils.ActivateObject(optionsUI.memoryCounter, false);
+    }
+
+    // TEXT
+    public void OnTextInputHover()
+    {
+        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsTextInputDesc;
+    }
+    public void OnActivateSettingHover()
+    {
+        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsActivateSetting;
+    }
+    public void OnInvertSettingHover()
+    {
+        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsInvertSetting;
+    }
+    public void OnModifiedSettingHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsModifiedSetting;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+    public void OnRevertSettingHover()
+    {
+        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsRevertSetting;
+    }
+    public void OnDescClear()
+    {
+        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDescClear;
+        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+    public void OnPageIncreaseHover()
+    {
+        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsNextPage;
+        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+    public void OnPageDecreaseHover()
+    {
+        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsPreviousPage;
+        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+    public void OnOptionsPage1Hover()
+    {
+        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsPage1Desc;
+    }
+    public void OnOptionsPage2Hover()
+    {
+        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsPage2Desc;
+    }
+    public void OnRaytracingInfoHover()
+    {
+        if (gameManager.scripts.optionsManager.rayTracingSupported)
+        {
+            gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.raytracingOnDesc;
+        }
+        else
+        {
+            gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.raytracingOffDesc;
+        }
+    }
+
+    public void OnAutosavesHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsAutosavesDesc;
+    }
+    public void OnMaximumAutosavesHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsMaximumAutosavesDesc;
+    }
+    public void OnMaximumQuicksavesHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsMaximumQuicksavesDesc;
+    }
+    public void OnGoreHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGoreDesc;
+    }
+
+    public void OnDisplayDeviceHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDisplayDeviceDesc;
+    }
+    public void OnDisplayAdapterHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDisplayAdapterDesc;
+    }
+    public void OnResolutionsHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsResolutionDesc;
+    }
+    public void OnDisplayModeHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDisplayModeDesc;
+    }
+    public void OnVSyncHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsVSyncDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsVSyncDescAdditional;
+    }
+    public void OnFramerateCapHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsFramerateCapDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsFramerateCapDescAdditional;
+    }
+    public void OnFramerateCapInfoHover()
+    {
+        gameManager.scripts.optionsManager.refreshRate = (Screen.currentResolution.refreshRateRatio.denominator != 0) ? Screen.currentResolution.refreshRateRatio.numerator / (float)Screen.currentResolution.refreshRateRatio.denominator : 0f;
+
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsFramerateCapInfoDesc + "<color=" + Colors.textCyan + ">" + gameManager.scripts.optionsManager.refreshRate.ToString("F0") + " Hz</color>.";
+    }
+    public void OnQualityHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsQualityDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsQualityDescAdditional;
+    }
+    public void OnAntiAliasHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsAntiAliasDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsAntiAliasDescAdditional;
+    }
+    public void OnTaaQualityHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsTaaQualityDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsTaaQualityDescAdditional;
+    }
+    public void OnVolumetricFogHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsVolumetricFogDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsVolumetricFogDescAdditional;
+    }
+    public void OnFOVHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsFOVDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsFOVDescAdditional;
+    }
+    public void OnRenderDistanceHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsRenderDistanceDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+    public void OnBloomHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsBloomDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsBloomDescAdditional;
+    }
+    public void OnHDRHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsHDRDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsHDRDescAdditional;
+    }
+    public void OnAnsioHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsAnsioDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsAnsioDescAdditional;
+    }
+    public void OnTonemappingHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsTonemappingDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsTonemappingDescAdditional;
+    }
+    public void OnGlobalIlluminationHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDescAdditional;
+    }
+    public void OnGlobalIlluminationResHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResDesc;
+        if (gameManager.scripts.optionsManager.selectedGlobalIlluminationFullRes)
+        {
+            optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResStatusFullDesc;
+        }
+        else
+        {
+            optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResStatusHalfDesc;
+        }
+    }
+    public void OnGlobalIlluminationResDescHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResStatusDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResDescAdditional;
+    }
+    public void OnGlobalIlluminationInfoHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDesc;
+        OnRaytracingInfoHover();
+    }
+    public void OnReflectionsHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsReflectionsDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsReflectionsDescAdditional;
+    }
+    public void OnReflectionsPlanarHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsPlanarReflectionsDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsPlanarReflectionsDescAdditional;
+    }
+    public void OnShadowQualityHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsShadowQualityDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsShadowQualityDescAdditional;
+    }
+    public void OnShadowDistanceHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsShadowDistanceDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+    public void OnDiagnosticsHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDiagnosticsDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+    public void OnFPSHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsFPSDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+    public void OnMemoryHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsMemoryDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
     }
 }

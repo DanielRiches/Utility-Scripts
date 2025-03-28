@@ -6,6 +6,7 @@ public class GameManager : MonoBehaviour
     [System.Serializable]
     public class Scripts
     {
+        public InputManager inputManager;
         public OptionsManager optionsManager;
         public UIManager uiManager;
         public AudioManager audioManager;
@@ -14,7 +15,7 @@ public class GameManager : MonoBehaviour
     public Scripts scripts;
     [Header("---- Garbage Collect ----------------------------------------------------")]
     [SerializeField] float lastGCTime = 0f;
-    [SerializeField] private float gcInterval = 5f; // Run GC every 5 seconds
+    [SerializeField] private float gcInterval = 60f; // Run GC every 60 seconds
     [Header("---- Game States ----------------------------------------------------")]
     public bool inSplashScreen;
     public bool inMainMenu;

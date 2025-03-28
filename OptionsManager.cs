@@ -21,17 +21,17 @@ public class OptionsManager : MonoBehaviour
     [SerializeField] private GlobalIllumination globalIllumination;
     [SerializeField] private ScreenSpaceReflection reflections;
     //[SerializeField] private HDAdditionalReflectionData planarReflection; // possibly needed to determine Planar Reflection resolution based on camera distance at runtime
-    private string gpuName;// Graphics card name.
-    Display[] displays;// To help automatically detect if someone connects another display.
+    private string gpuName;
+    Display[] displays;
     FullScreenMode screenMode;
-    float refreshRate;
+    [HideInInspector] public float refreshRate;// Accessed by UI Manager
     private Resolution[] resolutions;
     private List<Resolution> filteredResolutions = new List<Resolution>();
     Resolution selectedResolution;
     int lastDisplayCount; // To help automatically detect if someone connects another display, set to detect every 2 seconds at default.
     [SerializeField] private HDRenderPipelineAsset appliedHDRPAsset;
     RayCastingMode rayMode;
-    bool rayTracingSupported;
+    [HideInInspector] public bool rayTracingSupported;// Accessed by UI Manager
     TimeSpan timeSpan; // for keep settings timer
     [SerializeField] private float FPSCounterUpdateInterval = 0.1f; // How often to update the FPS display (in seconds)
     private float FPStimer;
@@ -58,25 +58,25 @@ public class OptionsManager : MonoBehaviour
     [SerializeField] private int selectedDisplayModeIndex;
     [SerializeField] private bool selectedFrameRateCap;
     [SerializeField] private int selectedFrameRateCapValue;
-    [SerializeField] private int selectedVsyncIndex;
-    [SerializeField] private int selectedAntiAliasIndex;
+    public int selectedVsyncIndex;// Accessed by UI Manager
+    public int selectedAntiAliasIndex;// Accessed by UI Manager
     [SerializeField] private int selectedTaaQualityIndex;
     [SerializeField] private int selectedQualityAssetIndex;
-    [SerializeField] private int selectedFogIndex;
+    public int selectedFogIndex;// Accessed by UI Manager
     [SerializeField] private int selectedFOV;
     [SerializeField] private int selectedRenderDistance;
-    [SerializeField] private int selectedBloomIndex;
-    [SerializeField] private bool selectedHDR;
-    [SerializeField] private int selectedAnsioIndex;
+    public int selectedBloomIndex;// Accessed by UI Manager
+    public bool selectedHDR;// Accessed by UI Manager
+    public int selectedAnsioIndex;// Accessed by UI Manager
     [SerializeField] private int selectedTonemappingIndex;
-    [SerializeField] private bool selectedGlobalIlluminationFullRes;
+    public bool selectedGlobalIlluminationFullRes;// Accessed by UI Manager
     [SerializeField] private int selectedGlobalIlluminationIndex;
     [SerializeField] private int selectedReflectionsIndex;
-    [SerializeField] private bool selectedPlanarReflections;
+    public bool selectedPlanarReflections;// Accessed by UI Manager
     [SerializeField] private int selectedShadowQualityIndex;
     [SerializeField] private int selectedShadowDistance;
-    [SerializeField] private bool selectedFPSCounter;
-    [SerializeField] private bool selectedMemoryCounter;
+    public bool selectedFPSCounter;// Accessed by UI Manager
+    public bool selectedMemoryCounter;// Accessed by UI Manager
     [Header("Audio")]
     [SerializeField] private float selectedMasterVolume;
     [SerializeField] private float selectedMusicVolume;
@@ -89,6 +89,7 @@ public class OptionsManager : MonoBehaviour
     [SerializeField] private float selectedCameraZoomSensitivity;
     [SerializeField] private float selectedCameraMoveSensitivity;
     [SerializeField] private float selectedCameraPanSensitivity;
+    public float selectedMouseScrollSensitivity;// Accessed by UI Manager for scroll wheel speed
     [Header("Gamepad")]
     [SerializeField] private float selectedGamepadCameraZoomSensitivity;
     [SerializeField] private float selectedGamepadCameraMoveSensitivity;
@@ -142,7 +143,7 @@ public class OptionsManager : MonoBehaviour
     public float appliedGamepadCameraZoomSensitivity;
     public float appliedGamepadCameraMoveSensitivity;
     public float appliedGamepadCameraPanSensitivity;
-    public float appliedGamepadCameraZoomDeadzone;
+    public float appliedGamepadCameraZoomDeadzone;// Accessed by UI Manager for gamepad scroll deadzone
     public float appliedGamepadCameraMoveDeadzone;
     public float appliedGamepadCameraPanDeadzone;
 
@@ -157,7 +158,7 @@ public class OptionsManager : MonoBehaviour
         PopulateAutosavesToggle();
         PopulateSavesSliders();
         PopulateGore();
-        DetectDisplays();// DISPLAY DEVICE
+        DetectDisplays();
         StartCoroutine(RuntimeMonitorDisplays());// WILL UPDATE DISPLAY DEVICE DROPDOWN AT RUNTIME IF MONITORS ARE ADDED / REMOVED
         PopulateDisplayAdapter();
         PopulateDisplayModeDropdown();
@@ -1403,15 +1404,6 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.optionsUI.planarReflectionsToggle.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.planarReflectionsToggle.onValueChanged.AddListener(OnPlanarRelectionsChanged);
 
-        if (selectedPlanarReflections)
-        {
-            Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.planarReflectionEffect, true);
-        }
-        else
-        {
-            Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.planarReflectionEffect, false);
-        }
-
         if (postProcess.profile.TryGet(out reflections)) { }
 
         selectedReflectionsIndex = 2;
@@ -1941,7 +1933,7 @@ public class OptionsManager : MonoBehaviour
             selectedGlobalIlluminationFullRes = false;
             Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.globalIlluminationEffect, false);
         }
-        OnGlobalIlluminationResHover();
+        gameManager.scripts.uiManager.OnGlobalIlluminationResHover();
         //ACTIVATE MODIFIED VALUE BUTTON
     }
 
@@ -1955,14 +1947,12 @@ public class OptionsManager : MonoBehaviour
         if (gameManager.scripts.uiManager.optionsUI.planarReflectionsToggle.isOn)
         {
             selectedPlanarReflections = true;
-            Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.planarReflectionEffect, true);
         }
         else if (!gameManager.scripts.uiManager.optionsUI.planarReflectionsToggle.isOn)
         {
             selectedPlanarReflections = false;
-            Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.planarReflectionEffect, false);
         }
-        OnPlanarReflectionsHover();
+        gameManager.scripts.uiManager.OnReflectionsPlanarHover();
         //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void SetPlanarReflection(PlanarReflectionProbe probe, bool scanScene, bool activate)
@@ -2402,199 +2392,5 @@ public class OptionsManager : MonoBehaviour
         //ACTIVATE MODIFIED VALUE BUTTON
     }
     #endregion
-
-
-
-    // Descriptions
-    public void OnActivateSettingHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsActivateSetting;
-    }
-    public void OnInvertSettingHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsInvertSetting;
-    }
-    public void OnRevertSettingHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsRevertSetting;
-    }
-    public void OnDescClear()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDescClear;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
-    }
-    public void OnPageIncreaseHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsNextPage;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
-    }
-    public void OnPageDecreaseHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsPreviousPage;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
-    }
-    public void OnOptionsPage1Hover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsPage1Desc;
-    }
-    public void OnOptionsPage2Hover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsPage2Desc;
-    }
-
-    public void OnAutosavesHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsAutosavesDesc;
-    }
-    public void OnMaximumAutosavesHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsMaximumAutosavesDesc;
-    }
-    public void OnMaximumQuicksavesHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsMaximumQuicksavesDesc;
-    }
-    public void OnGoreHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGoreDesc;
-    }
-
-    public void OnDisplayDeviceHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDisplayDeviceDesc;
-    }
-    public void OnDisplayAdapterHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDisplayAdapterDesc;
-    }
-    public void OnResolutionsHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsResolutionDesc;
-    }
-    public void OnDisplayModeHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDisplayModeDesc;
-    }
-    public void OnVSyncHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsVSyncDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsVSyncDescAdditional;
-    }
-    public void OnFramerateCapHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsFramerateCapDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsFramerateCapDescAdditional;
-    }
-    public void OnFramerateCapInfoHover()
-    {
-        refreshRate = (Screen.currentResolution.refreshRateRatio.denominator != 0) ? Screen.currentResolution.refreshRateRatio.numerator / (float)Screen.currentResolution.refreshRateRatio.denominator : 0f;
-
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsFramerateCapInfoDesc + "<color=" + Colors.textCyan + ">" + refreshRate.ToString("F0") + " Hz</color>.";
-    }
-    public void OnQualityHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsQualityDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsQualityDescAdditional;
-    }
-    public void OnAntiAliasHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsAntiAliasDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsAntiAliasDescAdditional;
-    }
-    public void OnTaaQualityHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsTaaQualityDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsTaaQualityDescAdditional;
-    }
-    public void OnVolumetricFogHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsVolumetricFogDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsVolumetricFogDescAdditional;
-    }
-    public void OnFOVHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsFOVDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsFOVDescAdditional;
-    }
-    public void OnRenderDistanceHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsRenderDistanceDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
-    }
-    public void OnBloomHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsBloomDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsBloomDescAdditional;
-    }
-    public void OnHDRHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsHDRDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsHDRDescAdditional;
-    }
-    public void OnAnsioHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsAnsioDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsAnsioDescAdditional;
-    }
-    public void OnTonemappingHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsTonemappingDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsTonemappingDescAdditional;
-    }
-    public void OnGlobalIlluminationHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDescAdditional;
-    }
-    public void OnGlobalIlluminationResHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResDesc;
-        if (selectedGlobalIlluminationFullRes)
-        {
-            gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResStatusFullDesc;
-        }
-        else
-        {
-            gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResStatusHalfDesc;
-        }        
-    }
-    public void OnGlobalIlluminationResDescHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResStatusDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResDescAdditional;
-    }
-    public void OnGlobalIlluminationInfoHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDesc;
-
-        if (rayTracingSupported)
-        {
-            gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDescAdditional3;
-        }
-        else
-        {
-            gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDescAdditional2;
-        }
-    }
-    public void OnReflectionsHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsReflectionsDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsReflectionsDescAdditional;
-    }
-    public void OnPlanarReflectionsHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsPlanarReflectionsDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsPlanarReflectionsDescAdditional;
-    }
-    public void OnShadowQualityHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsShadowQualityDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsShadowQualityDescAdditional;
-    }
-    public void OnShadowDistanceHover()
-    {
-        gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsShadowDistanceDesc;
-        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
-    }
 }
 
