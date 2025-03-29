@@ -43,60 +43,60 @@ public class OptionsManager : MonoBehaviour
     float memoryInMB;
     float memoryInGB;
     [HideInInspector] public List<string> desiredList;// ACCESSED BY POPULATE METHODS BELOW
-    [Header("---- SELECTED ----------------------------------------------------")]
+    [Header("---- SELECTED ----------------------------------------------------")]// Accessed by UI Manager
     [SerializeField] private bool requiresTimedConfirmation;
     [SerializeField] private float requiresTimedConfirmationTimer = 25;
     [Space(5)]
     [Header("Gameplay")]
-    [SerializeField] private bool selectedAutosaves;
-    [SerializeField] private int selectedMaximumAutosaves;
-    [SerializeField] private int selectedMaximumQuicksaves;
-    [SerializeField] private bool selectedGore;
-    [Header("Video")]    
-    [SerializeField] private int selectedDisplayIndex;
-    [SerializeField] private int selectedResolutionIndex;
-    [SerializeField] private int selectedDisplayModeIndex;
-    [SerializeField] private bool selectedFrameRateCap;
-    [SerializeField] private int selectedFrameRateCapValue;
-    public int selectedVsyncIndex;// Accessed by UI Manager
-    public int selectedAntiAliasIndex;// Accessed by UI Manager
-    [SerializeField] private int selectedTaaQualityIndex;
-    [SerializeField] private int selectedQualityAssetIndex;
-    public int selectedFogIndex;// Accessed by UI Manager
-    [SerializeField] private int selectedFOV;
-    [SerializeField] private int selectedRenderDistance;
-    public int selectedBloomIndex;// Accessed by UI Manager
-    public bool selectedHDR;// Accessed by UI Manager
-    public int selectedAnsioIndex;// Accessed by UI Manager
-    [SerializeField] private int selectedTonemappingIndex;
-    public bool selectedGlobalIlluminationFullRes;// Accessed by UI Manager
-    [SerializeField] private int selectedGlobalIlluminationIndex;
-    [SerializeField] private int selectedReflectionsIndex;
-    public bool selectedPlanarReflections;// Accessed by UI Manager
-    [SerializeField] private int selectedShadowQualityIndex;
-    [SerializeField] private int selectedShadowDistance;
-    public bool selectedFPSCounter;// Accessed by UI Manager
-    public bool selectedMemoryCounter;// Accessed by UI Manager
+    public bool selectedAutosaves;
+    public int selectedMaximumAutosaves;
+    public int selectedMaximumQuicksaves;
+    public bool selectedGore;
+    [Header("Video")]
+    public int selectedDisplayIndex;
+    public int selectedResolutionIndex;
+    public int selectedDisplayModeIndex;
+    public bool selectedFrameRateCap;
+    public int selectedFrameRateCapValue;
+    public int selectedVsyncIndex;
+    public int selectedAntiAliasIndex;
+    public int selectedTaaQualityIndex;
+    public int selectedQualityAssetIndex;
+    public int selectedFogIndex;
+    public int selectedFOV;
+    public int selectedRenderDistance;
+    public int selectedBloomIndex;
+    public bool selectedHDR;
+    public int selectedAnsioIndex;
+    public int selectedTonemappingIndex;
+    public bool selectedGlobalIlluminationFullRes;
+    public int selectedGlobalIlluminationIndex;
+    public int selectedReflectionsIndex;
+    public bool selectedPlanarReflections;
+    public int selectedShadowQualityIndex;
+    public int selectedShadowDistance;
+    public bool selectedFPSCounter;
+    public bool selectedMemoryCounter;
     [Header("Audio")]
-    [SerializeField] private float selectedMasterVolume;
-    [SerializeField] private float selectedMusicVolume;
-    [SerializeField] private float selectedAmbientVolume;
-    [SerializeField] private float selectedSfxVolume;
-    [SerializeField] private float selectedUiVolume;
-    [SerializeField] private float selectedVoiceVolume;
-    [SerializeField] private float selectedEventVolume;
+    public float selectedMasterVolume;
+    public float selectedMusicVolume;
+    public float selectedAmbientVolume;
+    public float selectedSfxVolume;
+    public float selectedUiVolume;
+    public float selectedVoiceVolume;
+    public float selectedEventVolume;
     [Header("Keyboard")]
-    [SerializeField] private float selectedCameraZoomSensitivity;
-    [SerializeField] private float selectedCameraMoveSensitivity;
-    [SerializeField] private float selectedCameraPanSensitivity;
+    public float selectedCameraZoomSensitivity;
+    public float selectedCameraMoveSensitivity;
+    public float selectedCameraPanSensitivity;
     public float selectedMouseScrollSensitivity;// Accessed by UI Manager for scroll wheel speed
     [Header("Gamepad")]
-    [SerializeField] private float selectedGamepadCameraZoomSensitivity;
-    [SerializeField] private float selectedGamepadCameraMoveSensitivity;
-    [SerializeField] private float selectedGamepadCameraPanSensitivity;
-    [SerializeField] private float selectedGamepadCameraZoomDeadzone;
-    [SerializeField] private float selectedGamepadCameraMoveDeadzone;
-    [SerializeField] private float selectedGamepadCameraPanDeadzone;
+    public float selectedGamepadCameraZoomSensitivity;
+    public float selectedGamepadCameraMoveSensitivity;
+    public float selectedGamepadCameraPanSensitivity;
+    public float selectedGamepadCameraZoomDeadzone;
+    public float selectedGamepadCameraMoveDeadzone;
+    public float selectedGamepadCameraPanDeadzone;
     [Header("---- APPLIED ----------------------------------------------------")] // ACCESSED BY SAVE+LOAD
     public bool appliedAutosaves;
     public int appliedMaximumAutosaves;
@@ -143,7 +143,7 @@ public class OptionsManager : MonoBehaviour
     public float appliedGamepadCameraZoomSensitivity;
     public float appliedGamepadCameraMoveSensitivity;
     public float appliedGamepadCameraPanSensitivity;
-    public float appliedGamepadCameraZoomDeadzone;// Accessed by UI Manager for gamepad scroll deadzone
+    public float appliedGamepadCameraZoomDeadzone;// Accessed by UI Manager for gamepad dropdown scroll deadzone
     public float appliedGamepadCameraMoveDeadzone;
     public float appliedGamepadCameraPanDeadzone;
 
@@ -1151,7 +1151,7 @@ public class OptionsManager : MonoBehaviour
         else
         {            
             gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value = selectedFrameRateCapValue;
-            gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value.ToString();
+            gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value.ToString(Strings.numberFormat0);
         }        
         gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.onValueChanged.AddListener(OnframeRateCapSliderChanged);
     }
@@ -1667,22 +1667,19 @@ public class OptionsManager : MonoBehaviour
     {
         selectedDisplayIndex = gameManager.scripts.uiManager.optionsUI.displayDevicesDropdown.value;
         requiresTimedConfirmation = true;
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnResolutionChanged(int resolutionIndex)
     {
         selectedResolutionIndex = gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.value;
         requiresTimedConfirmation = true;
-        //Debug.Log($"Selected resolution index updated: {selectedResolutionIndex}. Will apply on ApplySettings().");
-        //ACTIVATE MODIFIED VALUE BUTTON
+        //Debug.Log($"Selected resolution index updated: {selectedResolutionIndex}. Will apply on ApplySettings().");        
     }
 
     void OnDisplayModeChanged(int displayModeIndex)
     {
         selectedDisplayModeIndex = gameManager.scripts.uiManager.optionsUI.displayModeDropdown.value;
         requiresTimedConfirmation = true;
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnFrameRateCapToggleChanged(bool frameRateCapChanged)
@@ -1697,7 +1694,6 @@ public class OptionsManager : MonoBehaviour
             selectedFrameRateCap = false;
             Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.framerateCapEffect, false);
         }
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     void OnframeRateCapSliderChanged(float sliderValue)
     {
@@ -1715,97 +1711,82 @@ public class OptionsManager : MonoBehaviour
             selectedFrameRateCapValue = (int)gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value;
         }        
         gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value.ToString(Strings.numberFormat0);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseFrameRateCap()
     {
         gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value + 1, gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.minValue, gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.maxValue);
         selectedFrameRateCapValue = (int)gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value;
         gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseFrameRateCap()
     {
         gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value - 1, gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.minValue, gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.maxValue);
         selectedFrameRateCapValue = (int)gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value;
         gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnVSyncChanged(int vSyncIndex)
     {
         selectedVsyncIndex = gameManager.scripts.uiManager.optionsUI.vSyncDropdown.value;
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnAntiAliasChanged(int antiAliasIndex)
     {
-        selectedAntiAliasIndex = gameManager.scripts.uiManager.optionsUI.antiAliasDropdown.value;// Get selected display index from the dropdown
-        //ACTIVATE MODIFIED VALUE BUTTON
+        selectedAntiAliasIndex = gameManager.scripts.uiManager.optionsUI.antiAliasDropdown.value;
     }
     void OnTaaQualityChanged(int taaQualityIndex)
     {
-        selectedTaaQualityIndex = gameManager.scripts.uiManager.optionsUI.taaQualityDropdown.value;// Get selected display index from the dropdown
-        //ACTIVATE MODIFIED VALUE BUTTON
+        selectedTaaQualityIndex = gameManager.scripts.uiManager.optionsUI.taaQualityDropdown.value;
     }
     void OnFogChanged(int fogIndex)
     {
         selectedFogIndex = gameManager.scripts.uiManager.optionsUI.fogDropdown.value;
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnQualitySettingsChanged(int qualityIndex)
     {
         selectedQualityAssetIndex = gameManager.scripts.uiManager.optionsUI.qualityDropdown.value;
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     public void OnFOVChanged(float sliderValue)
     {
         selectedFOV = (int)gameManager.scripts.uiManager.optionsUI.fovSlider.value;
         gameManager.scripts.uiManager.optionsUI.fovSliderText.text = gameManager.scripts.uiManager.optionsUI.fovSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseFOV()
     {
         gameManager.scripts.uiManager.optionsUI.fovSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.fovSlider.value + 1, gameManager.scripts.uiManager.optionsUI.fovSlider.minValue, gameManager.scripts.uiManager.optionsUI.fovSlider.maxValue);
         selectedFOV = (int)gameManager.scripts.uiManager.optionsUI.fovSlider.value;
         gameManager.scripts.uiManager.optionsUI.fovSliderText.text = gameManager.scripts.uiManager.optionsUI.fovSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseFOV()
     {
         gameManager.scripts.uiManager.optionsUI.fovSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.fovSlider.value - 1, gameManager.scripts.uiManager.optionsUI.fovSlider.minValue, gameManager.scripts.uiManager.optionsUI.fovSlider.maxValue);
         selectedFOV = (int)gameManager.scripts.uiManager.optionsUI.fovSlider.value;
         gameManager.scripts.uiManager.optionsUI.fovSliderText.text = gameManager.scripts.uiManager.optionsUI.fovSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnRenderDistanceChanged(float sliderValue)
     {
         selectedRenderDistance = (int)gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value;
         gameManager.scripts.uiManager.optionsUI.renderDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseRenderDistance()
     {
         gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value + 1, gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.minValue, gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.maxValue);
         selectedRenderDistance = (int)gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value;
         gameManager.scripts.uiManager.optionsUI.renderDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseRenderDistance()
     {
         gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value - 1, gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.minValue, gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.maxValue);
         selectedRenderDistance = (int)gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value;
         gameManager.scripts.uiManager.optionsUI.renderDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnBloomChanged(int bloomIndex)
     {
         selectedBloomIndex = gameManager.scripts.uiManager.optionsUI.bloomDropdown.value;
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnHDRChanged(bool hdrChanged)
@@ -1818,20 +1799,18 @@ public class OptionsManager : MonoBehaviour
         {
             selectedHDR = false;
         }
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnAnsioChanged(int ansioIndex)
     {
-        selectedAnsioIndex = gameManager.scripts.uiManager.optionsUI.ansioDropdown.value;        
-        //ACTIVATE MODIFIED VALUE BUTTON
+        selectedAnsioIndex = gameManager.scripts.uiManager.optionsUI.ansioDropdown.value;
     }
 
     public void SetAnsio(Material material, bool scanScene)
     {
         if (material && material.mainTexture)
         {
-            if (selectedAnsioIndex == 0) // Set desired anisotropic level
+            if (selectedAnsioIndex == 0)
             {
                 material.mainTexture.anisoLevel = 0;
             }
@@ -1865,7 +1844,7 @@ public class OptionsManager : MonoBehaviour
                         if (mat && mat.mainTexture)
                         {
                             //Debug.Log("Material and mainTexture present..");
-                            if (selectedAnsioIndex == 0) // Set desired anisotropic level
+                            if (selectedAnsioIndex == 0)
                             {
                                 //Debug.Log("Texture Set to OFF");
                                 mat.mainTexture.anisoLevel = 0;
@@ -1912,14 +1891,12 @@ public class OptionsManager : MonoBehaviour
 
     void OnTonemappingChanged(int tonemappingIndex)
     {
-        selectedTonemappingIndex = gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value;        
-        //ACTIVATE MODIFIED VALUE BUTTON
+        selectedTonemappingIndex = gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value;
     }
 
     void OnGlobalIlluminationChanged(int globalIlluminationIndex)
     {
         selectedGlobalIlluminationIndex = gameManager.scripts.uiManager.optionsUI.giDropdown.value;
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     void OnGiResolutionChanged(bool giResolutionChanged)
     {
@@ -1934,13 +1911,11 @@ public class OptionsManager : MonoBehaviour
             Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.globalIlluminationEffect, false);
         }
         gameManager.scripts.uiManager.OnGlobalIlluminationResHover();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnReflectionsChanged(int reflectionsIndex)
     {
         selectedReflectionsIndex = gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.value;
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     void OnPlanarRelectionsChanged(bool planarRelectionsChanged)
     {
@@ -1953,7 +1928,6 @@ public class OptionsManager : MonoBehaviour
             selectedPlanarReflections = false;
         }
         gameManager.scripts.uiManager.OnReflectionsPlanarHover();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void SetPlanarReflection(PlanarReflectionProbe probe, bool scanScene, bool activate)
     {
@@ -1998,27 +1972,23 @@ public class OptionsManager : MonoBehaviour
     void OnShadowQualityChanged(int shadowIndex)
     {
         selectedShadowQualityIndex = gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.value;
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     void OnShadowDistanceChanged(float sliderValue)
     {
         selectedShadowDistance = (int)gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value;
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseShadowDistance()
     {
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value + 1, gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.minValue, gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.maxValue);
         selectedShadowDistance = (int)gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value;
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseShadowDistance()
     {
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value - 1, gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.minValue, gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.maxValue);
         selectedShadowDistance = (int)gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value;
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnFPSCounterChanged(bool fpsCounterChanged)
@@ -2033,7 +2003,6 @@ public class OptionsManager : MonoBehaviour
             selectedFPSCounter = false;
             Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.fpsCounterEffect, false);
         }
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnMemoryCounterChanged(bool memoryCounterChanged)
@@ -2048,120 +2017,98 @@ public class OptionsManager : MonoBehaviour
             selectedMemoryCounter = false;
             Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.memoryCounterEffect, false);
         }
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     public void SetMasterVolume(float sliderValue)
     {
         ChangeAudioSliderValue(ref selectedMasterVolume, Strings.audioMaster, gameManager.scripts.uiManager.optionsUI.audioMasterSlider, gameManager.scripts.uiManager.optionsUI.audioMasterNumberText, true, false, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseMasterVolume()
     {
         ChangeAudioSliderValue(ref selectedMasterVolume, Strings.audioMaster, gameManager.scripts.uiManager.optionsUI.audioMasterSlider, gameManager.scripts.uiManager.optionsUI.audioMasterNumberText, true, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseMasterVolume()
     {
         ChangeAudioSliderValue(ref selectedMasterVolume, Strings.audioMaster, gameManager.scripts.uiManager.optionsUI.audioMasterSlider, gameManager.scripts.uiManager.optionsUI.audioMasterNumberText, false, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     public void SetMusicVolume(float sliderValue)
     {
         ChangeAudioSliderValue(ref selectedMusicVolume, Strings.audioMusic, gameManager.scripts.uiManager.optionsUI.audioMusicSlider, gameManager.scripts.uiManager.optionsUI.audioMusicNumberText, true, false, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseMusicVolume()
     {
         ChangeAudioSliderValue(ref selectedMusicVolume, Strings.audioMusic, gameManager.scripts.uiManager.optionsUI.audioMusicSlider, gameManager.scripts.uiManager.optionsUI.audioMusicNumberText, true, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseMusicVolume()
     {
         ChangeAudioSliderValue(ref selectedMusicVolume, Strings.audioMusic, gameManager.scripts.uiManager.optionsUI.audioMusicSlider, gameManager.scripts.uiManager.optionsUI.audioMusicNumberText, false, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     public void SetAmbientVolume(float sliderValue)
     {
         ChangeAudioSliderValue(ref selectedAmbientVolume, Strings.audioAmbient, gameManager.scripts.uiManager.optionsUI.audioAmbientSlider, gameManager.scripts.uiManager.optionsUI.audioAmbientNumberText, true, false, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseAmbientVolume()
     {
         ChangeAudioSliderValue(ref selectedAmbientVolume, Strings.audioAmbient, gameManager.scripts.uiManager.optionsUI.audioAmbientSlider, gameManager.scripts.uiManager.optionsUI.audioAmbientNumberText, true, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseAmbientVolume()
     {
         ChangeAudioSliderValue(ref selectedAmbientVolume, Strings.audioAmbient, gameManager.scripts.uiManager.optionsUI.audioAmbientSlider, gameManager.scripts.uiManager.optionsUI.audioAmbientNumberText, false, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     public void SetSFXVolume(float sliderValue)
     {
         ChangeAudioSliderValue(ref selectedSfxVolume, Strings.audioAmbient, gameManager.scripts.uiManager.optionsUI.audioSFXSlider, gameManager.scripts.uiManager.optionsUI.audioSFXNumberText, true, false, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseSFXVolume()
     {
         ChangeAudioSliderValue(ref selectedSfxVolume, Strings.audioSFX, gameManager.scripts.uiManager.optionsUI.audioSFXSlider, gameManager.scripts.uiManager.optionsUI.audioSFXNumberText, true, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseSFXVolume()
     {
         ChangeAudioSliderValue(ref selectedSfxVolume, Strings.audioSFX, gameManager.scripts.uiManager.optionsUI.audioSFXSlider, gameManager.scripts.uiManager.optionsUI.audioSFXNumberText, false, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     public void SetUIVolume(float sliderValue)
     {
         ChangeAudioSliderValue(ref selectedUiVolume, Strings.audioUI, gameManager.scripts.uiManager.optionsUI.audioUISlider, gameManager.scripts.uiManager.optionsUI.audioUINumberText, true, false, false);
         ChangeAudioSliderValue(ref selectedUiVolume, Strings.audioUIPitchShiftVolume, gameManager.scripts.uiManager.optionsUI.audioUISlider, gameManager.scripts.uiManager.optionsUI.audioUINumberText, true, false, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseUIVolume()
     {
         ChangeAudioSliderValue(ref selectedUiVolume, Strings.audioUI, gameManager.scripts.uiManager.optionsUI.audioUISlider, gameManager.scripts.uiManager.optionsUI.audioUINumberText, true, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseUIVolume()
     {
         ChangeAudioSliderValue(ref selectedUiVolume, Strings.audioUI, gameManager.scripts.uiManager.optionsUI.audioUISlider, gameManager.scripts.uiManager.optionsUI.audioUINumberText, false, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     public void SetVoiceVolume(float sliderValue)
     {
         ChangeAudioSliderValue(ref selectedVoiceVolume, Strings.audioVoice, gameManager.scripts.uiManager.optionsUI.audioVoiceSlider, gameManager.scripts.uiManager.optionsUI.audioVoiceNumberText, true, false, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseVoiceVolume()
     {
         ChangeAudioSliderValue(ref selectedVoiceVolume, Strings.audioVoice, gameManager.scripts.uiManager.optionsUI.audioVoiceSlider, gameManager.scripts.uiManager.optionsUI.audioVoiceNumberText, true, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseVoiceVolume()
     {
         ChangeAudioSliderValue(ref selectedVoiceVolume, Strings.audioVoice, gameManager.scripts.uiManager.optionsUI.audioVoiceSlider, gameManager.scripts.uiManager.optionsUI.audioVoiceNumberText, false, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     public void SetEventVolume(float sliderValue)
     {
         ChangeAudioSliderValue(ref selectedEventVolume, Strings.audioEvent, gameManager.scripts.uiManager.optionsUI.audioEventSlider, gameManager.scripts.uiManager.optionsUI.audioEventNumberText, true, false, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseEventVolume()
     {
         ChangeAudioSliderValue(ref selectedEventVolume, Strings.audioEvent, gameManager.scripts.uiManager.optionsUI.audioEventSlider, gameManager.scripts.uiManager.optionsUI.audioEventNumberText, true, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseEventVolume()
     {
         ChangeAudioSliderValue(ref selectedEventVolume, Strings.audioEvent, gameManager.scripts.uiManager.optionsUI.audioEventSlider, gameManager.scripts.uiManager.optionsUI.audioEventNumberText, false, true, false);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     private void ChangeAudioSliderValue(ref float optionsProperty, string mixerProperty, Slider slider, TextMeshProUGUI sliderText, bool increase, bool button, bool setup)
@@ -2207,189 +2154,162 @@ public class OptionsManager : MonoBehaviour
     {
         selectedCameraZoomSensitivity = gameManager.scripts.uiManager.optionsUI.cameraZoomSensitivitySlider.value;// Get selected display index from the dropdown
         gameManager.scripts.uiManager.optionsUI.cameraZoomSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraZoomSensitivitySlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseCameraZoomSensitivity()
     {
         gameManager.scripts.uiManager.optionsUI.cameraZoomSensitivitySlider.value += 0.01f;
         selectedCameraZoomSensitivity = gameManager.scripts.uiManager.optionsUI.cameraZoomSensitivitySlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraZoomSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraZoomSensitivitySlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseCameraZoomSensitivity()
     {
         gameManager.scripts.uiManager.optionsUI.cameraZoomSensitivitySlider.value -= 0.01f;
         selectedCameraZoomSensitivity = gameManager.scripts.uiManager.optionsUI.cameraZoomSensitivitySlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraZoomSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraZoomSensitivitySlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnCameraMoveSensitivityChanged(float sliderValue)
     {
         selectedCameraMoveSensitivity = gameManager.scripts.uiManager.optionsUI.cameraMoveSensitivitySlider.value;// Get selected display index from the dropdown
         gameManager.scripts.uiManager.optionsUI.cameraMoveSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraMoveSensitivitySlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseCameraMoveSensitivity()
     {
         gameManager.scripts.uiManager.optionsUI.cameraMoveSensitivitySlider.value += 0.01f;
         selectedCameraMoveSensitivity = gameManager.scripts.uiManager.optionsUI.cameraMoveSensitivitySlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraMoveSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraMoveSensitivitySlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseCameraMoveSensitivity()
     {
         gameManager.scripts.uiManager.optionsUI.cameraMoveSensitivitySlider.value -= 0.01f;
         selectedCameraMoveSensitivity = gameManager.scripts.uiManager.optionsUI.cameraMoveSensitivitySlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraMoveSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraMoveSensitivitySlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnCameraPanSensitivityChanged(float sliderValue)
     {
         selectedCameraPanSensitivity = gameManager.scripts.uiManager.optionsUI.cameraPanSensitivitySlider.value;// Get selected display index from the dropdown
         gameManager.scripts.uiManager.optionsUI.cameraPanSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraPanSensitivitySlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseCameraPanSensitivity()
     {
         gameManager.scripts.uiManager.optionsUI.cameraPanSensitivitySlider.value += 0.01f;
         selectedCameraPanSensitivity = gameManager.scripts.uiManager.optionsUI.cameraPanSensitivitySlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraPanSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraPanSensitivitySlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseCameraPanSensitivity()
     {
         gameManager.scripts.uiManager.optionsUI.cameraPanSensitivitySlider.value -= 0.01f;
         selectedCameraPanSensitivity = gameManager.scripts.uiManager.optionsUI.cameraPanSensitivitySlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraPanSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraPanSensitivitySlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnGamepadCameraZoomSensitivityChanged(float sliderValue)
     {
         selectedGamepadCameraZoomSensitivity = gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomSensitivitySlider.value;// Get selected display index from the dropdown
         gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomSensitivitySlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseGamepadCameraZoomSensitivity()
     {
         gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomSensitivitySlider.value += 0.01f;
         selectedGamepadCameraZoomSensitivity = gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomSensitivitySlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomSensitivitySlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseGamepadCameraZoomSensitivity()
     {
         gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomSensitivitySlider.value -= 0.01f;
         selectedGamepadCameraZoomSensitivity = gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomSensitivitySlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomSensitivitySlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnGamepadCameraMoveSensitivityChanged(float sliderValue)
     {
         selectedGamepadCameraMoveSensitivity = gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveSensitivitySlider.value;// Get selected display index from the dropdown
         gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveSensitivitySlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseGamepadCameraMoveSensitivity()
     {
         gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveSensitivitySlider.value += 0.01f;
         selectedGamepadCameraMoveSensitivity = gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveSensitivitySlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveSensitivitySlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseGamepadCameraMoveSensitivity()
     {
         gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveSensitivitySlider.value -= 0.01f;
         selectedGamepadCameraMoveSensitivity = gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveSensitivitySlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveSensitivitySlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnGamepadCameraPanSensitivityChanged(float sliderValue)
     {
         selectedGamepadCameraPanSensitivity = gameManager.scripts.uiManager.optionsUI.cameraGamepadPanSensitivitySlider.value;// Get selected display index from the dropdown
         gameManager.scripts.uiManager.optionsUI.cameraGamepadPanSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadPanSensitivitySlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseGamepadCameraPanSensitivity()
     {
         gameManager.scripts.uiManager.optionsUI.cameraGamepadPanSensitivitySlider.value += 0.01f;
         selectedGamepadCameraPanSensitivity = gameManager.scripts.uiManager.optionsUI.cameraGamepadPanSensitivitySlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraGamepadPanSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadPanSensitivitySlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseGamepadCameraPanSensitivity()
     {
         gameManager.scripts.uiManager.optionsUI.cameraGamepadPanSensitivitySlider.value -= 0.01f;
         selectedGamepadCameraPanSensitivity = gameManager.scripts.uiManager.optionsUI.cameraGamepadPanSensitivitySlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraGamepadPanSensitivitySliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadPanSensitivitySlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnGamepadCameraZoomDeadzoneChanged(float sliderValue)
     {
         selectedGamepadCameraZoomDeadzone = gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomDeadzoneSlider.value;// Get selected display index from the dropdown
         gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomDeadzoneSliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomDeadzoneSlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseGamepadCameraZoomDeadzone()
     {
         gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomDeadzoneSlider.value += 0.01f;
         selectedGamepadCameraZoomDeadzone = gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomDeadzoneSlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomDeadzoneSliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomDeadzoneSlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseGamepadCameraZoomDeadzone()
     {
         gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomDeadzoneSlider.value -= 0.01f;
         selectedGamepadCameraZoomDeadzone = gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomDeadzoneSlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomDeadzoneSliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadZoomDeadzoneSlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnGamepadCameraMoveDeadzoneChanged(float sliderValue)
     {
         selectedGamepadCameraMoveDeadzone = gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveDeadzoneSlider.value;// Get selected display index from the dropdown
         gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveDeadzoneSliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveDeadzoneSlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseGamepadCameraMoveDeadzone()
     {
         gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveDeadzoneSlider.value += 0.01f;
         selectedGamepadCameraMoveDeadzone = gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveDeadzoneSlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveDeadzoneSliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveDeadzoneSlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseGamepadCameraMoveDeadzone()
     {
         gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveDeadzoneSlider.value -= 0.01f;
         selectedGamepadCameraMoveDeadzone = gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveDeadzoneSlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveDeadzoneSliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadMoveDeadzoneSlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
 
     void OnGamepadCameraPanDeadzoneChanged(float sliderValue)
     {
         selectedGamepadCameraPanDeadzone = gameManager.scripts.uiManager.optionsUI.cameraGamepadPanDeadzoneSlider.value;// Get selected display index from the dropdown
         gameManager.scripts.uiManager.optionsUI.cameraGamepadPanDeadzoneSliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadPanDeadzoneSlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void IncreaseGamepadCameraPanDeadzone()
     {
         gameManager.scripts.uiManager.optionsUI.cameraGamepadPanDeadzoneSlider.value += 0.01f;
         selectedGamepadCameraPanDeadzone = gameManager.scripts.uiManager.optionsUI.cameraGamepadPanDeadzoneSlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraGamepadPanDeadzoneSliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadPanDeadzoneSlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     public void DecreaseGamepadCameraPanDeadzone()
     {
         gameManager.scripts.uiManager.optionsUI.cameraGamepadPanDeadzoneSlider.value -= 0.01f;
         selectedGamepadCameraPanDeadzone = gameManager.scripts.uiManager.optionsUI.cameraGamepadPanDeadzoneSlider.value;
         gameManager.scripts.uiManager.optionsUI.cameraGamepadPanDeadzoneSliderText.text = gameManager.scripts.uiManager.optionsUI.cameraGamepadPanDeadzoneSlider.value.ToString(Strings.numberFormat1);
-        //ACTIVATE MODIFIED VALUE BUTTON
     }
     #endregion
 }

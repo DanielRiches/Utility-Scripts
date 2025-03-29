@@ -4,6 +4,8 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.InputSystem;
+using System.Text.RegularExpressions; // Needed for regex filtering
+using System.Text;
 
 public class UIManager : MonoBehaviour
 {
@@ -58,57 +60,75 @@ public class UIManager : MonoBehaviour
         public TextMeshProUGUI gpuName;
         [Space(5)]
         public TMP_Dropdown displayDevicesDropdown;
+        public GameObject displayDeviceModifiedIcon;
         [Space(5)]
         public TMP_Dropdown resolutionsDropdown;
+        public GameObject resolutionsModifiedIcon;
         [Space(5)]
         public TMP_Dropdown displayModeDropdown;
+        public GameObject displayModeModifiedIcon;
         [Space(5)]
         public GameObject framerateCapEffect;
-        public TextMeshProUGUI frameRateCapSliderText;
+        public TMP_InputField frameRateCapSliderText;
         public Toggle frameRateCapToggle;
         public Slider frameRateCapSlider;
+        public GameObject framerateCapModifiedIcon;
         [Space(5)]
         public GameObject vSyncEffect;
         public TMP_Dropdown vSyncDropdown;
+        public GameObject vSyncModifiedIcon;
         [Space(5)]
         public TMP_Dropdown qualityDropdown;
+        public GameObject qualityModifiedIcon;
         [Space(5)]
         public GameObject antiAliasEffect;
         public TMP_Dropdown antiAliasDropdown;
         public TMP_Dropdown taaQualityDropdown;
+        public GameObject antiAliasModifiedIcon;
         [Space(5)]
         public GameObject fogEffect;
         public TMP_Dropdown fogDropdown;
+        public GameObject fogModifiedIcon;
         [Space(5)]
-        public TextMeshProUGUI fovSliderText;
+        public TMP_InputField fovSliderText;
         public Slider fovSlider;
+        public GameObject fovModifiedIcon;
         [Space(5)]
         public TMP_InputField renderDistanceSliderText;
         public Slider renderDistanceSlider;
+        public GameObject renderDistanceModifiedIcon;
         [Space(5)]
         public GameObject bloomEffect;
         public TMP_Dropdown bloomDropdown;
+        public GameObject bloomModifiedIcon;
         [Space(5)]
         public GameObject ansioEffect;
         public TMP_Dropdown ansioDropdown;
+        public GameObject ansioModifiedIcon;
         [Space(5)]
         public GameObject hdrEffect;
         public Toggle hdrToggle;
+        public GameObject hdrModifiedIcon;
         [Space(5)]
         public TMP_Dropdown tonemappingDropdown;
+        public GameObject tonemappingModifiedIcon;
         [Space(5)]
         public GameObject globalIlluminationEffect;
         public TMP_Dropdown giDropdown;
         public Toggle giResolutionToggle;
+        public GameObject giModifiedIcon;
         [Space(5)]
         public GameObject planarReflectionEffect;
         public TMP_Dropdown reflectionsDropdown;
         public Toggle planarReflectionsToggle;
+        public GameObject reflectionsModifiedIcon;
         [Space(5)]
         public TMP_Dropdown shadowQualityDropdown;
+        public GameObject shadowQualityModifiedIcon;
         [Space(5)]
-        public TextMeshProUGUI shadowDistanceSliderText;
+        public TMP_InputField shadowDistanceSliderText;
         public Slider shadowDistanceSlider;
+        public GameObject shadowDistanceModifiedIcon;
         [Space(5)]
         public GameObject diagnosticsEffect;
         public GameObject fpsEffect;
@@ -117,6 +137,7 @@ public class UIManager : MonoBehaviour
         public Animator fpsCounterAnimator;
         public GameObject fpsCounterEffect;
         public Toggle fpsCounterToggle;
+        public GameObject diagnosticsModifiedIcon;
         [Space(5)]
         public GameObject memoryEffect;
         public GameObject memoryCounter;
@@ -201,6 +222,7 @@ public class UIManager : MonoBehaviour
     {
         gameManager = GameObject.FindWithTag(Strings.gameManagerTag).GetComponent<GameManager>();
         gameManager.scripts.uiManager = this;
+        
     }
 
     private void Update()
@@ -420,15 +442,246 @@ public class UIManager : MonoBehaviour
                 optionsUI.optionsTitle.text = GameStrings.GameStringsEnglish.optionsAccessibilitySectionTitle;
             }
         }
+
+        if (gameManager.inOptionsMenu)
+        {
+            // Video
+            if (gameManager.scripts.optionsManager.selectedDisplayIndex != gameManager.scripts.optionsManager.appliedDisplayIndex)
+            {
+                Utils.ActivateObject(optionsUI.displayDeviceModifiedIcon, true);                
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.displayDeviceModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedResolutionIndex != gameManager.scripts.optionsManager.appliedResolutionIndex)
+            {
+                Utils.ActivateObject(optionsUI.resolutionsModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.resolutionsModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedDisplayModeIndex != gameManager.scripts.optionsManager.appliedDisplayModeIndex)
+            {
+                Utils.ActivateObject(optionsUI.displayModeModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.displayModeModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedVsyncIndex != gameManager.scripts.optionsManager.appliedVsyncIndex)
+            {
+                Utils.ActivateObject(optionsUI.vSyncModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.vSyncModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedFrameRateCapValue != gameManager.scripts.optionsManager.appliedFrameRateCapValue || gameManager.scripts.optionsManager.selectedFrameRateCap != gameManager.scripts.optionsManager.appliedFrameRateCap)
+            {
+                Utils.ActivateObject(optionsUI.framerateCapModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.framerateCapModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedRenderDistance != gameManager.scripts.optionsManager.appliedRenderDistance)
+            {
+                Utils.ActivateObject(optionsUI.renderDistanceModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.renderDistanceModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedFOV != gameManager.scripts.optionsManager.appliedFOV)
+            {
+                Utils.ActivateObject(optionsUI.fovModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.fovModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedQualityAssetIndex != gameManager.scripts.optionsManager.appliedQualityAssetIndex)
+            {
+                Utils.ActivateObject(optionsUI.qualityModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.qualityModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedBloomIndex != gameManager.scripts.optionsManager.appliedBloomIndex)
+            {
+                Utils.ActivateObject(optionsUI.bloomModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.bloomModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedGlobalIlluminationIndex != gameManager.scripts.optionsManager.appliedGlobalIlluminationIndex || gameManager.scripts.optionsManager.selectedGlobalIlluminationFullRes != gameManager.scripts.optionsManager.appliedGlobalIlluminationFullRes)
+            {
+                Utils.ActivateObject(optionsUI.giModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.giModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedFogIndex != gameManager.scripts.optionsManager.appliedFogIndex)
+            {
+                Utils.ActivateObject(optionsUI.fogModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.fogModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedAntiAliasIndex != gameManager.scripts.optionsManager.appliedAntiAliasIndex || gameManager.scripts.optionsManager.selectedTaaQualityIndex != gameManager.scripts.optionsManager.appliedTaaQualityIndex)
+            {
+                Utils.ActivateObject(optionsUI.antiAliasModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.antiAliasModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedAnsioIndex != gameManager.scripts.optionsManager.appliedAnsioIndex)
+            {
+                Utils.ActivateObject(optionsUI.ansioModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.ansioModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedShadowQualityIndex != gameManager.scripts.optionsManager.appliedShadowQualityIndex)
+            {
+                Utils.ActivateObject(optionsUI.shadowQualityModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.shadowQualityModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedShadowDistance != gameManager.scripts.optionsManager.appliedShadowDistance)
+            {
+                Utils.ActivateObject(optionsUI.shadowDistanceModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.shadowDistanceModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedReflectionsIndex != gameManager.scripts.optionsManager.appliedReflectionsIndex || gameManager.scripts.optionsManager.selectedPlanarReflections != gameManager.scripts.optionsManager.appliedPlanarReflections)
+            {
+                Utils.ActivateObject(optionsUI.reflectionsModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.reflectionsModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedHDR != gameManager.scripts.optionsManager.appliedHDR)
+            {
+                Utils.ActivateObject(optionsUI.hdrModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.hdrModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedTonemappingIndex != gameManager.scripts.optionsManager.appliedTonemappingIndex)
+            {
+                Utils.ActivateObject(optionsUI.tonemappingModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.tonemappingModifiedIcon, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedFPSCounter != gameManager.scripts.optionsManager.appliedFPSCounter || gameManager.scripts.optionsManager.selectedMemoryCounter != gameManager.scripts.optionsManager.appliedMemoryCounter)
+            {
+                Utils.ActivateObject(optionsUI.diagnosticsModifiedIcon, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.diagnosticsModifiedIcon, false);
+            }
+        }
     }
 
-    public void OnRenderDistanceInputField(string input)
+
+
+
+
+    void TrimInput(Slider slider, TMP_InputField sliderText, bool decimals)
     {
-        inputText = input;
-        optionsUI.renderDistanceSliderText.text = inputText;
+        
+        if (string.IsNullOrEmpty(sliderText.text))// If the input is empty, set to the minimum value
+        {
+            sliderText.text = slider.minValue.ToString();
+        }
+        
+        StringBuilder numericText = new StringBuilder();// numeric-only string
+        foreach (char c in sliderText.text)
+        {
+            if (char.IsDigit(c))
+            {
+                numericText.Append(c);
+            }
+        }
+        sliderText.text = numericText.ToString();
+        
+        if (!decimals)
+        {
+            sliderText.text = float.TryParse(sliderText.text, out float result) ? result.ToString(Strings.numberFormat0) : sliderText.text;// Format the string to remove decimals
+        }        
+        
+        int maxDigits = slider.maxValue.ToString().Length;// Check if the length exceeds max slider value
+        if (sliderText.text.Length > maxDigits)
+        {
+            sliderText.text = sliderText.text.Remove(sliderText.text.Length - 1);// delete last digit
+        }
     }
+    public void OnInputEntered(Slider slider, TMP_InputField sliderText)
+    {
+        string input = sliderText.text;// Get the text directly from the input field
+        //Debug.Log($"Raw Input: '{input}'");
 
+        input = input.Trim();// Trim whitespace to avoid false "empty" detections
+        //Debug.Log($"Trimmed Input: '{input}'");
 
+        string numericInput = Regex.Replace(input, @"[^0-9]", "");// Filter out non-numeric characters
+        //Debug.Log($"Filtered Numeric Input: '{numericInput}'");
+
+        int minValue = (int)slider.minValue;
+        int maxValue = (int)slider.maxValue;
+
+        int inputValue;
+        if (string.IsNullOrEmpty(numericInput))// If input is empty after filtering, set to half of max value
+        {
+            //Debug.Log("EMPTY - Defaulting to half maxValue");
+            inputValue = maxValue / 2;
+        }
+        else
+        {
+            inputValue = int.Parse(numericInput);// Convert to integer
+        }
+        inputValue = Mathf.Clamp(inputValue, minValue, maxValue);
+
+        //Debug.Log($"Final Value Applied: {inputValue}");        
+        slider.value = inputValue;
+        sliderText.text = inputValue.ToString();
+    }
     public void ScrollbarActive()
     {
         Scrollbar[] scrollbars = optionsUI.optionsMenu.GetComponentsInChildren<Scrollbar>(true);
@@ -730,23 +983,28 @@ public class UIManager : MonoBehaviour
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDisplayDeviceDesc;
     }
+
     public void OnDisplayAdapterHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDisplayAdapterDesc;
     }
+
     public void OnResolutionsHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsResolutionDesc;
     }
+
     public void OnDisplayModeHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDisplayModeDesc;
     }
+
     public void OnVSyncHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsVSyncDesc;
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsVSyncDescAdditional;
     }
+
     public void OnFramerateCapHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsFramerateCapDesc;
@@ -754,10 +1012,21 @@ public class UIManager : MonoBehaviour
     }
     public void OnFramerateCapInfoHover()
     {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsFramerateCapDesc;
+
         gameManager.scripts.optionsManager.refreshRate = (Screen.currentResolution.refreshRateRatio.denominator != 0) ? Screen.currentResolution.refreshRateRatio.numerator / (float)Screen.currentResolution.refreshRateRatio.denominator : 0f;
 
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsFramerateCapInfoDesc + "<color=" + Colors.textCyan + ">" + gameManager.scripts.optionsManager.refreshRate.ToString("F0") + " Hz</color>.";
     }
+    public void OnFramerateCapInputField()
+    {
+        OnInputEntered(optionsUI.frameRateCapSlider, optionsUI.frameRateCapSliderText);
+    }
+    public void OnFramerateCapInputChanged()
+    {
+        TrimInput(optionsUI.frameRateCapSlider, optionsUI.frameRateCapSliderText, false);
+    }
+
     public void OnQualityHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsQualityDesc;
@@ -778,15 +1047,33 @@ public class UIManager : MonoBehaviour
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsVolumetricFogDesc;
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsVolumetricFogDescAdditional;
     }
+
     public void OnFOVHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsFOVDesc;
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsFOVDescAdditional;
     }
+    public void OnFOVInputField()
+    {
+        OnInputEntered(optionsUI.fovSlider, optionsUI.fovSliderText);
+    }
+    public void OnFOVInputChanged()
+    {
+        TrimInput(optionsUI.fovSlider, optionsUI.fovSliderText, false);
+    }
+
     public void OnRenderDistanceHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsRenderDistanceDesc;
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+    public void OnRenderDistanceInputField()
+    {
+        OnInputEntered(optionsUI.renderDistanceSlider, optionsUI.renderDistanceSliderText);
+    }
+    public void OnRenderDistanceInputChanged()
+    {
+        TrimInput(optionsUI.renderDistanceSlider, optionsUI.renderDistanceSliderText, false);
     }
     public void OnBloomHover()
     {
@@ -850,11 +1137,21 @@ public class UIManager : MonoBehaviour
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsShadowQualityDesc;
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsShadowQualityDescAdditional;
     }
+
     public void OnShadowDistanceHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsShadowDistanceDesc;
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
     }
+    public void OnShadowDistanceInputField()
+    {
+        OnInputEntered(optionsUI.shadowDistanceSlider, optionsUI.shadowDistanceSliderText);
+    }
+    public void OnShadowDistanceInputChanged()
+    {
+        TrimInput(optionsUI.shadowDistanceSlider, optionsUI.shadowDistanceSliderText, false);
+    }
+
     public void OnDiagnosticsHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDiagnosticsDesc;
