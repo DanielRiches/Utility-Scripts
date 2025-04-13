@@ -39,10 +39,10 @@ public class UIManager : MonoBehaviour
         [Space(5)]
         public Toggle autosavesToggle;
         [Space(5)]
-        public TextMeshProUGUI maximumAutosavesSliderText;
+        public TMP_InputField maximumAutosavesSliderText;
         public Slider maximumAutosavesSlider;
         [Space(5)]
-        public TextMeshProUGUI maximumQuicksavesSliderText;
+        public TMP_InputField maximumQuicksavesSliderText;
         public Slider maximumQuicksavesSlider;
         [Space(5)]
         public Toggle goreToggle;
@@ -78,6 +78,7 @@ public class UIManager : MonoBehaviour
         public TMP_Dropdown vSyncDropdown;
         public GameObject vSyncModifiedIcon;
         [Space(5)]
+        public GameObject qualityEffect;
         public TMP_Dropdown qualityDropdown;
         public GameObject qualityModifiedIcon;
         [Space(5)]
@@ -250,7 +251,12 @@ public class UIManager : MonoBehaviour
                 optionsUI.optionsTitle.text = GameStrings.GameStringsEnglish.optionsGameplaySectionTitle;
             }
         }
-        else if (gameManager.inOptionsVideoMenu)
+        else
+        {
+            //DeActivateOptionsGameplayEffects();
+        }
+
+        if (gameManager.inOptionsVideoMenu)
         {
             if (optionsUI.optionsVideoMenuButtonBG.color != Colors.red)
             {
@@ -267,97 +273,129 @@ public class UIManager : MonoBehaviour
                 optionsUI.optionsTitle.text = GameStrings.GameStringsEnglish.optionsVideoSectionTitle;
             }
 
-            if (gameManager.scripts.optionsManager.selectedFogIndex != 0)
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedFrameRateCap)
+            {
+                Utils.ActivateObject(optionsUI.framerateCapEffect, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.framerateCapEffect, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedFogIndex != 0)
             {
                 Utils.ActivateObject(optionsUI.fogEffect, true);
             }
-            else if (optionsUI.fogEffect.activeSelf)
+            else
             {
                 Utils.ActivateObject(optionsUI.fogEffect, false);
             }
 
-            if (gameManager.scripts.optionsManager.selectedAnsioIndex != 0)
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedAnsioIndex != 0)
             {
                 Utils.ActivateObject(optionsUI.ansioEffect, true);
             }
-            else if (optionsUI.ansioEffect.activeSelf)
+            else
             {
                 Utils.ActivateObject(optionsUI.ansioEffect, false);
             }
 
-            if (gameManager.scripts.optionsManager.selectedAntiAliasIndex != 0)
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedAntiAliasIndex != 0)
             {
                 Utils.ActivateObject(optionsUI.antiAliasEffect, true);
             }
-            else if (optionsUI.antiAliasEffect.activeSelf)
+            else
             {
                 Utils.ActivateObject(optionsUI.antiAliasEffect, false);
             }
 
-            if (gameManager.scripts.optionsManager.selectedVsyncIndex != 0)
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedVsyncIndex != 0)
             {
                 Utils.ActivateObject(optionsUI.vSyncEffect, true);
             }
-            else if (optionsUI.vSyncEffect.activeSelf)
+            else
             {
                 Utils.ActivateObject(optionsUI.vSyncEffect, false);
             }
 
-            if (gameManager.scripts.optionsManager.selectedBloomIndex != 0)
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedQualityAssetIndex == 0)
+            {
+                Utils.ActivateObject(optionsUI.qualityEffect, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.qualityEffect, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedBloomIndex != 0)
             {
                 Utils.ActivateObject(optionsUI.bloomEffect, true);
             }
-            else if (optionsUI.bloomEffect.activeSelf)
+            else
             {
                 Utils.ActivateObject(optionsUI.bloomEffect, false);
             }
 
-            if (gameManager.scripts.optionsManager.selectedPlanarReflections)
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedGlobalIlluminationFullRes)
+            {
+                Utils.ActivateObject(optionsUI.globalIlluminationEffect, true);
+            }
+            else
+            {
+                Utils.ActivateObject(optionsUI.globalIlluminationEffect, false);
+            }
+
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedPlanarReflections)
             {
                 Utils.ActivateObject(optionsUI.planarReflectionEffect, true);
             }
-            else if (optionsUI.planarReflectionEffect.activeSelf)
+            else
             {
                 Utils.ActivateObject(optionsUI.planarReflectionEffect, false);
             }
 
-            if (gameManager.scripts.optionsManager.selectedHDR)
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedHDR)
             {
                 Utils.ActivateObject(optionsUI.hdrEffect, true);
             }
-            else if (optionsUI.hdrEffect.activeSelf)
+            else
             {
                 Utils.ActivateObject(optionsUI.hdrEffect, false);
             }
 
-            if (gameManager.scripts.optionsManager.selectedFPSCounter || gameManager.scripts.optionsManager.selectedMemoryCounter)
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedFPSCounter || gameManager.scripts.optionsManager.selectedProperties.selectedMemoryCounter)
             {
                 Utils.ActivateObject(optionsUI.diagnosticsEffect, true);
             }
-            else if (optionsUI.diagnosticsEffect.activeSelf)
+            else
             {
                 Utils.ActivateObject(optionsUI.diagnosticsEffect, false);
             }
 
-            if (gameManager.scripts.optionsManager.selectedFPSCounter)
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedFPSCounter)
             {
                 Utils.ActivateObject(optionsUI.fpsEffect, true);
             }
-            else if (optionsUI.fpsEffect.activeSelf)
+            else
             {
                 Utils.ActivateObject(optionsUI.fpsEffect, false);
             }
 
-            if (gameManager.scripts.optionsManager.selectedMemoryCounter)
+            if (gameManager.scripts.optionsManager.selectedProperties.selectedMemoryCounter)
             {
                 Utils.ActivateObject(optionsUI.memoryEffect, true);
             }
-            else if (optionsUI.memoryEffect.activeSelf)
+            else
             {
                 Utils.ActivateObject(optionsUI.memoryEffect, false);
             }
         }
-        else if (gameManager.inOptionsAudioMenu)
+        else
+        {
+            DeActivateOptionsVideoEffects();
+        }
+
+        if (gameManager.inOptionsAudioMenu)
         {
             if (optionsUI.optionsAudioMenuButtonBG.color != Colors.red)
             {
@@ -443,183 +481,195 @@ public class UIManager : MonoBehaviour
             }
         }
 
-        if (gameManager.inOptionsMenu)
+        // Video
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedDisplayIndex != gameManager.scripts.optionsManager.appliedDisplayIndex)
         {
-            // Video
-            if (gameManager.scripts.optionsManager.selectedDisplayIndex != gameManager.scripts.optionsManager.appliedDisplayIndex)
-            {
-                Utils.ActivateObject(optionsUI.displayDeviceModifiedIcon, true);                
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.displayDeviceModifiedIcon, false);
-            }
+            Utils.ActivateObject(optionsUI.displayDeviceModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.displayDeviceModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedResolutionIndex != gameManager.scripts.optionsManager.appliedResolutionIndex)
-            {
-                Utils.ActivateObject(optionsUI.resolutionsModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.resolutionsModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedResolutionIndex != gameManager.scripts.optionsManager.appliedResolutionIndex)
+        {
+            Utils.ActivateObject(optionsUI.resolutionsModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.resolutionsModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedDisplayModeIndex != gameManager.scripts.optionsManager.appliedDisplayModeIndex)
-            {
-                Utils.ActivateObject(optionsUI.displayModeModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.displayModeModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedDisplayModeIndex != gameManager.scripts.optionsManager.appliedDisplayModeIndex)
+        {
+            Utils.ActivateObject(optionsUI.displayModeModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.displayModeModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedVsyncIndex != gameManager.scripts.optionsManager.appliedVsyncIndex)
-            {
-                Utils.ActivateObject(optionsUI.vSyncModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.vSyncModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedVsyncIndex != gameManager.scripts.optionsManager.appliedVsyncIndex)
+        {
+            Utils.ActivateObject(optionsUI.vSyncModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.vSyncModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedFrameRateCapValue != gameManager.scripts.optionsManager.appliedFrameRateCapValue || gameManager.scripts.optionsManager.selectedFrameRateCap != gameManager.scripts.optionsManager.appliedFrameRateCap)
-            {
-                Utils.ActivateObject(optionsUI.framerateCapModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.framerateCapModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedFrameRateCapValue != gameManager.scripts.optionsManager.appliedFrameRateCapValue || gameManager.scripts.optionsManager.selectedProperties.selectedFrameRateCap != gameManager.scripts.optionsManager.appliedFrameRateCap)
+        {
+            Utils.ActivateObject(optionsUI.framerateCapModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.framerateCapModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedRenderDistance != gameManager.scripts.optionsManager.appliedRenderDistance)
-            {
-                Utils.ActivateObject(optionsUI.renderDistanceModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.renderDistanceModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedRenderDistance != gameManager.scripts.optionsManager.appliedRenderDistance)
+        {
+            Utils.ActivateObject(optionsUI.renderDistanceModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.renderDistanceModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedFOV != gameManager.scripts.optionsManager.appliedFOV)
-            {
-                Utils.ActivateObject(optionsUI.fovModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.fovModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedFOV != gameManager.scripts.optionsManager.appliedFOV)
+        {
+            Utils.ActivateObject(optionsUI.fovModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.fovModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedQualityAssetIndex != gameManager.scripts.optionsManager.appliedQualityAssetIndex)
-            {
-                Utils.ActivateObject(optionsUI.qualityModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.qualityModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedQualityAssetIndex != gameManager.scripts.optionsManager.appliedQualityAssetIndex)
+        {
+            Utils.ActivateObject(optionsUI.qualityModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.qualityModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedBloomIndex != gameManager.scripts.optionsManager.appliedBloomIndex)
-            {
-                Utils.ActivateObject(optionsUI.bloomModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.bloomModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedBloomIndex != gameManager.scripts.optionsManager.appliedBloomIndex)
+        {
+            Utils.ActivateObject(optionsUI.bloomModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.bloomModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedGlobalIlluminationIndex != gameManager.scripts.optionsManager.appliedGlobalIlluminationIndex || gameManager.scripts.optionsManager.selectedGlobalIlluminationFullRes != gameManager.scripts.optionsManager.appliedGlobalIlluminationFullRes)
-            {
-                Utils.ActivateObject(optionsUI.giModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.giModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedGlobalIlluminationIndex != gameManager.scripts.optionsManager.appliedGlobalIlluminationIndex || gameManager.scripts.optionsManager.selectedProperties.selectedGlobalIlluminationFullRes != gameManager.scripts.optionsManager.appliedGlobalIlluminationFullRes)
+        {
+            Utils.ActivateObject(optionsUI.giModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.giModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedFogIndex != gameManager.scripts.optionsManager.appliedFogIndex)
-            {
-                Utils.ActivateObject(optionsUI.fogModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.fogModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedFogIndex != gameManager.scripts.optionsManager.appliedFogIndex)
+        {
+            Utils.ActivateObject(optionsUI.fogModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.fogModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedAntiAliasIndex != gameManager.scripts.optionsManager.appliedAntiAliasIndex || gameManager.scripts.optionsManager.selectedTaaQualityIndex != gameManager.scripts.optionsManager.appliedTaaQualityIndex)
-            {
-                Utils.ActivateObject(optionsUI.antiAliasModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.antiAliasModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedAntiAliasIndex != gameManager.scripts.optionsManager.appliedAntiAliasIndex || gameManager.scripts.optionsManager.selectedProperties.selectedTaaQualityIndex != gameManager.scripts.optionsManager.appliedTaaQualityIndex)
+        {
+            Utils.ActivateObject(optionsUI.antiAliasModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.antiAliasModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedAnsioIndex != gameManager.scripts.optionsManager.appliedAnsioIndex)
-            {
-                Utils.ActivateObject(optionsUI.ansioModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.ansioModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedAnsioIndex != gameManager.scripts.optionsManager.appliedAnsioIndex)
+        {
+            Utils.ActivateObject(optionsUI.ansioModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.ansioModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedShadowQualityIndex != gameManager.scripts.optionsManager.appliedShadowQualityIndex)
-            {
-                Utils.ActivateObject(optionsUI.shadowQualityModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.shadowQualityModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedShadowQualityIndex != gameManager.scripts.optionsManager.appliedShadowQualityIndex)
+        {
+            Utils.ActivateObject(optionsUI.shadowQualityModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.shadowQualityModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedShadowDistance != gameManager.scripts.optionsManager.appliedShadowDistance)
-            {
-                Utils.ActivateObject(optionsUI.shadowDistanceModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.shadowDistanceModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedShadowDistance != gameManager.scripts.optionsManager.appliedShadowDistance)
+        {
+            Utils.ActivateObject(optionsUI.shadowDistanceModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.shadowDistanceModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedReflectionsIndex != gameManager.scripts.optionsManager.appliedReflectionsIndex || gameManager.scripts.optionsManager.selectedPlanarReflections != gameManager.scripts.optionsManager.appliedPlanarReflections)
-            {
-                Utils.ActivateObject(optionsUI.reflectionsModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.reflectionsModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedReflectionsIndex != gameManager.scripts.optionsManager.appliedReflectionsIndex || gameManager.scripts.optionsManager.selectedProperties.selectedPlanarReflections != gameManager.scripts.optionsManager.appliedPlanarReflections)
+        {
+            Utils.ActivateObject(optionsUI.reflectionsModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.reflectionsModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedHDR != gameManager.scripts.optionsManager.appliedHDR)
-            {
-                Utils.ActivateObject(optionsUI.hdrModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.hdrModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedHDR != gameManager.scripts.optionsManager.appliedHDR)
+        {
+            Utils.ActivateObject(optionsUI.hdrModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.hdrModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedTonemappingIndex != gameManager.scripts.optionsManager.appliedTonemappingIndex)
-            {
-                Utils.ActivateObject(optionsUI.tonemappingModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.tonemappingModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedTonemappingIndex != gameManager.scripts.optionsManager.appliedTonemappingIndex)
+        {
+            Utils.ActivateObject(optionsUI.tonemappingModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.tonemappingModifiedIcon, false);
+        }
 
-            if (gameManager.scripts.optionsManager.selectedFPSCounter != gameManager.scripts.optionsManager.appliedFPSCounter || gameManager.scripts.optionsManager.selectedMemoryCounter != gameManager.scripts.optionsManager.appliedMemoryCounter)
-            {
-                Utils.ActivateObject(optionsUI.diagnosticsModifiedIcon, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.diagnosticsModifiedIcon, false);
-            }
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedFPSCounter != gameManager.scripts.optionsManager.appliedFPSCounter || gameManager.scripts.optionsManager.selectedProperties.selectedMemoryCounter != gameManager.scripts.optionsManager.appliedMemoryCounter)
+        {
+            Utils.ActivateObject(optionsUI.diagnosticsModifiedIcon, true);
+        }
+        else
+        {
+            Utils.ActivateObject(optionsUI.diagnosticsModifiedIcon, false);
         }
     }
 
-
+    private void DeActivateOptionsVideoEffects()
+    {
+        Utils.ActivateObject(optionsUI.qualityEffect, false);
+        Utils.ActivateObject(optionsUI.fogEffect, false);
+        Utils.ActivateObject(optionsUI.ansioEffect, false);
+        Utils.ActivateObject(optionsUI.antiAliasEffect, false);
+        Utils.ActivateObject(optionsUI.vSyncEffect, false);
+        Utils.ActivateObject(optionsUI.framerateCapEffect, false);
+        Utils.ActivateObject(optionsUI.bloomEffect, false);
+        Utils.ActivateObject(optionsUI.globalIlluminationEffect, false);
+        Utils.ActivateObject(optionsUI.planarReflectionEffect, false);
+        Utils.ActivateObject(optionsUI.hdrEffect, false);
+        Utils.ActivateObject(optionsUI.diagnosticsEffect, false);
+        Utils.ActivateObject(optionsUI.fpsEffect, false);
+        Utils.ActivateObject(optionsUI.memoryEffect, false);
+    }
 
 
 
@@ -705,7 +755,7 @@ public class UIManager : MonoBehaviour
 
                 if (scrollDelta.y != 0)
                 {
-                    scrollAmount = scrollDelta.y * gameManager.scripts.optionsManager.selectedMouseScrollSensitivity;
+                    scrollAmount = scrollDelta.y * gameManager.scripts.optionsManager.selectedProperties.selectedMouseScrollSensitivity;
                 }
                 else
                 {
@@ -718,7 +768,7 @@ public class UIManager : MonoBehaviour
 
                 if (scrollDelta.y > gameManager.scripts.optionsManager.appliedGamepadCameraZoomDeadzone || scrollDelta.y < -gameManager.scripts.optionsManager.appliedGamepadCameraZoomDeadzone)
                 {
-                    scrollAmount = scrollDelta.y * gameManager.scripts.optionsManager.selectedMouseScrollSensitivity;
+                    scrollAmount = scrollDelta.y * gameManager.scripts.optionsManager.selectedProperties.selectedMouseScrollSensitivity;
                 }
                 else
                 {
@@ -905,6 +955,7 @@ public class UIManager : MonoBehaviour
         Utils.ActivateObject(optionsUI.memoryCounter, false);
     }
 
+
     // TEXT
     public void OnTextInputHover()
     {
@@ -966,14 +1017,33 @@ public class UIManager : MonoBehaviour
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsAutosavesDesc;
     }
+
     public void OnMaximumAutosavesHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsMaximumAutosavesDesc;
     }
+    public void OnMaximumAutosavesInputField()
+    {
+        OnInputEntered(optionsUI.maximumAutosavesSlider, optionsUI.maximumAutosavesSliderText);
+    }
+    public void OnMaximumAutosavesInputChanged()
+    {
+        TrimInput(optionsUI.maximumAutosavesSlider, optionsUI.maximumAutosavesSliderText, false);
+    }
+
     public void OnMaximumQuicksavesHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsMaximumQuicksavesDesc;
     }
+    public void OnMaximumQuicksavesInputField()
+    {
+        OnInputEntered(optionsUI.maximumQuicksavesSlider, optionsUI.maximumQuicksavesSliderText);
+    }
+    public void OnMaximumQuicksavesInputChanged()
+    {
+        TrimInput(optionsUI.maximumQuicksavesSlider, optionsUI.maximumQuicksavesSliderText, false);
+    }
+
     public void OnGoreHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGoreDesc;
@@ -1103,7 +1173,7 @@ public class UIManager : MonoBehaviour
     public void OnGlobalIlluminationResHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResDesc;
-        if (gameManager.scripts.optionsManager.selectedGlobalIlluminationFullRes)
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedGlobalIlluminationFullRes)
         {
             optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResStatusFullDesc;
         }

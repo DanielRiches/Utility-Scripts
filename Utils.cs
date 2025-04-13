@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 using Unity.Jobs;
 using System.Globalization;// Works on Steamdeck
 using System.IO;
+using System;
 
 public static class Utils
 {
@@ -135,7 +136,7 @@ public static class Utils
         }
     }
 
-    // OBJECT REFERENCE = Utils.GetCursorObjectAndTransform(out TRANSFORM REFERENCE);
+    // GameObject target = Utils.GetCursorObjectAndTransform(out target.transform);
     public static GameObject GetCursorObjectAndTransform(out Transform transform)
     {
         Ray ray = CursorRay3D();
@@ -152,7 +153,7 @@ public static class Utils
         }
     }
 
-    // mouseCursorObjectTransform = Utils.GetCursorObjectTransform();
+    // Transform mouseCursorObjectTransform = Utils.GetCursorObjectTransform();
     public static Transform GetCursorObjectTransform()
     {
         Ray ray = CursorRay3D();
@@ -218,7 +219,7 @@ public static class Utils
         }
     }
 
-    // if(Utils.GetPreferredSystemLanguage() == "en"){// DO SOMETHING}
+    // if(Utils.GetPreferredSystemLanguage() == "en"){// ENGLISH EXISTS, DO SOMETHING};
     public static string GetPreferredSystemLanguage()
     {
         CultureInfo currentCulture = CultureInfo.CurrentCulture;
@@ -226,193 +227,8 @@ public static class Utils
         return language;
     }
 
-    // Utils.LocalizeText(gameManager, ref languageClassName, ref splashTitleText, "VARIABLENAMEHERE");
-    /*
-    public static void LocalizeText(GameManager gameManager, ref string languageClassName, ref TextMeshProUGUI desiredTextField, string fieldName, TMP_FontAsset defaultFontAsset, TMP_FontAsset chineseFontAsset, TMP_FontAsset japaneseFontAsset)
-    {
-        if (desiredTextField)
-        {
-            languageClassName = null;
 
-            if (gameManager.scriptReferences.options.languageEnglish)
-            {
-                languageClassName = "GameStringsEnglish";
-                desiredTextField.fontStyle = FontStyles.Normal;
-
-                if (defaultFontAsset)
-                {
-                    if (desiredTextField.font != defaultFontAsset)
-                    {
-                        desiredTextField.font = defaultFontAsset;
-                    }
-                }
-            }
-            else if (gameManager.scriptReferences.options.languageFrench)
-            {
-                languageClassName = "GameStringsFrench";
-                desiredTextField.fontStyle = FontStyles.Normal;
-
-                if (defaultFontAsset)
-                {
-                    if (desiredTextField.font != defaultFontAsset)
-                    {
-                        desiredTextField.font = defaultFontAsset;
-                    }
-                }
-            }
-            else if (gameManager.scriptReferences.options.languageGerman)
-            {
-                languageClassName = "GameStringsGerman";
-                desiredTextField.fontStyle = FontStyles.Normal;
-
-                if (defaultFontAsset)
-                {
-                    if (desiredTextField.font != defaultFontAsset)
-                    {
-                        desiredTextField.font = defaultFontAsset;
-                    }
-                }
-            }
-            else if (gameManager.scriptReferences.options.languageItalian)
-            {
-                languageClassName = "GameStringsItalian";
-                desiredTextField.fontStyle = FontStyles.Normal;
-
-                if (defaultFontAsset)
-                {
-                    if (desiredTextField.font != defaultFontAsset)
-                    {
-                        desiredTextField.font = defaultFontAsset;
-                    }
-                }
-            }
-            else if (gameManager.scriptReferences.options.languageSpanish)
-            {
-                languageClassName = "GameStringsSpanish";
-                desiredTextField.fontStyle = FontStyles.Normal;
-
-                if (defaultFontAsset)
-                {
-                    if (desiredTextField.font != defaultFontAsset)
-                    {
-                        desiredTextField.font = defaultFontAsset;
-                    }
-                }
-            }
-            else if (gameManager.scriptReferences.options.languageAmerican)
-            {
-                languageClassName = "GameStringsAmerican";
-                desiredTextField.fontStyle = FontStyles.Normal;
-
-                if (defaultFontAsset)
-                {
-                    if (desiredTextField.font != defaultFontAsset)
-                    {
-                        desiredTextField.font = defaultFontAsset;
-                    }
-                }
-            }
-            else if (gameManager.scriptReferences.options.languageRussian)
-            {
-                languageClassName = "GameStringsRussian";
-                desiredTextField.fontStyle = FontStyles.Bold;
-
-                if (defaultFontAsset)
-                {
-                    if (desiredTextField.font != defaultFontAsset)
-                    {
-                        desiredTextField.font = defaultFontAsset;
-                    }
-                }
-            }
-            else if (gameManager.scriptReferences.options.languageChinese)
-            {
-                languageClassName = "GameStringsChinese";
-                desiredTextField.fontStyle = FontStyles.Bold;
-
-                if (chineseFontAsset)
-                {
-                    if (desiredTextField.font != chineseFontAsset)
-                    {
-                        desiredTextField.font = chineseFontAsset;
-                    }
-                }
-            }
-            else if (gameManager.scriptReferences.options.languageJapanese)
-            {
-                languageClassName = "GameStringsJapanese";
-                desiredTextField.fontStyle = FontStyles.Bold;
-
-                if (japaneseFontAsset)
-                {
-                    if (desiredTextField.font != japaneseFontAsset)
-                    {
-                        desiredTextField.font = japaneseFontAsset;
-                    }
-                }
-            }
-            else if (gameManager.scriptReferences.options.languageBrazilian)
-            {
-                languageClassName = "GameStringsBrazilian";
-                desiredTextField.fontStyle = FontStyles.Normal;
-
-                if (defaultFontAsset)
-                {
-                    if (desiredTextField.font != defaultFontAsset)
-                    {
-                        desiredTextField.font = defaultFontAsset;
-                    }
-                }
-            }
-            else
-            {
-                languageClassName = "GameStringsEnglish";
-                desiredTextField.fontStyle = FontStyles.Normal;
-
-                if (defaultFontAsset)
-                {
-                    if (desiredTextField.font != defaultFontAsset)
-                    {
-                        desiredTextField.font = defaultFontAsset;
-                    }
-                }
-            }
-
-            if (languageClassName != null)
-            {
-                var gameStringsType = typeof(GameStrings);
-                var languageType = gameStringsType.GetNestedType(languageClassName);
-
-                if (languageType != null)
-                {
-                    var field = languageType.GetField(fieldName);
-                    if (field != null)
-                    {
-                        string localizedText = field.GetValue(null) as string;
-                        desiredTextField.text = localizedText;
-                    }
-                    else
-                    {
-                        Debug.LogError($"Field '{fieldName}' not found in '{languageClassName}'");
-                    }
-                }
-                else
-                {
-                    Debug.LogError($"Language class '{languageClassName}' not found");
-                }
-            }
-        }
-        else
-        {
-            //Debug.Log("desiredTextField not active...");
-        }
-    }
-    */
-
-    /*if (Utils.CheckForOptionsSave(gameManager.saveManager.optionsFilePath))
-     * {
-     *    //SAVE EXISTS, DO SOMETHING
-     * }*/
+    //if (Utils.CheckForOptionsSave(gameManager.saveManager.optionsFilePath)){//SAVE EXISTS, DO SOMETHING};
     public static bool CheckForOptionsSave(string filePath)
     {
         if (File.Exists(filePath))
@@ -460,6 +276,23 @@ public static class Utils
     {
         image.color = desiredColor;
     }
+
+    public static void CheckToggleValueModified(Toggle toggle, bool optionsSelectedBool, GameObject valueModifiedImage)
+    {
+        if (toggle)
+        {
+            if (optionsSelectedBool != toggle.isOn)
+            {
+                ActivateObject(valueModifiedImage, true);
+            }
+            else
+            {
+                ActivateObject(valueModifiedImage, false);
+            }
+        }
+    }
+
+
 
     // Utils.TintUIScriptTrigger(uiScript, on);
     public static void TintUIScriptTrigger(UI uiScript, bool on)
