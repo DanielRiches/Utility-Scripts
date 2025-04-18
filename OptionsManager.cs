@@ -33,12 +33,11 @@ public class OptionsManager : MonoBehaviour
     [SerializeField] private HDRenderPipelineAsset appliedHDRPAsset;
     RayCastingMode rayMode;
     [HideInInspector] public bool rayTracingSupported;// Accessed by UI Manager
-
-    public TimeSpan timeSpan; // for keep settings timer, accessed by GameManager
+    
     public float FPSCounterUpdateInterval = 0.1f; // How often to update the FPS display (in seconds), accessed by GameManager
     public float FPStimer;// Accessed by GameManager
-    public int frameCount;// Accessed by GameManager
-    public float fps;// Accessed by GameManager
+    [HideInInspector] public int frameCount;// Accessed by GameManager
+    [HideInInspector] public float fps;// Accessed by GameManager
     public float memoryCounterUpdateInterval = 0.1f; // How often to update the memory display (in seconds), accessed by GameManager
     [HideInInspector] public float memoryTimer;// Accessed by GameManager
     [HideInInspector] public long totalMemory;// Accessed by GameManager
@@ -46,6 +45,7 @@ public class OptionsManager : MonoBehaviour
     [HideInInspector] public float memoryInGB;// Accessed by GameManager
     [HideInInspector] public List<string> desiredList;// Accessed by populate methods below
 
+    public TimeSpan timeSpan; // for keep settings timer, accessed by GameManager
     public bool requiresTimedConfirmation;
     public float requiresTimedConfirmationTimer = 25;
 
@@ -55,7 +55,8 @@ public class OptionsManager : MonoBehaviour
         public bool selectedAutosaves;
         public int selectedMaximumAutosaves;
         public int selectedMaximumQuicksaves;
-        public bool selectedGore;
+        public int selectedGoreIndex;
+        public int selectedDestructionIndex;
         public int selectedDisplayIndex;
         public int selectedResolutionIndex;
         public int selectedDisplayModeIndex;
@@ -69,14 +70,19 @@ public class OptionsManager : MonoBehaviour
         public int selectedFOV;
         public int selectedRenderDistance;
         public int selectedBloomIndex;
-        public bool selectedHDR;
+        public int selectedHDRIndex;
         public int selectedAnsioIndex;
         public int selectedTonemappingIndex;
-        public bool selectedGlobalIlluminationFullRes;
+        public int selectedTonemappingQualityIndex;
+        public int selectedTonemappingQualityACESIndex;
+        public int selectedGlobalIlluminationResIndex;
         public int selectedGlobalIlluminationIndex;
         public int selectedReflectionsIndex;
-        public bool selectedPlanarReflections;
+        public int selectedPlanarReflectionsIndex;
         public int selectedShadowQualityIndex;
+        public int selectedWeatherEffectsIndex;
+        public int selectedLineRenderingIndex;
+        public int selectedCrevicesIndex;
         public int selectedShadowDistance;
         public bool selectedFPSCounter;
         public bool selectedMemoryCounter;
@@ -104,7 +110,8 @@ public class OptionsManager : MonoBehaviour
     public bool appliedAutosaves;
     public int appliedMaximumAutosaves;
     public int appliedMaximumQuicksaves;
-    public bool appliedGore;
+    public int appliedGoreIndex;
+    public int appliedDestructionIndex;
     [Header("Video")]
     public int appliedDisplayIndex;
     public int appliedResolutionIndex;
@@ -119,15 +126,20 @@ public class OptionsManager : MonoBehaviour
     public int appliedFOV;
     public int appliedRenderDistance;
     public int appliedBloomIndex;
-    public bool appliedHDR;
+    public int appliedHDRIndex;
     public int appliedAnsioIndex;
     public int appliedTonemappingIndex;
-    public bool appliedGlobalIlluminationFullRes;
+    public int appliedTonemappingQualityIndex;
+    public int appliedTonemappingQualityACESIndex;
+    public int appliedGlobalIlluminationResIndex;
     public int appliedGlobalIlluminationIndex;
     public int appliedReflectionsIndex;
-    public bool appliedPlanarReflections;
+    public int appliedPlanarReflectionsIndex;
     public int appliedShadowQualityIndex;
     public int appliedShadowDistance;
+    public int appliedWeatherEffectsIndex;
+    public int appliedLineRenderingIndex;
+    public int appliedCrevicesIndex;
     public bool appliedFPSCounter;
     public bool appliedMemoryCounter;
     [Header("Audio")]
@@ -159,8 +171,10 @@ public class OptionsManager : MonoBehaviour
     void Start()
     {
         PopulateAutosavesToggle();
-        PopulateSavesSliders();
-        PopulateGore();
+        PopulateMaximumAutoSavesSliders();
+        PopulateMaximumQuickSavesSlider();
+        PopulateGoreDropdown();
+        PopulateDestructionDropdown();
         DetectDisplays();// resolutions are populated inside this    
         PopulateDisplayAdapter();
         PopulateDisplayModeDropdown();
@@ -173,11 +187,17 @@ public class OptionsManager : MonoBehaviour
         PopulateFovSlider();
         PopulateRenderDistanceSlider();
         PopulateBloomDropdown();
-        PopulateHDRToggle();
+        PopulateHDRDropdown();
         PopulateAnsioDropdown();
+        PopulateWeatherEffectsDropdown();
+        PopulateLineRenderingDropdown();
+        PopulateCrevicesDropdown();
         PopulateTonemappingDropdown();
+        PopulateTonemappingQualityDropdown();
         PopulateGlobalIlluminationDropdown();
+        PopulateGlobalIlluminationResDropdown();
         PopulateReflectionsDropdown();
+        PopulatePlanarReflectionsDropdown();
         PopulateShadowQualityDropdown();
         PopulateShadowDistanceSlider();
         PopulateFPSCounterToggle();
@@ -229,10 +249,10 @@ public class OptionsManager : MonoBehaviour
             }
             else
             {
-                Debug.Log("Tried to switch to a resolution index that doesn't exist.");
+                //Debug.Log("Tried to switch to a resolution index that doesn't exist.");
                 if (selectedProperties.selectedDisplayModeIndex != appliedDisplayModeIndex)// If Display Mode has changed
                 {
-                    Screen.SetResolution(Screen.width, Screen.height, screenMode, selectedResolution.refreshRateRatio);
+                    Screen.SetResolution(Screen.width, Screen.height, screenMode, selectedResolution.refreshRateRatio);// Default back to screen.width + height to avoid error
                     requiresTimedConfirmation = true;
                 }                
             }
@@ -244,13 +264,13 @@ public class OptionsManager : MonoBehaviour
                     if (selectedProperties.selectedVsyncIndex == 1)
                     {
                         Application.targetFrameRate = (int)selectedResolution.refreshRateRatio.value;
-                        gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = "<color=" + Colors.textCyan + ">" + ((int)selectedResolution.refreshRateRatio.value).ToString(Strings.numberFormat0) + " </color>";
+                        gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = ((int)selectedResolution.refreshRateRatio.value).ToString(Strings.numberFormat0);
                         gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value = (int)selectedResolution.refreshRateRatio.value;
                     }
                     else if (selectedProperties.selectedVsyncIndex == 2)
                     {
                         Application.targetFrameRate = (int)(selectedResolution.refreshRateRatio.value / 2);
-                        gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = "<color=" + Colors.textCyan + ">" + ((int)(selectedResolution.refreshRateRatio.value / 2)).ToString(Strings.numberFormat0) + " </color>";
+                        gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = ((int)(selectedResolution.refreshRateRatio.value / 2)).ToString(Strings.numberFormat0);
                         gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value = (int)selectedResolution.refreshRateRatio.value / 2;
                     }
                 }
@@ -260,7 +280,7 @@ public class OptionsManager : MonoBehaviour
             {
                 if (selectedProperties.selectedVsyncIndex == 0)// If VSync is off
                 {
-                    if (selectedProperties.selectedFrameRateCap)// use framerate cap
+                    if (selectedProperties.selectedFrameRateCap)// Use framerate cap
                     {
                         if (selectedProperties.selectedFrameRateCapValue > selectedResolution.refreshRateRatio.value)// Cap to monitors max refresh rate
                         {
@@ -268,7 +288,7 @@ public class OptionsManager : MonoBehaviour
                             Application.targetFrameRate = (int)selectedResolution.refreshRateRatio.value;
                             selectedProperties.selectedFrameRateCapValue = (int)selectedResolution.refreshRateRatio.value;
                             gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value = selectedProperties.selectedFrameRateCapValue;
-                            gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = "<color=" + Colors.textCyan + ">" + gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value.ToString(Strings.numberFormat0) + " </color>";
+                            gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value.ToString(Strings.numberFormat0);
                         }
                         else
                         {
@@ -441,9 +461,9 @@ public class OptionsManager : MonoBehaviour
                 }
             }
 
-            if (selectedProperties.selectedHDR != appliedHDR)
+            if (selectedProperties.selectedHDRIndex != appliedHDRIndex)
             {
-                if (selectedProperties.selectedHDR)
+                if (selectedProperties.selectedHDRIndex == 1)
                 {
                     gameManager.scripts.cameraManager.mainCamera.allowHDR = true;
                 }
@@ -653,9 +673,9 @@ public class OptionsManager : MonoBehaviour
                 }
             }
 
-            if (selectedProperties.selectedPlanarReflections != appliedPlanarReflections)
+            if (selectedProperties.selectedPlanarReflectionsIndex != appliedPlanarReflectionsIndex)
             {
-                if (selectedProperties.selectedPlanarReflections)
+                if (selectedProperties.selectedPlanarReflectionsIndex != 0)
                 {
                     SetPlanarReflection(null, true, true);
                 }
@@ -731,7 +751,7 @@ public class OptionsManager : MonoBehaviour
             else
             {
                 ApplySettingsPermanent();
-                requiresTimedConfirmationTimer = 24f;
+                requiresTimedConfirmationTimer = 24f;                
             }
         }
     }
@@ -741,7 +761,8 @@ public class OptionsManager : MonoBehaviour
         appliedAutosaves = selectedProperties.selectedAutosaves;
         appliedMaximumAutosaves = selectedProperties.selectedMaximumAutosaves;
         appliedMaximumQuicksaves = selectedProperties.selectedMaximumQuicksaves;
-        appliedGore = selectedProperties.selectedGore;
+        appliedGoreIndex = selectedProperties.selectedGoreIndex;
+        appliedDestructionIndex = selectedProperties.selectedDestructionIndex; 
         //VIDEO
         appliedResolutionIndex = selectedProperties.selectedResolutionIndex;
         appliedDisplayModeIndex = selectedProperties.selectedDisplayModeIndex;
@@ -755,13 +776,18 @@ public class OptionsManager : MonoBehaviour
         appliedFOV = selectedProperties.selectedFOV;
         appliedRenderDistance = selectedProperties.selectedRenderDistance;
         appliedBloomIndex = selectedProperties.selectedBloomIndex;
-        appliedHDR = selectedProperties.selectedHDR;
+        appliedHDRIndex = selectedProperties.selectedHDRIndex;
         appliedAnsioIndex = selectedProperties.selectedAnsioIndex;
+        appliedWeatherEffectsIndex = selectedProperties.selectedWeatherEffectsIndex;
+        appliedLineRenderingIndex = selectedProperties.selectedLineRenderingIndex;
+        appliedCrevicesIndex = selectedProperties.selectedCrevicesIndex;
         appliedTonemappingIndex = selectedProperties.selectedTonemappingIndex;
-        appliedGlobalIlluminationFullRes = selectedProperties.selectedGlobalIlluminationFullRes;
+        appliedTonemappingQualityIndex = selectedProperties.selectedTonemappingQualityIndex;
+        appliedTonemappingQualityACESIndex = selectedProperties.selectedTonemappingQualityACESIndex;
+        appliedGlobalIlluminationResIndex = selectedProperties.selectedGlobalIlluminationResIndex;
         appliedGlobalIlluminationIndex = selectedProperties.selectedGlobalIlluminationIndex;
         appliedReflectionsIndex = selectedProperties.selectedReflectionsIndex;
-        appliedPlanarReflections = selectedProperties.selectedPlanarReflections;
+        appliedPlanarReflectionsIndex = selectedProperties.selectedPlanarReflectionsIndex;
         appliedShadowQualityIndex = selectedProperties.selectedShadowQualityIndex;
         appliedShadowDistance = selectedProperties.selectedShadowDistance;
         appliedFPSCounter = selectedProperties.selectedFPSCounter;
@@ -788,7 +814,7 @@ public class OptionsManager : MonoBehaviour
 
         requiresTimedConfirmation = false;
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.confirmOptionsChanges, false);
-        Utils.ClearMemory();
+        CheckModified();
     }
     public void RevertChanges()
     {
@@ -796,8 +822,9 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.optionsUI.autosavesToggle.isOn = appliedAutosaves;
         gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.value = appliedMaximumAutosaves;
         gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.value = appliedMaximumQuicksaves;
+        gameManager.scripts.uiManager.optionsUI.destructionDropdown.value = appliedDestructionIndex;
         //VIDEO
-        gameManager.scripts.uiManager.optionsUI.goreToggle.isOn = appliedGore;
+        gameManager.scripts.uiManager.optionsUI.goreDropdown.value = appliedGoreIndex;
         gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.value = appliedResolutionIndex;
         gameManager.scripts.uiManager.optionsUI.displayModeDropdown.value = appliedDisplayModeIndex;
         gameManager.scripts.uiManager.optionsUI.qualityDropdown.value = appliedQualityAssetIndex;
@@ -810,13 +837,30 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.optionsUI.fovSlider.value = appliedFOV;
         gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value = appliedRenderDistance;
         gameManager.scripts.uiManager.optionsUI.bloomDropdown.value = appliedBloomIndex;
-        gameManager.scripts.uiManager.optionsUI.hdrToggle.isOn = appliedHDR;
+        gameManager.scripts.uiManager.optionsUI.hdrDropdown.value = appliedHDRIndex;
         gameManager.scripts.uiManager.optionsUI.ansioDropdown.value = appliedAnsioIndex;
+        gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown.value = appliedWeatherEffectsIndex;
+        gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown.value = appliedLineRenderingIndex;
+        gameManager.scripts.uiManager.optionsUI.crevicesDropdown.value = appliedCrevicesIndex;
         gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value = appliedTonemappingIndex;
-        gameManager.scripts.uiManager.optionsUI.giResolutionToggle.isOn = appliedGlobalIlluminationFullRes;
+
+        if (appliedTonemappingIndex == 0)
+        {
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = appliedTonemappingIndex;
+        }
+        else if (appliedTonemappingIndex == 1)
+        {
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = appliedTonemappingQualityIndex;
+        }
+        else if (appliedTonemappingIndex == 2)
+        {
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = appliedTonemappingQualityACESIndex;
+        }
+
+        gameManager.scripts.uiManager.optionsUI.giResolutionDropdown.value = appliedGlobalIlluminationResIndex;
         gameManager.scripts.uiManager.optionsUI.giDropdown.value = appliedGlobalIlluminationIndex;
         gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.value = appliedReflectionsIndex;
-        gameManager.scripts.uiManager.optionsUI.planarReflectionsToggle.isOn = appliedPlanarReflections;
+        gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown.value = appliedPlanarReflectionsIndex;
         gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.value = appliedShadowQualityIndex;
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value = appliedShadowDistance;
         gameManager.scripts.uiManager.optionsUI.fpsCounterToggle.isOn = appliedFPSCounter;
@@ -845,7 +889,63 @@ public class OptionsManager : MonoBehaviour
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.confirmOptionsChanges, false);
         ApplySettings();// RE-APPLY PREVIOUS SETTINGS
     }
+    public void CheckModified()
+    {
+        Utils.CheckToggleValueModified(ref gameManager.scripts.uiManager.optionsUI.autosavesToggle, appliedAutosaves, ref gameManager.scripts.uiManager.optionsUI.autosavesModifiedIcon);
+        Utils.CheckSliderValueModified(ref gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider, appliedMaximumAutosaves, ref gameManager.scripts.uiManager.optionsUI.maximumAutosavesModifiedIcon);
+        Utils.CheckSliderValueModified(ref gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider, appliedMaximumQuicksaves, ref gameManager.scripts.uiManager.optionsUI.maximumQuicksavesModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.goreDropdown, appliedGoreIndex, ref gameManager.scripts.uiManager.optionsUI.goreModifiedIcon);
 
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.displayDevicesDropdown, appliedDisplayIndex, ref gameManager.scripts.uiManager.optionsUI.displayDeviceModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.resolutionsDropdown, appliedResolutionIndex, ref gameManager.scripts.uiManager.optionsUI.resolutionsModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.displayModeDropdown, appliedDisplayModeIndex, ref gameManager.scripts.uiManager.optionsUI.displayModeModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.vSyncDropdown, appliedVsyncIndex, ref gameManager.scripts.uiManager.optionsUI.vSyncModifiedIcon);
+        Utils.CheckToggleValueModified(ref gameManager.scripts.uiManager.optionsUI.frameRateCapToggle, appliedFrameRateCap, ref gameManager.scripts.uiManager.optionsUI.framerateCapModifiedIcon);
+        Utils.CheckSliderValueModified(ref gameManager.scripts.uiManager.optionsUI.frameRateCapSlider, appliedFrameRateCapValue, ref gameManager.scripts.uiManager.optionsUI.framerateCapModifiedIcon);        
+
+        Utils.CheckSliderValueModified(ref gameManager.scripts.uiManager.optionsUI.renderDistanceSlider, appliedRenderDistance, ref gameManager.scripts.uiManager.optionsUI.renderDistanceModifiedIcon);
+        Utils.CheckSliderValueModified(ref gameManager.scripts.uiManager.optionsUI.fovSlider, appliedFOV, ref gameManager.scripts.uiManager.optionsUI.fovModifiedIcon);                
+        Utils.CheckSliderValueModified(ref gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider, appliedShadowDistance, ref gameManager.scripts.uiManager.optionsUI.shadowDistanceModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.qualityDropdown, appliedQualityAssetIndex, ref gameManager.scripts.uiManager.optionsUI.qualityModifiedIcon);
+             
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.bloomDropdown, appliedBloomIndex, ref gameManager.scripts.uiManager.optionsUI.bloomModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.giDropdown, appliedGlobalIlluminationIndex, ref gameManager.scripts.uiManager.optionsUI.giModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.giResolutionDropdown, appliedGlobalIlluminationResIndex, ref gameManager.scripts.uiManager.optionsUI.giResolutionModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.fogDropdown, appliedFogIndex, ref gameManager.scripts.uiManager.optionsUI.fogModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.ansioDropdown, appliedAnsioIndex, ref gameManager.scripts.uiManager.optionsUI.ansioModifiedIcon);
+
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown, appliedWeatherEffectsIndex, ref gameManager.scripts.uiManager.optionsUI.weatherEffectsModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown, appliedLineRenderingIndex, ref gameManager.scripts.uiManager.optionsUI.lineRenderingModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.crevicesDropdown, appliedCrevicesIndex, ref gameManager.scripts.uiManager.optionsUI.crevicesModifiedIcon);
+
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.reflectionsDropdown, appliedReflectionsIndex, ref gameManager.scripts.uiManager.optionsUI.reflectionsModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown, appliedPlanarReflectionsIndex, ref gameManager.scripts.uiManager.optionsUI.planarReflectionsModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown, appliedShadowQualityIndex, ref gameManager.scripts.uiManager.optionsUI.shadowQualityModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.antiAliasDropdown, appliedAntiAliasIndex, ref gameManager.scripts.uiManager.optionsUI.antiAliasModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.taaQualityDropdown, appliedTaaQualityIndex, ref gameManager.scripts.uiManager.optionsUI.taaQualityModifiedIcon);
+
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.hdrDropdown, appliedHDRIndex, ref gameManager.scripts.uiManager.optionsUI.hdrModifiedIcon);        
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.tonemappingDropdown, appliedTonemappingIndex, ref gameManager.scripts.uiManager.optionsUI.tonemappingModifiedIcon);
+
+        if (selectedProperties.selectedTonemappingIndex == 0)
+        {
+            Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown, 0, ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityModifiedIcon);
+        }
+        else if (selectedProperties.selectedTonemappingIndex == 1)
+        {
+            Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown, appliedTonemappingQualityIndex, ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityModifiedIcon);
+        }
+        else if (selectedProperties.selectedTonemappingIndex == 2)
+        {
+            Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown, appliedTonemappingQualityACESIndex, ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityModifiedIcon);
+        }
+
+        Utils.CheckToggleValueModified(ref gameManager.scripts.uiManager.optionsUI.fpsCounterToggle, appliedFPSCounter, ref gameManager.scripts.uiManager.optionsUI.fpsCounterModifiedIcon);
+        Utils.CheckToggleValueModified(ref gameManager.scripts.uiManager.optionsUI.memoryCounterToggle, appliedMemoryCounter, ref gameManager.scripts.uiManager.optionsUI.memoryCounterModifiedIcon);
+
+        Utils.CheckSliderValueModified(ref gameManager.scripts.uiManager.optionsUI.audioMasterSlider, appliedMasterVolume, ref gameManager.scripts.uiManager.optionsUI.audioMasterModifiedIcon);
+
+    }
 
     #region Setup
     void PopulateAutosavesToggle()
@@ -855,22 +955,47 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.optionsUI.autosavesToggle.isOn = true;// Default value
         OnAutosavesToggleChanged(gameManager.scripts.uiManager.optionsUI.autosavesToggle.isOn);
     }
-    void PopulateSavesSliders()
+    void PopulateMaximumAutoSavesSliders()
     {
         gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.onValueChanged.AddListener(OnAutosavesSliderChanged);
         gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.value = 10;// Default value
         OnAutosavesSliderChanged(gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.value);
-
+    }
+    void PopulateMaximumQuickSavesSlider()
+    {
         gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.onValueChanged.AddListener(OnQuicksavesSliderChanged);
         gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.value = 10;// Default value
         OnQuicksavesSliderChanged(gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.value);
     }
-    void PopulateGore()
+    void PopulateGoreDropdown()
     {
-        gameManager.scripts.uiManager.optionsUI.goreToggle.onValueChanged.RemoveAllListeners();
-        gameManager.scripts.uiManager.optionsUI.goreToggle.onValueChanged.AddListener(OnGoreChanged);
-        gameManager.scripts.uiManager.optionsUI.goreToggle.isOn = true;// Default value
-        OnGoreChanged(gameManager.scripts.uiManager.optionsUI.goreToggle.isOn);
+        gameManager.scripts.uiManager.optionsUI.goreDropdown.ClearOptions();
+        desiredList.Clear();
+        desiredList = new List<string>
+        {
+            "Off",
+            "On"
+        };
+        gameManager.scripts.uiManager.optionsUI.goreDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.goreDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.goreDropdown.onValueChanged.AddListener(OnGoreChanged);
+        gameManager.scripts.uiManager.optionsUI.goreDropdown.value = 1;// Default value
+        OnGoreChanged(gameManager.scripts.uiManager.optionsUI.goreDropdown.value);
+    }
+    void PopulateDestructionDropdown()
+    {
+        gameManager.scripts.uiManager.optionsUI.destructionDropdown.ClearOptions();
+        desiredList.Clear();
+        desiredList = new List<string>
+        {
+            "Off",
+            "On"
+        };
+        gameManager.scripts.uiManager.optionsUI.destructionDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.destructionDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.destructionDropdown.onValueChanged.AddListener(OnDestructionChanged);
+        gameManager.scripts.uiManager.optionsUI.destructionDropdown.value = 1;// Default value
+        OnDestructionChanged(gameManager.scripts.uiManager.optionsUI.destructionDropdown.value);
     }
     public void DetectDisplays()
     {
@@ -1028,9 +1153,9 @@ public class OptionsManager : MonoBehaviour
             "Second V<color=red>-</color>Blank",
         };
         gameManager.scripts.uiManager.optionsUI.vSyncDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.vSyncDropdown.value = 1;// Default value 
         gameManager.scripts.uiManager.optionsUI.vSyncDropdown.onValueChanged.RemoveAllListeners();
-        gameManager.scripts.uiManager.optionsUI.vSyncDropdown.onValueChanged.AddListener(OnVSyncChanged);        
-        gameManager.scripts.uiManager.optionsUI.vSyncDropdown.value = 1;// Default value
+        gameManager.scripts.uiManager.optionsUI.vSyncDropdown.onValueChanged.AddListener(OnVSyncChanged);
         OnVSyncChanged(gameManager.scripts.uiManager.optionsUI.vSyncDropdown.value);
     }
     void PopulateAntiAliasDropdown()
@@ -1154,12 +1279,21 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.optionsUI.bloomDropdown.value = 2;// Default value
         OnBloomChanged(gameManager.scripts.uiManager.optionsUI.bloomDropdown.value);
     }
-    void PopulateHDRToggle()
+    void PopulateHDRDropdown()
     {
-        gameManager.scripts.uiManager.optionsUI.hdrToggle.onValueChanged.RemoveAllListeners();
-        gameManager.scripts.uiManager.optionsUI.hdrToggle.onValueChanged.AddListener(OnHDRChanged);
-        gameManager.scripts.uiManager.optionsUI.hdrToggle.isOn = false;// Default value
-        OnHDRChanged(gameManager.scripts.uiManager.optionsUI.hdrToggle.isOn);
+        gameManager.scripts.uiManager.optionsUI.hdrDropdown.ClearOptions();
+
+        desiredList.Clear();
+        desiredList = new List<string>
+        {
+            "Off",
+            "On"
+        };
+        gameManager.scripts.uiManager.optionsUI.hdrDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.hdrDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.hdrDropdown.onValueChanged.AddListener(OnHDRChanged);
+        gameManager.scripts.uiManager.optionsUI.hdrDropdown.value = 0;// Default value
+        OnHDRChanged(gameManager.scripts.uiManager.optionsUI.hdrDropdown.value);
     }
     void PopulateAnsioDropdown()
     {
@@ -1182,6 +1316,52 @@ public class OptionsManager : MonoBehaviour
         OnAnsioChanged(gameManager.scripts.uiManager.optionsUI.ansioDropdown.value);
         SetAnsio(null, true);
     }
+    void PopulateWeatherEffectsDropdown()
+    {
+        gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown.ClearOptions();
+        desiredList.Clear();
+        desiredList = new List<string>
+        {
+            "Off",
+            "Half",
+            "Full"
+        };
+        gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown.onValueChanged.AddListener(OnWeatherEffectsChanged);
+        gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown.value = 2;// Default value
+        OnWeatherEffectsChanged(gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown.value);
+    }
+    void PopulateLineRenderingDropdown()
+    {
+        gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown.ClearOptions();
+        desiredList.Clear();
+        desiredList = new List<string>
+        {
+            "Standard",
+            "High Quality"
+        };
+        gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown.onValueChanged.AddListener(OnLineRenderingChanged);
+        gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown.value = 0;// Default value
+        OnLineRenderingChanged(gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown.value);
+    }
+    void PopulateCrevicesDropdown()
+    {
+        gameManager.scripts.uiManager.optionsUI.crevicesDropdown.ClearOptions();
+        desiredList.Clear();
+        desiredList = new List<string>
+        {
+            "Off",
+            "On"
+        };
+        gameManager.scripts.uiManager.optionsUI.crevicesDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.crevicesDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.crevicesDropdown.onValueChanged.AddListener(OnCrevicesChanged);
+        gameManager.scripts.uiManager.optionsUI.crevicesDropdown.value = 1;// Default value
+        OnCrevicesChanged(gameManager.scripts.uiManager.optionsUI.crevicesDropdown.value);
+    }
     void PopulateTonemappingDropdown()
     {
         if (postProcess.profile.TryGet(out tonemapping)){}
@@ -1190,25 +1370,73 @@ public class OptionsManager : MonoBehaviour
         desiredList.Clear();
         desiredList = new List<string>
         {            
-            "Reinhard",
-            "BT2390",
-            "ACES 1000",
-            "ACES 2000",
-            "ACES 4000"
+            "Off",
+            "Neutral",
+            "ACES"
         };
         gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.AddOptions(desiredList);        
         gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.onValueChanged.AddListener(OnTonemappingChanged);        
         gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value = 2;// Default value
         OnTonemappingChanged(gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value);
+        desiredList.Clear();
+    }
+    void PopulateTonemappingQualityDropdown()
+    {
+        if (gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value == 0)
+        {
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.ClearOptions();
+
+            desiredList.Clear();
+            desiredList = new List<string>
+            {
+                "N/A"
+            };
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.AddOptions(desiredList);
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.RemoveAllListeners();
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = 0;// Default value
+            OnTonemappingQualityChanged(gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value);
+        }
+        else if (gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value == 1)
+        {
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.ClearOptions();
+
+            desiredList.Clear();
+            desiredList = new List<string>
+            {
+                "Reinhard",
+                "BT2390"
+            };
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.AddOptions(desiredList);
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.RemoveAllListeners();
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = 1;// Default value
+            OnTonemappingQualityChanged(gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value);            
+        }
+        else
+        {
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.ClearOptions();
+
+            desiredList.Clear();
+            desiredList = new List<string>
+            {
+                "ACES1000",
+                "ACES2000",
+                "ACES4000"
+            };
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.AddOptions(desiredList);
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.RemoveAllListeners();
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = 0;// Default value
+            OnTonemappingQualityChanged(gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value);            
+        }
+        selectedProperties.selectedTonemappingQualityIndex = 1;// Default value for neutral
+        selectedProperties.selectedTonemappingQualityACESIndex = 0;// Default value for ACES
+        desiredList.Clear();
     }
     void PopulateGlobalIlluminationDropdown()
     {        
-        gameManager.scripts.uiManager.optionsUI.giResolutionToggle.onValueChanged.RemoveAllListeners();
-        gameManager.scripts.uiManager.optionsUI.giResolutionToggle.onValueChanged.AddListener(OnGiResolutionChanged);
-        gameManager.scripts.uiManager.optionsUI.giResolutionToggle.isOn = true;
-        OnGiResolutionChanged(gameManager.scripts.uiManager.optionsUI.giResolutionToggle.isOn);
-
         if (postProcess.profile.TryGet(out globalIllumination)) { }
         gameManager.scripts.uiManager.optionsUI.giDropdown.ClearOptions();
 
@@ -1229,32 +1457,62 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.optionsUI.giDropdown.value = 2;// Default value
         OnGlobalIlluminationChanged(gameManager.scripts.uiManager.optionsUI.giDropdown.value);
     }
+    void PopulateGlobalIlluminationResDropdown()
+    {
+        gameManager.scripts.uiManager.optionsUI.giResolutionDropdown.ClearOptions();
+
+        desiredList.Clear();
+        desiredList = new List<string>
+        {
+            "Half",
+            "Full"
+        };
+        gameManager.scripts.uiManager.optionsUI.giResolutionDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.giResolutionDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.giResolutionDropdown.onValueChanged.AddListener(OnGiResolutionChanged);
+        gameManager.scripts.uiManager.optionsUI.giResolutionDropdown.value = 1;
+        OnGiResolutionChanged(gameManager.scripts.uiManager.optionsUI.giResolutionDropdown.value);
+    }
     void PopulateReflectionsDropdown()
     {
-        gameManager.scripts.uiManager.optionsUI.planarReflectionsToggle.onValueChanged.RemoveAllListeners();
-        gameManager.scripts.uiManager.optionsUI.planarReflectionsToggle.onValueChanged.AddListener(OnPlanarRelectionsChanged);
-        gameManager.scripts.uiManager.optionsUI.planarReflectionsToggle.isOn = false;// Default value
-        OnPlanarRelectionsChanged(gameManager.scripts.uiManager.optionsUI.planarReflectionsToggle.isOn);
-
         if (postProcess.profile.TryGet(out reflections)) { }
         gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.ClearOptions();
 
         desiredList.Clear();
         desiredList = new List<string>
         {
-            "Realtime",
+            "Off",
             "SSR Low",
             "SSR Medium",
             "SSR High",
             "RTR Low",
             "RTR Medium",
-            "RTR High"
+            "RTR High",
+            "Realtime"
         };
         gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.AddOptions(desiredList);        
         gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.onValueChanged.AddListener(OnReflectionsChanged);        
         gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.value = 2;// Default value
         OnReflectionsChanged(gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.value);
+    }
+    void PopulatePlanarReflectionsDropdown()
+    {
+        gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown.ClearOptions();
+
+        desiredList.Clear();
+        desiredList = new List<string>
+        {
+            "Off",
+            "Low",
+            "Medium",
+            "High"
+        };
+        gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown.onValueChanged.AddListener(OnPlanarRelectionsChanged);
+        gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown.value = 0;// Default value
+        OnPlanarRelectionsChanged(gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown.value);
     }
     void PopulateShadowQualityDropdown()
     {
@@ -1265,15 +1523,16 @@ public class OptionsManager : MonoBehaviour
         desiredList.Clear();
         desiredList = new List<string>
         {
+            "Off",
             "Low",
             "Medium",
             "High",
-            "Very High"
+            "Ultra"
         };
         gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.AddOptions(desiredList);        
         gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.onValueChanged.AddListener(OnShadowQualityChanged);        
-        gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.value = 1;// Default value
+        gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.value = 2;// Default value
         OnShadowQualityChanged(gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.value);
     }
     void PopulateShadowDistanceSlider()
@@ -1375,9 +1634,8 @@ public class OptionsManager : MonoBehaviour
     #endregion
 
 
-
-
     #region Runtime
+    // GAMEPLAY
     void OnAutosavesToggleChanged(bool autosavesChanged)
     {
         if (gameManager.scripts.uiManager.optionsUI.autosavesToggle.isOn)
@@ -1388,74 +1646,68 @@ public class OptionsManager : MonoBehaviour
         {
             selectedProperties.selectedAutosaves = false;
         }
-        //ACTIVATE MODIFIED VALUE BUTTON
+        CheckModified();
     }
     void OnAutosavesSliderChanged(float sliderValue)
     {
         selectedProperties.selectedMaximumAutosaves = (int)gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.value;
         gameManager.scripts.uiManager.optionsUI.maximumAutosavesSliderText.text = gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
+        CheckModified();
     }
     public void IncreaseAutosavesSlider()
     {
         gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.value++;
         selectedProperties.selectedMaximumAutosaves = (int)gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.value;
         gameManager.scripts.uiManager.optionsUI.maximumAutosavesSliderText.text = gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
+        CheckModified();
     }
     public void DecreaseAutosavesSlider()
     {
         gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.value--;
         selectedProperties.selectedMaximumAutosaves = (int)gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.value;
         gameManager.scripts.uiManager.optionsUI.maximumAutosavesSliderText.text = gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
+        CheckModified();
     }
-
     void OnQuicksavesSliderChanged(float sliderValue)
     {
         selectedProperties.selectedMaximumQuicksaves = (int)gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.value;
         gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSliderText.text = gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.value.ToString();
-        //ACTIVATE MODIFIED VALUE BUTTON
+        CheckModified();
     }
     public void IncreaseQuicksavesSlider()
     {
         gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.value++;
         selectedProperties.selectedMaximumQuicksaves = (int)gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.value;
         gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSliderText.text = gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.value.ToString(Strings.numberFormat0);
-        //ACTIVATE MODIFIED VALUE BUTTON
+        CheckModified();
     }
     public void DecreaseQuicksavesSlider()
     {
         gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.value--;
         selectedProperties.selectedMaximumQuicksaves = (int)gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.value;
         gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSliderText.text = gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.value.ToString(Strings.numberFormat0);
-        //ACTIVATE MODIFIED VALUE BUTTON
+        CheckModified();
     }
-
-    void OnGoreChanged(bool goreChanged)
+    void OnGoreChanged(int goreIndex)
     {
-        if (gameManager.scripts.uiManager.optionsUI.goreToggle.isOn)
-        {
-            selectedProperties.selectedGore = true;
-        }
-        else if (!gameManager.scripts.uiManager.optionsUI.goreToggle.isOn)
-        {
-            selectedProperties.selectedGore = false;
-        }
+        selectedProperties.selectedGoreIndex = gameManager.scripts.uiManager.optionsUI.goreDropdown.value;
+        CheckModified();
+    }
+    void OnDestructionChanged(int destructionIndex)
+    {
+        selectedProperties.selectedDestructionIndex = gameManager.scripts.uiManager.optionsUI.destructionDropdown.value;
+        CheckModified();
     }
 
+    // VIDEO
     public void VideoPage1()
     {
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2, false);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Tab, false);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Tab, true);
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1, true);
     }
     public void VideoPage2()
     {
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1, false);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Tab, false);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Tab, true);
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2, true);
     }
     public void VideoPageIncrease()
@@ -1476,22 +1728,20 @@ public class OptionsManager : MonoBehaviour
     
     void OnDisplayDeviceChanged(int deviceIndex)
     {
-        selectedProperties.selectedDisplayIndex = gameManager.scripts.uiManager.optionsUI.displayDevicesDropdown.value;        
+        selectedProperties.selectedDisplayIndex = gameManager.scripts.uiManager.optionsUI.displayDevicesDropdown.value;
+        CheckModified();
     }
-
     void OnResolutionChanged(int resolutionIndex)
     {
         selectedProperties.selectedResolutionIndex = gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.value;
-        
-        gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.RefreshShownValue();
-        //Debug.Log($"Selected resolution index updated: {selectedResolutionIndex}. Will apply on ApplySettings().");        
+        //Debug.Log($"Selected resolution index updated: {selectedResolutionIndex}. Will apply on ApplySettings().");
+        CheckModified();
     }
-
     void OnDisplayModeChanged(int displayModeIndex)
     {
-        selectedProperties.selectedDisplayModeIndex = gameManager.scripts.uiManager.optionsUI.displayModeDropdown.value;        
+        selectedProperties.selectedDisplayModeIndex = gameManager.scripts.uiManager.optionsUI.displayModeDropdown.value;
+        CheckModified();
     }
-
     void OnFrameRateCapToggleChanged(bool frameRateCapChanged)
     {
         if (gameManager.scripts.uiManager.optionsUI.frameRateCapToggle.isOn)
@@ -1502,6 +1752,7 @@ public class OptionsManager : MonoBehaviour
         {
             selectedProperties.selectedFrameRateCap = false;
         }
+        CheckModified();
     }
     void OnframeRateCapSliderChanged(float sliderValue)
     {
@@ -1519,106 +1770,124 @@ public class OptionsManager : MonoBehaviour
             selectedProperties.selectedFrameRateCapValue = (int)gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value;
         }        
         gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value.ToString(Strings.numberFormat0);
+        CheckModified();
     }
     public void IncreaseFrameRateCap()
     {
         gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value + 1, gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.minValue, gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.maxValue);
         selectedProperties.selectedFrameRateCapValue = (int)gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value;
         gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value.ToString();
+        CheckModified();
     }
     public void DecreaseFrameRateCap()
     {
         gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value - 1, gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.minValue, gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.maxValue);
         selectedProperties.selectedFrameRateCapValue = (int)gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value;
         gameManager.scripts.uiManager.optionsUI.frameRateCapSliderText.text = gameManager.scripts.uiManager.optionsUI.frameRateCapSlider.value.ToString();
+        CheckModified();
     }
-
     void OnVSyncChanged(int vSyncIndex)
     {
         selectedProperties.selectedVsyncIndex = gameManager.scripts.uiManager.optionsUI.vSyncDropdown.value;
-        gameManager.scripts.uiManager.optionsUI.vSyncDropdown.RefreshShownValue();
+        CheckModified();
     }
-
     void OnAntiAliasChanged(int antiAliasIndex)
     {
         selectedProperties.selectedAntiAliasIndex = gameManager.scripts.uiManager.optionsUI.antiAliasDropdown.value;
         gameManager.scripts.uiManager.optionsUI.antiAliasDropdown.RefreshShownValue();
+        CheckModified();
     }
     void OnTaaQualityChanged(int taaQualityIndex)
     {
         selectedProperties.selectedTaaQualityIndex = gameManager.scripts.uiManager.optionsUI.taaQualityDropdown.value;
         gameManager.scripts.uiManager.optionsUI.taaQualityDropdown.RefreshShownValue();
+        CheckModified();
     }
     void OnFogChanged(int fogIndex)
     {
         selectedProperties.selectedFogIndex = gameManager.scripts.uiManager.optionsUI.fogDropdown.value;
         gameManager.scripts.uiManager.optionsUI.fogDropdown.RefreshShownValue();
+        CheckModified();
     }
-
     void OnQualitySettingsChanged(int qualityIndex)
     {
         selectedProperties.selectedQualityAssetIndex = gameManager.scripts.uiManager.optionsUI.qualityDropdown.value;
         gameManager.scripts.uiManager.optionsUI.qualityDropdown.RefreshShownValue();
+        CheckModified();
     }
-
     public void OnFOVChanged(float sliderValue)
     {
         selectedProperties.selectedFOV = (int)gameManager.scripts.uiManager.optionsUI.fovSlider.value;
         gameManager.scripts.uiManager.optionsUI.fovSliderText.text = gameManager.scripts.uiManager.optionsUI.fovSlider.value.ToString();
+        CheckModified();
     }
     public void IncreaseFOV()
     {
         gameManager.scripts.uiManager.optionsUI.fovSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.fovSlider.value + 1, gameManager.scripts.uiManager.optionsUI.fovSlider.minValue, gameManager.scripts.uiManager.optionsUI.fovSlider.maxValue);
         selectedProperties.selectedFOV = (int)gameManager.scripts.uiManager.optionsUI.fovSlider.value;
         gameManager.scripts.uiManager.optionsUI.fovSliderText.text = gameManager.scripts.uiManager.optionsUI.fovSlider.value.ToString();
+        CheckModified();
     }
     public void DecreaseFOV()
     {
         gameManager.scripts.uiManager.optionsUI.fovSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.fovSlider.value - 1, gameManager.scripts.uiManager.optionsUI.fovSlider.minValue, gameManager.scripts.uiManager.optionsUI.fovSlider.maxValue);
         selectedProperties.selectedFOV = (int)gameManager.scripts.uiManager.optionsUI.fovSlider.value;
         gameManager.scripts.uiManager.optionsUI.fovSliderText.text = gameManager.scripts.uiManager.optionsUI.fovSlider.value.ToString();
+        CheckModified();
     }
-
     void OnRenderDistanceChanged(float sliderValue)
     {
         selectedProperties.selectedRenderDistance = (int)gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value;
         gameManager.scripts.uiManager.optionsUI.renderDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value.ToString();
+        CheckModified();
     }
     public void IncreaseRenderDistance()
     {
         gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value + 1, gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.minValue, gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.maxValue);
         selectedProperties.selectedRenderDistance = (int)gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value;
         gameManager.scripts.uiManager.optionsUI.renderDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value.ToString();
+        CheckModified();
     }
     public void DecreaseRenderDistance()
     {
         gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value - 1, gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.minValue, gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.maxValue);
         selectedProperties.selectedRenderDistance = (int)gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value;
         gameManager.scripts.uiManager.optionsUI.renderDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.renderDistanceSlider.value.ToString();
+        CheckModified();
     }
-
     void OnBloomChanged(int bloomIndex)
     {
         selectedProperties.selectedBloomIndex = gameManager.scripts.uiManager.optionsUI.bloomDropdown.value;
         gameManager.scripts.uiManager.optionsUI.bloomDropdown.RefreshShownValue();
+        CheckModified();
     }
-
-    void OnHDRChanged(bool hdrChanged)
+    void OnHDRChanged(int hdrChanged)
     {
-        if (gameManager.scripts.uiManager.optionsUI.hdrToggle.isOn)
-        {
-            selectedProperties.selectedHDR = true;
-        }
-        else if (!gameManager.scripts.uiManager.optionsUI.hdrToggle.isOn)
-        {
-            selectedProperties.selectedHDR = false;
-        }
+        selectedProperties.selectedHDRIndex = gameManager.scripts.uiManager.optionsUI.hdrDropdown.value;
+        CheckModified();
     }
-
     void OnAnsioChanged(int ansioIndex)
     {
         selectedProperties.selectedAnsioIndex = gameManager.scripts.uiManager.optionsUI.ansioDropdown.value;
-        gameManager.scripts.uiManager.optionsUI.ansioDropdown.RefreshShownValue();
+        CheckModified();
+    }
+
+    void OnWeatherEffectsChanged(int weatherEffectsIndex)
+    {
+        selectedProperties.selectedWeatherEffectsIndex = gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown.value;
+        CheckModified();
+    }
+
+    void OnLineRenderingChanged(int lineRenderingIndex)
+    {
+        selectedProperties.selectedLineRenderingIndex = gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown.value;
+        CheckModified();
+    }
+
+    void OnCrevicesChanged(int crevicesIndex)
+    {
+        selectedProperties.selectedCrevicesIndex = gameManager.scripts.uiManager.optionsUI.crevicesDropdown.value;
+        CheckModified();
     }
 
     public void SetAnsio(Material material, bool scanScene)
@@ -1700,50 +1969,99 @@ public class OptionsManager : MonoBehaviour
                     renderers = null;
                 }
             }            
-        }
-        Utils.ClearMemory();
+        }        
     }
 
     void OnTonemappingChanged(int tonemappingIndex)
     {
         selectedProperties.selectedTonemappingIndex = gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value;
-        gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.RefreshShownValue();
+        
+        if (gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value == 0)// Re-Populate Tonemapping Quality
+        {
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.ClearOptions();
+
+            desiredList.Clear();
+            desiredList = new List<string>
+            {
+                "N/A"
+            };
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.AddOptions(desiredList);
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = 0;// Default value
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.RemoveAllListeners();
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);            
+        }
+        else if (gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value == 1)
+        {
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.ClearOptions();
+
+            desiredList.Clear();
+            desiredList = new List<string>
+            {
+                "Reinhard",
+                "BT2390"
+            };
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.AddOptions(desiredList);
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = appliedTonemappingQualityIndex;// Default value
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.RemoveAllListeners();
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);            
+        }
+        else
+        {
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.ClearOptions();
+
+            desiredList.Clear();
+            desiredList = new List<string>
+            {
+                "ACES1000",
+                "ACES2000",
+                "ACES4000"
+            };
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.AddOptions(desiredList);
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = appliedTonemappingQualityACESIndex;// Default value
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.RemoveAllListeners();
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);            
+        }
+        desiredList.Clear();
+        CheckModified();
+    }
+
+    void OnTonemappingQualityChanged(int tonemappingIndex)
+    {
+        if (selectedProperties.selectedTonemappingIndex == 0)
+        {            
+            selectedProperties.selectedTonemappingQualityIndex = gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value;
+        }
+        else if (selectedProperties.selectedTonemappingIndex == 1)
+        {
+            selectedProperties.selectedTonemappingQualityIndex = gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value;
+        }
+        else if (selectedProperties.selectedTonemappingIndex == 2)
+        {
+            selectedProperties.selectedTonemappingQualityACESIndex = gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value;
+        }        
+        CheckModified();
     }
 
     void OnGlobalIlluminationChanged(int globalIlluminationIndex)
     {
         selectedProperties.selectedGlobalIlluminationIndex = gameManager.scripts.uiManager.optionsUI.giDropdown.value;
-        gameManager.scripts.uiManager.optionsUI.giDropdown.RefreshShownValue();
+        CheckModified();
     }
-    void OnGiResolutionChanged(bool giResolutionChanged)
+    void OnGiResolutionChanged(int giResolutionChanged)
     {
-        if (gameManager.scripts.uiManager.optionsUI.giResolutionToggle.isOn)
-        {
-            selectedProperties.selectedGlobalIlluminationFullRes = true;
-        }
-        else if (!gameManager.scripts.uiManager.optionsUI.giResolutionToggle.isOn)
-        {
-            selectedProperties.selectedGlobalIlluminationFullRes = false;
-        }
-        gameManager.scripts.uiManager.OnGlobalIlluminationResHover();
+        selectedProperties.selectedGlobalIlluminationResIndex = gameManager.scripts.uiManager.optionsUI.giResolutionDropdown.value;
+        CheckModified();
     }
 
     void OnReflectionsChanged(int reflectionsIndex)
     {
         selectedProperties.selectedReflectionsIndex = gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.value;
-        gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.RefreshShownValue();
+        CheckModified();
     }
-    void OnPlanarRelectionsChanged(bool planarRelectionsChanged)
+    void OnPlanarRelectionsChanged(int planarRelectionsChanged)
     {
-        if (gameManager.scripts.uiManager.optionsUI.planarReflectionsToggle.isOn)
-        {
-            selectedProperties.selectedPlanarReflections = true;
-        }
-        else if (!gameManager.scripts.uiManager.optionsUI.planarReflectionsToggle.isOn)
-        {
-            selectedProperties.selectedPlanarReflections = false;
-        }
-        gameManager.scripts.uiManager.OnReflectionsPlanarHover();
+        selectedProperties.selectedPlanarReflectionsIndex = gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown.value;
+        CheckModified();
     }
     public void SetPlanarReflection(PlanarReflectionProbe probe, bool scanScene, bool activate)
     {
@@ -1782,30 +2100,32 @@ public class OptionsManager : MonoBehaviour
                 probes = null;
             }
         }
-        Utils.ClearMemory();
     }
 
     void OnShadowQualityChanged(int shadowIndex)
     {
         selectedProperties.selectedShadowQualityIndex = gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.value;
-        gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.RefreshShownValue();
+        CheckModified();
     }
     void OnShadowDistanceChanged(float sliderValue)
     {
         selectedProperties.selectedShadowDistance = (int)gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value;
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value.ToString();
+        CheckModified();
     }
     public void IncreaseShadowDistance()
     {
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value + 1, gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.minValue, gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.maxValue);
         selectedProperties.selectedShadowDistance = (int)gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value;
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value.ToString();
+        CheckModified();
     }
     public void DecreaseShadowDistance()
     {
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value = Mathf.Clamp(gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value - 1, gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.minValue, gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.maxValue);
         selectedProperties.selectedShadowDistance = (int)gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value;
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value.ToString();
+        CheckModified();
     }
 
     void OnFPSCounterChanged(bool fpsCounterChanged)
@@ -1818,6 +2138,7 @@ public class OptionsManager : MonoBehaviour
         {
             selectedProperties.selectedFPSCounter = false;
         }
+        CheckModified();
     }
 
     void OnMemoryCounterChanged(bool memoryCounterChanged)
@@ -1830,11 +2151,14 @@ public class OptionsManager : MonoBehaviour
         {
             selectedProperties.selectedMemoryCounter = false;
         }
+        CheckModified();
     }
 
+    // AUDIO
     public void SetMasterVolume(float sliderValue)
     {
         ChangeAudioSliderValue(ref selectedProperties.selectedMasterVolume, Strings.audioMaster, gameManager.scripts.uiManager.optionsUI.audioMasterSlider, gameManager.scripts.uiManager.optionsUI.audioMasterNumberText, true, false, false);
+
     }
     public void IncreaseMasterVolume()
     {

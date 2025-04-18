@@ -5,6 +5,7 @@ using Unity.Jobs;
 using System.Globalization;// Works on Steamdeck
 using System.IO;
 using System;
+using TMPro;
 
 public static class Utils
 {
@@ -80,9 +81,9 @@ public static class Utils
         cursorCanvasImageTransform.localPosition = localPoint;
     }
 
-
-    // int uiLayer = LayerMask.NameToLayer(Strings.uiLayerName);
-    // if (Utils.RayCastIn3DLayerSpecific(uiLayer, out mouseWorldPosition))
+    // Vector3 hitWorldPosition;
+    // int uiLayer = LayerMask.NameToLayer("Layer Name");
+    // if (Utils.RayCastIn3DLayerSpecific(uiLayer, out hitWorldPosition))
     public static bool RayCastIn3DLayerSpecific(int desiredLayer, out Vector3 hitPoint)
     {
         Ray ray = CursorRay3D();
@@ -100,7 +101,8 @@ public static class Utils
         }
     }
 
-    // if (Utils.RayCastIn3DTagSpecific(tagString, out hitPoint))
+    // Vector3 hitWorldPosition;
+    // if (Utils.RayCastIn3DTagSpecific("Tag Name", hitWorldPosition))
     public static bool RayCastIn3DTagSpecific(string tag, out Vector3 hitPoint)
     {
         Ray ray = CursorRay3D();
@@ -117,8 +119,9 @@ public static class Utils
         }
     }
 
-    // uiLayer = LayerMask.NameToLayer(Strings.uiLayerName);
-    // if (Utils.RayCastIn3DLayerAndTagSpecific(uiLayer, Strings.uiLayerName, out hitPoint))
+    // Vector3 hitWorldPosition;
+    // uiLayer = LayerMask.NameToLayer("Layer Name");
+    // if (Utils.RayCastIn3DLayerAndTagSpecific(uiLayer, "Tag Name", out hitWorldPosition))
     public static bool RayCastIn3DLayerAndTagSpecific(int desiredLayer, string tag, out Vector3 hitPoint)
     {
         Ray ray = CursorRay3D();
@@ -136,7 +139,9 @@ public static class Utils
         }
     }
 
-    // GameObject target = Utils.GetCursorObjectAndTransform(out target.transform);
+    // Transform targetTransform;
+    // GameObject targetObject;
+    // targetObject = Utils.GetCursorObjectAndTransform(out targetTransform);
     public static GameObject GetCursorObjectAndTransform(out Transform transform)
     {
         Ray ray = CursorRay3D();
@@ -219,7 +224,7 @@ public static class Utils
         }
     }
 
-    // if(Utils.GetPreferredSystemLanguage() == "en"){// ENGLISH EXISTS, DO SOMETHING};
+    // if(Utils.GetPreferredSystemLanguage() == "en"){// SYSTEM USING ENGLISH, DO SOMETHING};
     public static string GetPreferredSystemLanguage()
     {
         CultureInfo currentCulture = CultureInfo.CurrentCulture;
@@ -240,7 +245,8 @@ public static class Utils
             return false;
         }
     }
-    
+
+    // Utils.ActivateObject(object, true);
     public static void ActivateObject(GameObject gameObject, bool activate)
     {
         if (activate)
@@ -277,33 +283,68 @@ public static class Utils
         image.color = desiredColor;
     }
 
-    public static void CheckToggleValueModified(Toggle toggle, bool optionsSelectedBool, GameObject valueModifiedImage)
+    // Utils.CheckToggleValueModified(gameManager.scripts.uiManager.optionsUI.frameRateCapToggle, appliedFrameRateCap, gameManager.scripts.uiManager.optionsUI.framerateCapModifiedIcon);
+    public static void CheckToggleValueModified(ref Toggle toggle, bool optionsAppliedBool, ref GameObject valueModifiedImage)
     {
         if (toggle)
         {
-            if (optionsSelectedBool != toggle.isOn)
+            if (optionsAppliedBool != toggle.isOn)
             {
-                ActivateObject(valueModifiedImage, true);
+                if (!valueModifiedImage.activeSelf)
+                {
+                    valueModifiedImage.SetActive(true);
+                }
             }
             else
             {
-                ActivateObject(valueModifiedImage, false);
+                if (valueModifiedImage.activeSelf)
+                {
+                    valueModifiedImage.SetActive(false);
+                }
             }
         }
     }
 
-
-
-    // Utils.TintUIScriptTrigger(uiScript, on);
-    public static void TintUIScriptTrigger(UI uiScript, bool on)
+    // Utils.CheckSliderValueModified(gameManager.scripts.uiManager.optionsUI.frameRateCapSlider, appliedFrameRateCapValue, gameManager.scripts.uiManager.optionsUI.framerateCapModifiedIcon);
+    public static void CheckSliderValueModified(ref Slider slider, float optionsAppliedFloat, ref GameObject valueModifiedImage)
     {
-        if (on)
+        if (slider)
         {
-            uiScript.UIMouseOver();
+            if (optionsAppliedFloat != slider.value)
+            {
+                if (!valueModifiedImage.activeSelf)
+                {
+                    valueModifiedImage.SetActive(true);
+                }
+            }
+            else
+            {
+                if (valueModifiedImage.activeSelf)
+                {
+                    valueModifiedImage.SetActive(false);
+                }
+            }
         }
-        else
+    }
+
+    public static void CheckDropdownValueModified(ref TMP_Dropdown dropdown, int optionsAppliedInt, ref GameObject valueModifiedImage)
+    {
+        if (dropdown)
         {
-            uiScript.UIMouseExit();
+            if (optionsAppliedInt != dropdown.value)
+            {
+                if (!valueModifiedImage.activeSelf)
+                {
+                    valueModifiedImage.SetActive(true);
+                }
+            }
+            else
+            {
+                if (valueModifiedImage.activeSelf)
+                {
+                    valueModifiedImage.SetActive(false);
+                }
+            }
         }
     }
 

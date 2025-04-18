@@ -26,8 +26,10 @@ public class UIManager : MonoBehaviour
         public Animator optionsMenuAnimator;
         [Space(5)]
         public TextMeshProUGUI confirmOptionsChangesTimerText;
-        public GameObject confirmOptionsChanges;
-        [Space(10)]
+        public GameObject confirmOptionsChanges;        
+        public GameObject applyOptionsChanges;
+        public GameObject revertOptionsChanges;
+        [Space(5)]
         public TextMeshProUGUI optionsTitle;
         public TextMeshProUGUI optionsDescription;
         public TextMeshProUGUI optionsDescriptionAdditional;
@@ -36,26 +38,36 @@ public class UIManager : MonoBehaviour
         public Image optionsGameplayMenuButtonBG;
         public UI optionsGameplayMenuButtonUIScript;
         [Space(5)]
-        [Space(5)]
         public Toggle autosavesToggle;
+        public GameObject autosavesModifiedIcon;
         [Space(5)]
         public TMP_InputField maximumAutosavesSliderText;
         public Slider maximumAutosavesSlider;
+        public GameObject maximumAutosavesModifiedIcon;
         [Space(5)]
         public TMP_InputField maximumQuicksavesSliderText;
         public Slider maximumQuicksavesSlider;
+        public GameObject maximumQuicksavesModifiedIcon;
         [Space(5)]
-        public Toggle goreToggle;
+        public GameObject goreEffect;
+        public TMP_Dropdown goreDropdown;
+        public GameObject goreModifiedIcon;
+        [Space(5)]
+        public GameObject destructionEffect;
+        public TMP_Dropdown destructionDropdown;
+        public GameObject destructionModifiedIcon;
         [Header("---- Video ----")]
         public GameObject optionsVideoMenu;
         public Image optionsVideoMenuButtonBG;
         public UI optionsVideoMenuButtonUIScript;
         [Space(5)]
         public GameObject optionsVideoPage1;
-        public GameObject optionsVideoPage1Tab;
+        public UI optionsVideoPage1UIScript;
+        public GameObject optionsVideoPage1BG;
         [Space(5)]
         public GameObject optionsVideoPage2;
-        public GameObject optionsVideoPage2Tab;
+        public UI optionsVideoPage2UIScript;
+        public GameObject optionsVideoPage2BG;
         [Space(5)]
         public TextMeshProUGUI gpuName;
         [Space(5)]
@@ -83,9 +95,11 @@ public class UIManager : MonoBehaviour
         public GameObject qualityModifiedIcon;
         [Space(5)]
         public GameObject antiAliasEffect;
-        public TMP_Dropdown antiAliasDropdown;
-        public TMP_Dropdown taaQualityDropdown;
+        public TMP_Dropdown antiAliasDropdown;        
         public GameObject antiAliasModifiedIcon;
+        [Space(5)]
+        public TMP_Dropdown taaQualityDropdown;
+        public GameObject taaQualityModifiedIcon;
         [Space(5)]
         public GameObject fogEffect;
         public TMP_Dropdown fogDropdown;
@@ -108,21 +122,41 @@ public class UIManager : MonoBehaviour
         public GameObject ansioModifiedIcon;
         [Space(5)]
         public GameObject hdrEffect;
-        public Toggle hdrToggle;
+        public TMP_Dropdown hdrDropdown;
         public GameObject hdrModifiedIcon;
         [Space(5)]
         public TMP_Dropdown tonemappingDropdown;
         public GameObject tonemappingModifiedIcon;
         [Space(5)]
+        public TMP_Dropdown tonemappingQualityDropdown;
+        public GameObject tonemappingQualityModifiedIcon;
+        [Space(5)]
         public GameObject globalIlluminationEffect;
         public TMP_Dropdown giDropdown;
-        public Toggle giResolutionToggle;
         public GameObject giModifiedIcon;
         [Space(5)]
-        public GameObject planarReflectionEffect;
+        public GameObject giResolutionEffect;
+        public TMP_Dropdown giResolutionDropdown;
+        public GameObject giResolutionModifiedIcon;        
+        [Space(5)]        
         public TMP_Dropdown reflectionsDropdown;
-        public Toggle planarReflectionsToggle;
         public GameObject reflectionsModifiedIcon;
+        [Space(5)]
+        public GameObject planarReflectionEffect;
+        public TMP_Dropdown planarReflectionsDropdown;
+        public GameObject planarReflectionsModifiedIcon;
+        [Space(5)]
+        public GameObject weatherEffectsEffect;
+        public TMP_Dropdown weatherEffectsDropdown;
+        public GameObject weatherEffectsModifiedIcon;
+        [Space(5)]
+        public GameObject lineRenderingEffect;
+        public TMP_Dropdown lineRenderingDropdown;
+        public GameObject lineRenderingModifiedIcon;
+        [Space(5)]
+        public GameObject crevicesEffect;
+        public TMP_Dropdown crevicesDropdown;
+        public GameObject crevicesModifiedIcon;
         [Space(5)]
         public TMP_Dropdown shadowQualityDropdown;
         public GameObject shadowQualityModifiedIcon;
@@ -131,14 +165,12 @@ public class UIManager : MonoBehaviour
         public Slider shadowDistanceSlider;
         public GameObject shadowDistanceModifiedIcon;
         [Space(5)]
-        public GameObject diagnosticsEffect;
-        public GameObject fpsEffect;
         public GameObject fpsCounter;
         public TextMeshProUGUI fpsCounterText;
         public Animator fpsCounterAnimator;
         public GameObject fpsCounterEffect;
         public Toggle fpsCounterToggle;
-        public GameObject diagnosticsModifiedIcon;
+        public GameObject fpsCounterModifiedIcon;
         [Space(5)]
         public GameObject memoryEffect;
         public GameObject memoryCounter;
@@ -146,6 +178,7 @@ public class UIManager : MonoBehaviour
         public Animator memoryCounterAnimator;
         public GameObject memoryCounterEffect;
         public Toggle memoryCounterToggle;
+        public GameObject memoryCounterModifiedIcon;
         [Header("---- Audio ----")]
         public GameObject optionsAudioMenu;
         public Image optionsAudioMenuButtonBG;
@@ -153,6 +186,7 @@ public class UIManager : MonoBehaviour
         [Space(5)]
         public TextMeshProUGUI audioMasterNumberText;
         public Slider audioMasterSlider;
+        public GameObject audioMasterModifiedIcon;
         [Space(5)]
         public TextMeshProUGUI audioMusicNumberText;
         public Slider audioMusicSlider;
@@ -238,13 +272,13 @@ public class UIManager : MonoBehaviour
         {
             if (optionsUI.optionsGameplayMenuButtonBG.color != Colors.red)
             {
-                Utils.TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, true);
-                Utils.TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, true);
+                TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
             }
             if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsGameplaySectionTitle)
             {
@@ -253,159 +287,53 @@ public class UIManager : MonoBehaviour
         }
         else
         {
-            //DeActivateOptionsGameplayEffects();
+            //DeActivate Options Gameplay
         }
 
         if (gameManager.inOptionsVideoMenu)
         {
+            if (optionsUI.optionsVideoPage1.activeSelf)
+            {
+                gameManager.scripts.uiManager.TintUIScriptTrigger(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1UIScript, true);
+                gameManager.scripts.uiManager.TintUIScriptTrigger(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2UIScript, false);
+            }
+            else if (optionsUI.optionsVideoPage2.activeSelf)
+            {
+                gameManager.scripts.uiManager.TintUIScriptTrigger(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1UIScript, false);
+                gameManager.scripts.uiManager.TintUIScriptTrigger(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2UIScript, true);
+            }
+
             if (optionsUI.optionsVideoMenuButtonBG.color != Colors.red)
             {
-                Utils.TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, true);
-                Utils.TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, true);
+                TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
             }
             if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsVideoSectionTitle)
             {
                 optionsUI.optionsTitle.text = GameStrings.GameStringsEnglish.optionsVideoSectionTitle;
             }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedFrameRateCap)
-            {
-                Utils.ActivateObject(optionsUI.framerateCapEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.framerateCapEffect, false);
-            }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedFogIndex != 0)
-            {
-                Utils.ActivateObject(optionsUI.fogEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.fogEffect, false);
-            }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedAnsioIndex != 0)
-            {
-                Utils.ActivateObject(optionsUI.ansioEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.ansioEffect, false);
-            }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedAntiAliasIndex != 0)
-            {
-                Utils.ActivateObject(optionsUI.antiAliasEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.antiAliasEffect, false);
-            }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedVsyncIndex != 0)
-            {
-                Utils.ActivateObject(optionsUI.vSyncEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.vSyncEffect, false);
-            }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedQualityAssetIndex == 0)
-            {
-                Utils.ActivateObject(optionsUI.qualityEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.qualityEffect, false);
-            }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedBloomIndex != 0)
-            {
-                Utils.ActivateObject(optionsUI.bloomEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.bloomEffect, false);
-            }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedGlobalIlluminationFullRes)
-            {
-                Utils.ActivateObject(optionsUI.globalIlluminationEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.globalIlluminationEffect, false);
-            }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedPlanarReflections)
-            {
-                Utils.ActivateObject(optionsUI.planarReflectionEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.planarReflectionEffect, false);
-            }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedHDR)
-            {
-                Utils.ActivateObject(optionsUI.hdrEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.hdrEffect, false);
-            }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedFPSCounter || gameManager.scripts.optionsManager.selectedProperties.selectedMemoryCounter)
-            {
-                Utils.ActivateObject(optionsUI.diagnosticsEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.diagnosticsEffect, false);
-            }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedFPSCounter)
-            {
-                Utils.ActivateObject(optionsUI.fpsEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.fpsEffect, false);
-            }
-
-            if (gameManager.scripts.optionsManager.selectedProperties.selectedMemoryCounter)
-            {
-                Utils.ActivateObject(optionsUI.memoryEffect, true);
-            }
-            else
-            {
-                Utils.ActivateObject(optionsUI.memoryEffect, false);
-            }
         }
         else
         {
-            DeActivateOptionsVideoEffects();
+            //DeActivate Options video
         }
 
         if (gameManager.inOptionsAudioMenu)
         {
             if (optionsUI.optionsAudioMenuButtonBG.color != Colors.red)
             {
-                Utils.TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, true);
-                Utils.TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, true);
+                TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
             }
             if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsAudioSectionTitle)
             {
@@ -416,13 +344,13 @@ public class UIManager : MonoBehaviour
         {
             if (optionsUI.optionsKeyboardMenuButtonBG.color != Colors.red)
             {
-                Utils.TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, true);
-                Utils.TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, true);
+                TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
             }
             if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsKeyboardSectionTitle)
             {
@@ -433,13 +361,13 @@ public class UIManager : MonoBehaviour
         {
             if (optionsUI.optionsGamepadMenuButtonBG.color != Colors.red)
             {
-                Utils.TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, true);
-                Utils.TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, true);
+                TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
             }
             if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsGamepadSectionTitle)
             {
@@ -450,13 +378,13 @@ public class UIManager : MonoBehaviour
         {
             if (optionsUI.optionsInterfaceMenuButtonBG.color != Colors.red)
             {
-                Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, true);
-                Utils.TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, true);
+                TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, false);
             }
             if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsInterfaceSectionTitle)
             {
@@ -467,211 +395,20 @@ public class UIManager : MonoBehaviour
         {
             if (optionsUI.optionsAccessibilityMenuButtonBG.color != Colors.red)
             {
-                Utils.TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, true);
-                Utils.TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
-                Utils.TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAccessibilityMenuButtonUIScript, true);
+                TintUIScriptTrigger(optionsUI.optionsGameplayMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsVideoMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsAudioMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsKeyboardMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsGamepadMenuButtonUIScript, false);
+                TintUIScriptTrigger(optionsUI.optionsInterfaceMenuButtonUIScript, false);
             }
             if (optionsUI.optionsTitle.text != GameStrings.GameStringsEnglish.optionsAccessibilitySectionTitle)
             {
                 optionsUI.optionsTitle.text = GameStrings.GameStringsEnglish.optionsAccessibilitySectionTitle;
             }
         }
-
-        // Video
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedDisplayIndex != gameManager.scripts.optionsManager.appliedDisplayIndex)
-        {
-            Utils.ActivateObject(optionsUI.displayDeviceModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.displayDeviceModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedResolutionIndex != gameManager.scripts.optionsManager.appliedResolutionIndex)
-        {
-            Utils.ActivateObject(optionsUI.resolutionsModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.resolutionsModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedDisplayModeIndex != gameManager.scripts.optionsManager.appliedDisplayModeIndex)
-        {
-            Utils.ActivateObject(optionsUI.displayModeModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.displayModeModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedVsyncIndex != gameManager.scripts.optionsManager.appliedVsyncIndex)
-        {
-            Utils.ActivateObject(optionsUI.vSyncModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.vSyncModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedFrameRateCapValue != gameManager.scripts.optionsManager.appliedFrameRateCapValue || gameManager.scripts.optionsManager.selectedProperties.selectedFrameRateCap != gameManager.scripts.optionsManager.appliedFrameRateCap)
-        {
-            Utils.ActivateObject(optionsUI.framerateCapModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.framerateCapModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedRenderDistance != gameManager.scripts.optionsManager.appliedRenderDistance)
-        {
-            Utils.ActivateObject(optionsUI.renderDistanceModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.renderDistanceModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedFOV != gameManager.scripts.optionsManager.appliedFOV)
-        {
-            Utils.ActivateObject(optionsUI.fovModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.fovModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedQualityAssetIndex != gameManager.scripts.optionsManager.appliedQualityAssetIndex)
-        {
-            Utils.ActivateObject(optionsUI.qualityModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.qualityModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedBloomIndex != gameManager.scripts.optionsManager.appliedBloomIndex)
-        {
-            Utils.ActivateObject(optionsUI.bloomModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.bloomModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedGlobalIlluminationIndex != gameManager.scripts.optionsManager.appliedGlobalIlluminationIndex || gameManager.scripts.optionsManager.selectedProperties.selectedGlobalIlluminationFullRes != gameManager.scripts.optionsManager.appliedGlobalIlluminationFullRes)
-        {
-            Utils.ActivateObject(optionsUI.giModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.giModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedFogIndex != gameManager.scripts.optionsManager.appliedFogIndex)
-        {
-            Utils.ActivateObject(optionsUI.fogModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.fogModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedAntiAliasIndex != gameManager.scripts.optionsManager.appliedAntiAliasIndex || gameManager.scripts.optionsManager.selectedProperties.selectedTaaQualityIndex != gameManager.scripts.optionsManager.appliedTaaQualityIndex)
-        {
-            Utils.ActivateObject(optionsUI.antiAliasModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.antiAliasModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedAnsioIndex != gameManager.scripts.optionsManager.appliedAnsioIndex)
-        {
-            Utils.ActivateObject(optionsUI.ansioModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.ansioModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedShadowQualityIndex != gameManager.scripts.optionsManager.appliedShadowQualityIndex)
-        {
-            Utils.ActivateObject(optionsUI.shadowQualityModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.shadowQualityModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedShadowDistance != gameManager.scripts.optionsManager.appliedShadowDistance)
-        {
-            Utils.ActivateObject(optionsUI.shadowDistanceModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.shadowDistanceModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedReflectionsIndex != gameManager.scripts.optionsManager.appliedReflectionsIndex || gameManager.scripts.optionsManager.selectedProperties.selectedPlanarReflections != gameManager.scripts.optionsManager.appliedPlanarReflections)
-        {
-            Utils.ActivateObject(optionsUI.reflectionsModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.reflectionsModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedHDR != gameManager.scripts.optionsManager.appliedHDR)
-        {
-            Utils.ActivateObject(optionsUI.hdrModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.hdrModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedTonemappingIndex != gameManager.scripts.optionsManager.appliedTonemappingIndex)
-        {
-            Utils.ActivateObject(optionsUI.tonemappingModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.tonemappingModifiedIcon, false);
-        }
-
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedFPSCounter != gameManager.scripts.optionsManager.appliedFPSCounter || gameManager.scripts.optionsManager.selectedProperties.selectedMemoryCounter != gameManager.scripts.optionsManager.appliedMemoryCounter)
-        {
-            Utils.ActivateObject(optionsUI.diagnosticsModifiedIcon, true);
-        }
-        else
-        {
-            Utils.ActivateObject(optionsUI.diagnosticsModifiedIcon, false);
-        }
     }
-
-    private void DeActivateOptionsVideoEffects()
-    {
-        Utils.ActivateObject(optionsUI.qualityEffect, false);
-        Utils.ActivateObject(optionsUI.fogEffect, false);
-        Utils.ActivateObject(optionsUI.ansioEffect, false);
-        Utils.ActivateObject(optionsUI.antiAliasEffect, false);
-        Utils.ActivateObject(optionsUI.vSyncEffect, false);
-        Utils.ActivateObject(optionsUI.framerateCapEffect, false);
-        Utils.ActivateObject(optionsUI.bloomEffect, false);
-        Utils.ActivateObject(optionsUI.globalIlluminationEffect, false);
-        Utils.ActivateObject(optionsUI.planarReflectionEffect, false);
-        Utils.ActivateObject(optionsUI.hdrEffect, false);
-        Utils.ActivateObject(optionsUI.diagnosticsEffect, false);
-        Utils.ActivateObject(optionsUI.fpsEffect, false);
-        Utils.ActivateObject(optionsUI.memoryEffect, false);
-    }
-
-
 
     void TrimInput(Slider slider, TMP_InputField sliderText, bool decimals)
     {
@@ -842,15 +579,12 @@ public class UIManager : MonoBehaviour
         Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
         Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
         Utils.ActivateObject(optionsUI.optionsVideoPage2, false);
-        Utils.ActivateObject(optionsUI.optionsVideoPage2Tab, false);
         gameManager.inOptionsGameplayMenu = false;        
         gameManager.inOptionsAudioMenu = false;
         gameManager.inOptionsKeyboardMenu = false;
         gameManager.inOptionsGamepadMenu = false;
         gameManager.inOptionsInterfaceMenu = false;
         gameManager.inOptionsAccessibilityMenu = false;
-
-        Utils.ActivateObject(optionsUI.optionsVideoPage1Tab, true);
         Utils.ActivateObject(optionsUI.optionsVideoPage1, true);        
         Utils.ActivateObject(optionsUI.optionsVideoMenu, true);
         gameManager.inOptionsVideoMenu = true;
@@ -1173,7 +907,7 @@ public class UIManager : MonoBehaviour
     public void OnGlobalIlluminationResHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResDesc;
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedGlobalIlluminationFullRes)
+        if (gameManager.scripts.optionsManager.selectedProperties.selectedGlobalIlluminationResIndex == 1)
         {
             optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResStatusFullDesc;
         }
@@ -1236,5 +970,18 @@ public class UIManager : MonoBehaviour
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsMemoryDesc;
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+
+    // ---------------------------------
+    public void TintUIScriptTrigger(UI uiScript, bool on)
+    {
+        if (on)
+        {
+            uiScript.UIMouseOver();
+        }
+        else
+        {
+            uiScript.UIMouseExit();
+        }
     }
 }
