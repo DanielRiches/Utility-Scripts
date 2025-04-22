@@ -10,6 +10,8 @@ public class Strings
     public static string numberFormat2 = "F2";// will display 0.00
 
     // UI
+    public static string dropdownViewport = "Viewport";
+    public static string dropdownContent = "Content";
     public static string inputSystemUIInputModuleScrollWheel = "ScrollWheel";
 
     // AUDIO

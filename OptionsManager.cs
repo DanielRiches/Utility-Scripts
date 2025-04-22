@@ -977,11 +977,6 @@ public class OptionsManager : MonoBehaviour
         {
             Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown, 0, ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityModifiedIcon);
         }
-
-        Utils.CheckToggleValueModified(ref gameManager.scripts.uiManager.optionsUI.fpsCounterToggle, appliedFPSCounter, ref gameManager.scripts.uiManager.optionsUI.fpsCounterModifiedIcon);
-        Utils.CheckToggleValueModified(ref gameManager.scripts.uiManager.optionsUI.memoryCounterToggle, appliedMemoryCounter, ref gameManager.scripts.uiManager.optionsUI.memoryCounterModifiedIcon);
-
-        Utils.CheckSliderValueModified(ref gameManager.scripts.uiManager.optionsUI.audioMasterSlider, appliedMasterVolume, ref gameManager.scripts.uiManager.optionsUI.audioMasterModifiedIcon);
     }
 
     #region Setup
@@ -1107,7 +1102,7 @@ public class OptionsManager : MonoBehaviour
         filteredResolutions.Sort((a, b) =>
         {
             if (a.width != b.width)
-                return b.width.CompareTo(a.width); // Reverse order
+             return b.width.CompareTo(a.width); // Reverse order
             return b.height.CompareTo(a.height); // Reverse order
         });
         
@@ -1691,27 +1686,15 @@ public class OptionsManager : MonoBehaviour
     {
         gameManager.scripts.uiManager.TintUIScriptTrigger(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2UIScript, false);
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2, false);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Images, false);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Icons, false);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Effects, false);
 
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1, true);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Images, true);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Icons, true);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Effects, true);
     }
     public void VideoPage2()
     {
         gameManager.scripts.uiManager.TintUIScriptTrigger(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1UIScript, false);
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1, false);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Images, false);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Icons, false);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Effects, false);
 
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2, true);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Images, true);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Icons, true);
-        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Effects, true);
     }
     public void VideoPageIncrease()
     {
