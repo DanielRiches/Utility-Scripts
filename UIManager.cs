@@ -9,11 +9,10 @@ using System.Text;
 
 public class UIManager : MonoBehaviour
 {
-    [SerializeField] GameManager gameManager;
-    [SerializeField] private InputSystemUIInputModule uiInput;
+    [SerializeField] GameManager gameManager;    
     [SerializeField] private Scrollbar activeScrollbar;
-    public InputAction scrollAction; // Accessed by inputManager
-    private Vector2 scrollDelta;
+    //public InputAction scrollAction; // Accessed by inputManager
+    
     private float scrollAmount = 0f;
     private string inputText;
     [Header("-------------------------------------------------------------------")]
@@ -24,6 +23,10 @@ public class UIManager : MonoBehaviour
     {        
         public GameObject optionsMenu;
         public Animator optionsMenuAnimator;
+        [Space(5)]
+        public GameObject optionsMenuImagesScalable;
+        public Animator optionsMenuImagesAnimator;
+        public GameObject optionsMenuImages;
         [Space(5)]
         public TextMeshProUGUI confirmOptionsChangesTimerText;
         public GameObject confirmOptionsChanges;        
@@ -38,13 +41,20 @@ public class UIManager : MonoBehaviour
         public Image optionsGameplayMenuButtonBG;
         public UI optionsGameplayMenuButtonUIScript;
         [Space(5)]
-        public Toggle autosavesToggle;
+        public GameObject optionsGameplayPage1Images;
+        public GameObject optionsGameplayPage1Icons;
+        public GameObject optionsGameplayPage1Effects;
+        [Space(5)]
+        public GameObject autosavesEffect;
+        public TMP_Dropdown autosavesDropdown;
         public GameObject autosavesModifiedIcon;
         [Space(5)]
+        public GameObject maximumAutosavesEffect;
         public TMP_InputField maximumAutosavesSliderText;
         public Slider maximumAutosavesSlider;
         public GameObject maximumAutosavesModifiedIcon;
         [Space(5)]
+        public GameObject maximumQuicksavesEffect;
         public TMP_InputField maximumQuicksavesSliderText;
         public Slider maximumQuicksavesSlider;
         public GameObject maximumQuicksavesModifiedIcon;
@@ -62,21 +72,30 @@ public class UIManager : MonoBehaviour
         public UI optionsVideoMenuButtonUIScript;
         [Space(5)]
         public GameObject optionsVideoPage1;
+        public GameObject optionsVideoPage1Images;
+        public GameObject optionsVideoPage1Icons;
+        public GameObject optionsVideoPage1Effects;
         public UI optionsVideoPage1UIScript;
         public GameObject optionsVideoPage1BG;
         [Space(5)]
         public GameObject optionsVideoPage2;
+        public GameObject optionsVideoPage2Images;
+        public GameObject optionsVideoPage2Icons;
+        public GameObject optionsVideoPage2Effects;
         public UI optionsVideoPage2UIScript;
         public GameObject optionsVideoPage2BG;
         [Space(5)]
+        public GameObject displayAdapterEffect;
         public TextMeshProUGUI gpuName;
         [Space(5)]
         public TMP_Dropdown displayDevicesDropdown;
         public GameObject displayDeviceModifiedIcon;
         [Space(5)]
+        public GameObject resolutionsEffect;
         public TMP_Dropdown resolutionsDropdown;
         public GameObject resolutionsModifiedIcon;
         [Space(5)]
+        public GameObject displayModeEffect;
         public TMP_Dropdown displayModeDropdown;
         public GameObject displayModeModifiedIcon;
         [Space(5)]
@@ -98,6 +117,7 @@ public class UIManager : MonoBehaviour
         public TMP_Dropdown antiAliasDropdown;        
         public GameObject antiAliasModifiedIcon;
         [Space(5)]
+        public GameObject taaQualityEffect;
         public TMP_Dropdown taaQualityDropdown;
         public GameObject taaQualityModifiedIcon;
         [Space(5)]
@@ -105,10 +125,12 @@ public class UIManager : MonoBehaviour
         public TMP_Dropdown fogDropdown;
         public GameObject fogModifiedIcon;
         [Space(5)]
+        public GameObject fovEffect;
         public TMP_InputField fovSliderText;
         public Slider fovSlider;
         public GameObject fovModifiedIcon;
         [Space(5)]
+        public GameObject renderDistanceEffect;
         public TMP_InputField renderDistanceSliderText;
         public Slider renderDistanceSlider;
         public GameObject renderDistanceModifiedIcon;
@@ -125,9 +147,11 @@ public class UIManager : MonoBehaviour
         public TMP_Dropdown hdrDropdown;
         public GameObject hdrModifiedIcon;
         [Space(5)]
+        public GameObject tonemappingEffect;
         public TMP_Dropdown tonemappingDropdown;
         public GameObject tonemappingModifiedIcon;
         [Space(5)]
+        public GameObject tonemappingQualityEffect;
         public TMP_Dropdown tonemappingQualityDropdown;
         public GameObject tonemappingQualityModifiedIcon;
         [Space(5)]
@@ -138,7 +162,8 @@ public class UIManager : MonoBehaviour
         public GameObject giResolutionEffect;
         public TMP_Dropdown giResolutionDropdown;
         public GameObject giResolutionModifiedIcon;        
-        [Space(5)]        
+        [Space(5)]
+        public GameObject reflectionsEffect;
         public TMP_Dropdown reflectionsDropdown;
         public GameObject reflectionsModifiedIcon;
         [Space(5)]
@@ -158,12 +183,26 @@ public class UIManager : MonoBehaviour
         public TMP_Dropdown crevicesDropdown;
         public GameObject crevicesModifiedIcon;
         [Space(5)]
+        public GameObject shadowQualityEffect;
         public TMP_Dropdown shadowQualityDropdown;
         public GameObject shadowQualityModifiedIcon;
         [Space(5)]
+        public GameObject shadowDistanceEffect;
         public TMP_InputField shadowDistanceSliderText;
         public Slider shadowDistanceSlider;
         public GameObject shadowDistanceModifiedIcon;
+        [Space(5)]
+        public GameObject crowdsEffect;
+        public TMP_Dropdown crowdsDropdown;
+        public GameObject crowdsModifiedIcon;
+        [Space(5)]
+        public GameObject trafficEffect;
+        public TMP_Dropdown trafficDropdown;
+        public GameObject trafficModifiedIcon;
+        [Space(5)]
+        public GameObject wildlifeEffect;
+        public TMP_Dropdown wildlifeDropdown;
+        public GameObject wildlifeModifiedIcon;
         [Space(5)]
         public GameObject fpsCounter;
         public TextMeshProUGUI fpsCounterText;
@@ -183,6 +222,10 @@ public class UIManager : MonoBehaviour
         public GameObject optionsAudioMenu;
         public Image optionsAudioMenuButtonBG;
         public UI optionsAudioMenuButtonUIScript;
+        [Space(5)]
+        public GameObject optionsAudioPage1Images;
+        public GameObject optionsAudioPage1Icons;
+        public GameObject optionsAudioPage1Effects;
         [Space(5)]
         public TextMeshProUGUI audioMasterNumberText;
         public Slider audioMasterSlider;
@@ -210,6 +253,10 @@ public class UIManager : MonoBehaviour
         public Image optionsKeyboardMenuButtonBG;
         public UI optionsKeyboardMenuButtonUIScript;
         [Space(5)]
+        public GameObject optionsKeyboardPage1Images;
+        public GameObject optionsKeyboardPage1Icons;
+        public GameObject optionsKeyboardPage1Effects;
+        [Space(5)]
         public TextMeshProUGUI cameraZoomSensitivitySliderText;
         public Slider cameraZoomSensitivitySlider;
         [Space(5)]
@@ -222,6 +269,10 @@ public class UIManager : MonoBehaviour
         public GameObject optionsGamepadMenu;
         public Image optionsGamepadMenuButtonBG;
         public UI optionsGamepadMenuButtonUIScript;
+        [Space(5)]
+        public GameObject optionsGamepadPage1Images;
+        public GameObject optionsGamepadPage1Icons;
+        public GameObject optionsGamepadPage1Effects;
         [Space(5)]
         public TextMeshProUGUI cameraGamepadZoomSensitivitySliderText;
         public Slider cameraGamepadZoomSensitivitySlider;
@@ -245,10 +296,18 @@ public class UIManager : MonoBehaviour
         public Image optionsInterfaceMenuButtonBG;
         public UI optionsInterfaceMenuButtonUIScript;
         [Space(5)]
+        public GameObject optionsInterfacePage1Images;
+        public GameObject optionsInterfacePage1Icons;
+        public GameObject optionsInterfacePage1Effects;
+        [Space(5)]
         [Header("---- Accessibility ----")]
         public GameObject optionsAccessibilityMenu;
         public Image optionsAccessibilityMenuButtonBG;
         public UI optionsAccessibilityMenuButtonUIScript;
+        [Space(5)]
+        public GameObject optionsAccessibilityPage1Images;
+        public GameObject optionsAccessibilityPage1Icons;
+        public GameObject optionsAccessibilityPage1Effects;        
     }
     public OptionsUI optionsUI;
 
@@ -256,13 +315,12 @@ public class UIManager : MonoBehaviour
     void Awake()
     {
         gameManager = GameObject.FindWithTag(Strings.gameManagerTag).GetComponent<GameManager>();
-        gameManager.scripts.uiManager = this;
-        
+        gameManager.scripts.uiManager = this;        
     }
 
     private void Update()
     {
-        OptionsScrollbar();
+        Scrollbar();
         Options();
     }    
 
@@ -295,11 +353,9 @@ public class UIManager : MonoBehaviour
             if (optionsUI.optionsVideoPage1.activeSelf)
             {
                 gameManager.scripts.uiManager.TintUIScriptTrigger(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1UIScript, true);
-                gameManager.scripts.uiManager.TintUIScriptTrigger(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2UIScript, false);
             }
-            else if (optionsUI.optionsVideoPage2.activeSelf)
-            {
-                gameManager.scripts.uiManager.TintUIScriptTrigger(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1UIScript, false);
+            if (optionsUI.optionsVideoPage2.activeSelf)
+            {                
                 gameManager.scripts.uiManager.TintUIScriptTrigger(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2UIScript, true);
             }
 
@@ -412,63 +468,67 @@ public class UIManager : MonoBehaviour
 
     void TrimInput(Slider slider, TMP_InputField sliderText, bool decimals)
     {
-        
-        if (string.IsNullOrEmpty(sliderText.text))// If the input is empty, set to the minimum value
+        if (string.IsNullOrEmpty(sliderText.text))
         {
-            sliderText.text = slider.minValue.ToString();
+            sliderText.text = slider.minValue.ToString(decimals ? Strings.numberFormat1 : Strings.numberFormat0);
+            return;
         }
-        
-        StringBuilder numericText = new StringBuilder();// numeric-only string
+
+        StringBuilder numericText = new StringBuilder();
+        bool decimalPointAdded = false;
+
         foreach (char c in sliderText.text)
         {
             if (char.IsDigit(c))
             {
                 numericText.Append(c);
             }
+            else if (decimals && c == '.' && !decimalPointAdded)
+            {
+                numericText.Append(c);
+                decimalPointAdded = true;
+            }
         }
+
         sliderText.text = numericText.ToString();
-        
-        if (!decimals)
-        {
-            sliderText.text = float.TryParse(sliderText.text, out float result) ? result.ToString(Strings.numberFormat0) : sliderText.text;// Format the string to remove decimals
-        }        
-        
-        int maxDigits = slider.maxValue.ToString().Length;// Check if the length exceeds max slider value
+
+        int maxDigits = slider.maxValue.ToString(decimals ? Strings.numberFormat1 : Strings.numberFormat0).Length;
+
         if (sliderText.text.Length > maxDigits)
         {
-            sliderText.text = sliderText.text.Remove(sliderText.text.Length - 1);// delete last digit
+            sliderText.text = sliderText.text.Remove(sliderText.text.Length - 1);
         }
     }
+
     public void OnInputEntered(Slider slider, TMP_InputField sliderText)
     {
         string input = sliderText.text;// Get the text directly from the input field
         //Debug.Log($"Raw Input: '{input}'");
-
         input = input.Trim();// Trim whitespace to avoid false "empty" detections
-        //Debug.Log($"Trimmed Input: '{input}'");
+        //Debug.Log($"Trimmed Input: '{input}'");        
+        input = slider.wholeNumbers? Regex.Replace(input, @"[^0-9]", "") : Regex.Replace(input, @"[^0-9.]", "");// Filter out non-numeric characters (including decimal point if allowed)
 
-        string numericInput = Regex.Replace(input, @"[^0-9]", "");// Filter out non-numeric characters
-        //Debug.Log($"Filtered Numeric Input: '{numericInput}'");
-
-        int minValue = (int)slider.minValue;
-        int maxValue = (int)slider.maxValue;
-
-        int inputValue;
-        if (string.IsNullOrEmpty(numericInput))// If input is empty after filtering, set to half of max value
+        float minValue = slider.minValue;
+        float maxValue = slider.maxValue;
+        float inputValue;
+        if (string.IsNullOrEmpty(input))
         {
-            //Debug.Log("EMPTY - Defaulting to half maxValue");
-            inputValue = maxValue / 2;
+            inputValue = maxValue / 2f;
         }
         else
-        {
-            inputValue = int.Parse(numericInput);// Convert to integer
-        }
-        inputValue = Mathf.Clamp(inputValue, minValue, maxValue);
-
-        //Debug.Log($"Final Value Applied: {inputValue}");        
-        slider.value = inputValue;
-        sliderText.text = inputValue.ToString();
+        {            
+            if (!float.TryParse(input, out inputValue))// Try parse as float
+            {
+                inputValue = maxValue / 2f; // fallback if parsing fails
+            }
+        }        
+        inputValue = Mathf.Clamp(inputValue, minValue, maxValue);// Clamp to slider bounds
+        slider.value = inputValue;        
+        sliderText.text = slider.wholeNumbers? inputValue.ToString(Strings.numberFormat0)  : inputValue.ToString("F2");// Format text output based on wholeNumbers
     }
+
+
+
     public void ScrollbarActive()
     {
         Scrollbar[] scrollbars = optionsUI.optionsMenu.GetComponentsInChildren<Scrollbar>(true);
@@ -482,41 +542,31 @@ public class UIManager : MonoBehaviour
             }
         }
     }
-    private void OptionsScrollbar()
+    private void Scrollbar()
     {
-        if (uiInput != null)
+        if (!activeScrollbar) return;
+        if (gameManager.scripts.inputManager.keyboard)
+        {            
+            if (gameManager.scripts.inputManager.uiActionMapScrollDelta.y != 0)
+            {
+                if (gameManager.scripts.inputManager.uiActionMapScrollDelta.y > 0)
+                {
+                    scrollAmount = 0.01f * gameManager.scripts.optionsManager.selectedProperties.selectedMouseScrollSensitivity;
+                }
+                else
+                {
+                    scrollAmount = -0.01f * gameManager.scripts.optionsManager.selectedProperties.selectedMouseScrollSensitivity;
+                }
+            }
+            else
+            {
+                scrollAmount = 0f;
+            }        
+        }
+
+        if (scrollAmount != 0f)
         {
-            if (gameManager.scripts.inputManager.keyboard)
-            {
-                scrollDelta = uiInput.input.mouseScrollDelta;
-
-                if (scrollDelta.y != 0)
-                {
-                    scrollAmount = scrollDelta.y * gameManager.scripts.optionsManager.selectedProperties.selectedMouseScrollSensitivity;
-                }
-                else
-                {
-                    scrollAmount = 0f;
-                }
-            }
-            else if (gameManager.scripts.inputManager.gamepad)
-            {
-                scrollDelta = scrollAction.ReadValue<Vector2>();
-
-                if (scrollDelta.y > gameManager.scripts.optionsManager.appliedGamepadCameraZoomDeadzone || scrollDelta.y < -gameManager.scripts.optionsManager.appliedGamepadCameraZoomDeadzone)
-                {
-                    scrollAmount = scrollDelta.y * gameManager.scripts.optionsManager.selectedProperties.selectedMouseScrollSensitivity;
-                }
-                else
-                {
-                    scrollAmount = 0f;
-                }
-            }
-
-            if (activeScrollbar)
-            {
-                activeScrollbar.value += scrollAmount;
-            }
+            activeScrollbar.value += scrollAmount;
         }
     }
 
@@ -524,10 +574,12 @@ public class UIManager : MonoBehaviour
     {        
         Utils.ActivateObject(mainMenu, false);
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDescInitial;
-        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescInitialAdditional;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescInitialAdditional;        
         Utils.ActivateObject(optionsUI.optionsMenu, true);
-        optionsUI.optionsMenuAnimator.Play(Strings.on);
-    }
+        Utils.ActivateObject(optionsUI.optionsMenuImagesScalable, true);
+        Utils.ActivateObject(optionsUI.optionsGameplayMenu, true);
+        optionsUI.optionsMenuAnimator.Play(Strings.on);// Calls ActivateOptionsImages() via animation event
+    }// Calls ActivateOptionsImages()
     public void ClickedExitOptions()
     {        
         Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
@@ -544,139 +596,266 @@ public class UIManager : MonoBehaviour
         gameManager.inOptionsInterfaceMenu = false;
         gameManager.inOptionsAccessibilityMenu = false;
 
-        Utils.ActivateObject(optionsUI.optionsGameplayMenu, true);
-        optionsUI.optionsMenuAnimator.Play(Strings.off);
-    }
-    public void CloseOptions()
+        Utils.ActivateObject(optionsUI.optionsMenuImages, false);
+        optionsUI.optionsMenuAnimator.Play(Strings.off);// Calls CloseOptions() via animation event
+    }// Calls CloseOptions()
+    public void CloseOptions()// Called from animation events
     {
+        Utils.ActivateObject(optionsUI.optionsMenuImagesScalable, false);
         Utils.ActivateObject(optionsUI.optionsMenu, false);
         gameManager.inOptionsMenu = false;
         Utils.ActivateObject(mainMenu, true);
     }
+    public void ActivateOptionsImages()// Called from animation events
+    {
+        Utils.ActivateObject(optionsUI.optionsMenuImages, true);
+        Utils.ActivateObject(optionsUI.optionsGameplayPage1Images, true);
+    }
+
     public void ClickedGameplayOptions()
     {
-        Utils.ActivateObject(optionsUI.optionsVideoMenu, false);        
-        Utils.ActivateObject(optionsUI.optionsAudioMenu, false);        
-        Utils.ActivateObject(optionsUI.optionsKeyboardMenu, false);
-        Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
-        Utils.ActivateObject(optionsUI.optionsInterfaceMenu, false);
-        Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
         gameManager.inOptionsVideoMenu = false;
-        gameManager.inOptionsAudioMenu = false;
-        gameManager.inOptionsKeyboardMenu = false;
-        gameManager.inOptionsGamepadMenu = false;
-        gameManager.inOptionsInterfaceMenu = false;
-        gameManager.inOptionsAccessibilityMenu = false;
+        Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage1Images, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage2Images, false);
 
+        gameManager.inOptionsAudioMenu = false;
+        Utils.ActivateObject(optionsUI.optionsAudioMenu, false);
+        Utils.ActivateObject(optionsUI.optionsAudioPage1Images, false);
+
+        gameManager.inOptionsKeyboardMenu = false;
+        Utils.ActivateObject(optionsUI.optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsUI.optionsKeyboardPage1Images, false);
+
+        gameManager.inOptionsGamepadMenu = false;
+        Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsUI.optionsGamepadPage1Images, false);
+
+        gameManager.inOptionsInterfaceMenu = false;
+        Utils.ActivateObject(optionsUI.optionsInterfaceMenu, false);
+        Utils.ActivateObject(optionsUI.optionsInterfacePage1Images, false);
+
+        gameManager.inOptionsAccessibilityMenu = false;
+        Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
+        Utils.ActivateObject(optionsUI.optionsAccessibilityPage1Images, false);
+
+        //---
         Utils.ActivateObject(optionsUI.optionsGameplayMenu, true);
+        Utils.ActivateObject(optionsUI.optionsGameplayPage1Images, true);
+        Utils.ActivateObject(optionsUI.optionsGameplayPage1Icons, true);
+        Utils.ActivateObject(optionsUI.optionsGameplayPage1Effects, true);
         gameManager.inOptionsGameplayMenu = true;
     }
     public void ClickedVideoOptions()
     {
+        gameManager.inOptionsGameplayMenu = false;
         Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
-        Utils.ActivateObject(optionsUI.optionsAudioMenu, false);
-        Utils.ActivateObject(optionsUI.optionsKeyboardMenu, false);
-        Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
-        Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
+        Utils.ActivateObject(optionsUI.optionsGameplayPage1Images, false);
+
         Utils.ActivateObject(optionsUI.optionsVideoPage2, false);
-        gameManager.inOptionsGameplayMenu = false;        
+        Utils.ActivateObject(optionsUI.optionsVideoPage2Images, false);
+
         gameManager.inOptionsAudioMenu = false;
+        Utils.ActivateObject(optionsUI.optionsAudioMenu, false);
+        Utils.ActivateObject(optionsUI.optionsAudioPage1Images, false);
+
         gameManager.inOptionsKeyboardMenu = false;
+        Utils.ActivateObject(optionsUI.optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsUI.optionsKeyboardPage1Images, false);
+
         gameManager.inOptionsGamepadMenu = false;
+        Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsUI.optionsGamepadPage1Images, false);
+
         gameManager.inOptionsInterfaceMenu = false;
+        Utils.ActivateObject(optionsUI.optionsInterfaceMenu, false);
+        Utils.ActivateObject(optionsUI.optionsInterfacePage1Images, false);
+
         gameManager.inOptionsAccessibilityMenu = false;
-        Utils.ActivateObject(optionsUI.optionsVideoPage1, true);        
+        Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
+        Utils.ActivateObject(optionsUI.optionsAccessibilityPage1Images, false);             
+        
+        //---
         Utils.ActivateObject(optionsUI.optionsVideoMenu, true);
+        Utils.ActivateObject(optionsUI.optionsVideoPage1, true);
+        Utils.ActivateObject(optionsUI.optionsVideoPage1Images, true);
+        Utils.ActivateObject(optionsUI.optionsVideoPage1Icons, true);
+        Utils.ActivateObject(optionsUI.optionsVideoPage1Effects, true);        
         gameManager.inOptionsVideoMenu = true;
     }
     public void ClickedAudioOptions()
     {
-        Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
-        Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
-        Utils.ActivateObject(optionsUI.optionsKeyboardMenu, false);
-        Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
-        Utils.ActivateObject(optionsUI.optionsInterfaceMenu, false);
-        Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
         gameManager.inOptionsGameplayMenu = false;
-        gameManager.inOptionsVideoMenu = false;        
-        gameManager.inOptionsKeyboardMenu = false;
-        gameManager.inOptionsGamepadMenu = false;
-        gameManager.inOptionsInterfaceMenu = false;
-        gameManager.inOptionsAccessibilityMenu = false;
+        Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
+        Utils.ActivateObject(optionsUI.optionsGameplayPage1Images, false);
 
+        gameManager.inOptionsVideoMenu = false;
+        Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage1Images, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage2, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage2Images, false);
+
+        gameManager.inOptionsKeyboardMenu = false;
+        Utils.ActivateObject(optionsUI.optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsUI.optionsKeyboardPage1Images, false);
+
+        gameManager.inOptionsGamepadMenu = false;
+        Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsUI.optionsGamepadPage1Images, false);
+
+        gameManager.inOptionsInterfaceMenu = false;
+        Utils.ActivateObject(optionsUI.optionsInterfaceMenu, false);
+        Utils.ActivateObject(optionsUI.optionsInterfacePage1Images, false);
+
+        gameManager.inOptionsAccessibilityMenu = false;
+        Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
+        Utils.ActivateObject(optionsUI.optionsAccessibilityPage1Images, false);
+
+        //---
         Utils.ActivateObject(optionsUI.optionsAudioMenu, true);
+        Utils.ActivateObject(optionsUI.optionsAudioPage1Images, true);
+        Utils.ActivateObject(optionsUI.optionsAudioPage1Icons, true);
+        Utils.ActivateObject(optionsUI.optionsAudioPage1Effects, true);
         gameManager.inOptionsAudioMenu = true;
     }
     public void ClickedKeyboardOptions()
     {
-        Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
-        Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
-        Utils.ActivateObject(optionsUI.optionsAudioMenu, false);
-        Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
-        Utils.ActivateObject(optionsUI.optionsInterfaceMenu, false);
-        Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
         gameManager.inOptionsGameplayMenu = false;
-        gameManager.inOptionsVideoMenu = false;
-        gameManager.inOptionsAudioMenu = false;        
-        gameManager.inOptionsGamepadMenu = false;
-        gameManager.inOptionsInterfaceMenu = false;
-        gameManager.inOptionsAccessibilityMenu = false;
+        Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
+        Utils.ActivateObject(optionsUI.optionsGameplayPage1Images, false);
 
+        gameManager.inOptionsVideoMenu = false;
+        Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage1Images, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage2, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage2Images, false);
+
+        gameManager.inOptionsAudioMenu = false;
+        Utils.ActivateObject(optionsUI.optionsAudioMenu, false);
+        Utils.ActivateObject(optionsUI.optionsAudioPage1Images, false);
+
+        gameManager.inOptionsGamepadMenu = false;
+        Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsUI.optionsGamepadPage1Images, false);
+
+        gameManager.inOptionsInterfaceMenu = false;
+        Utils.ActivateObject(optionsUI.optionsInterfaceMenu, false);
+        Utils.ActivateObject(optionsUI.optionsInterfacePage1Images, false);
+
+        gameManager.inOptionsAccessibilityMenu = false;
+        Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
+        Utils.ActivateObject(optionsUI.optionsAccessibilityPage1Images, false);
+
+        //---
         Utils.ActivateObject(optionsUI.optionsKeyboardMenu, true);
+        Utils.ActivateObject(optionsUI.optionsKeyboardPage1Images, true);
+        Utils.ActivateObject(optionsUI.optionsKeyboardPage1Icons, true);
+        Utils.ActivateObject(optionsUI.optionsKeyboardPage1Effects, true);
         gameManager.inOptionsKeyboardMenu = true;
     }
     public void ClickedGamepadOptions()
     {
-        Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
-        Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
-        Utils.ActivateObject(optionsUI.optionsAudioMenu, false);
-        Utils.ActivateObject(optionsUI.optionsKeyboardMenu, false);
-        Utils.ActivateObject(optionsUI.optionsInterfaceMenu, false);
-        Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
         gameManager.inOptionsGameplayMenu = false;
-        gameManager.inOptionsVideoMenu = false;
-        gameManager.inOptionsAudioMenu = false;
-        gameManager.inOptionsKeyboardMenu = false;        
-        gameManager.inOptionsInterfaceMenu = false;
-        gameManager.inOptionsAccessibilityMenu = false;
+        Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
+        Utils.ActivateObject(optionsUI.optionsGameplayPage1Images, false);
 
+        gameManager.inOptionsVideoMenu = false;
+        Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage1Images, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage2, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage2Images, false);
+
+        gameManager.inOptionsAudioMenu = false;
+        Utils.ActivateObject(optionsUI.optionsAudioMenu, false);
+        Utils.ActivateObject(optionsUI.optionsAudioPage1Images, false);
+
+        gameManager.inOptionsKeyboardMenu = false;
+        Utils.ActivateObject(optionsUI.optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsUI.optionsKeyboardPage1Images, false);
+
+        gameManager.inOptionsInterfaceMenu = false;
+        Utils.ActivateObject(optionsUI.optionsInterfaceMenu, false);
+        Utils.ActivateObject(optionsUI.optionsInterfacePage1Images, false);
+
+        gameManager.inOptionsAccessibilityMenu = false;
+        Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
+        Utils.ActivateObject(optionsUI.optionsAccessibilityPage1Images, false);
+
+        //---
         Utils.ActivateObject(optionsUI.optionsGamepadMenu, true);
+        Utils.ActivateObject(optionsUI.optionsGamepadPage1Images, true);
+        Utils.ActivateObject(optionsUI.optionsGamepadPage1Icons, true);
+        Utils.ActivateObject(optionsUI.optionsGamepadPage1Effects, true);
         gameManager.inOptionsGamepadMenu = true;
     }
     public void ClickedInterfaceOptions()
     {
-        Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
-        Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
-        Utils.ActivateObject(optionsUI.optionsAudioMenu, false);
-        Utils.ActivateObject(optionsUI.optionsKeyboardMenu, false);
-        Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
-        Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
         gameManager.inOptionsGameplayMenu = false;
-        gameManager.inOptionsVideoMenu = false;
-        gameManager.inOptionsAudioMenu = false;
-        gameManager.inOptionsKeyboardMenu = false;
-        gameManager.inOptionsGamepadMenu = false;        
-        gameManager.inOptionsAccessibilityMenu = false;
+        Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
+        Utils.ActivateObject(optionsUI.optionsGameplayPage1Images, false);
 
+        gameManager.inOptionsVideoMenu = false;
+        Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage1Images, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage2, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage2Images, false);
+
+        gameManager.inOptionsAudioMenu = false;
+        Utils.ActivateObject(optionsUI.optionsAudioMenu, false);
+        Utils.ActivateObject(optionsUI.optionsAudioPage1Images, false);
+
+        gameManager.inOptionsKeyboardMenu = false;
+        Utils.ActivateObject(optionsUI.optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsUI.optionsKeyboardPage1Images, false);
+
+        gameManager.inOptionsGamepadMenu = false;
+        Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsUI.optionsGamepadPage1Images, false);
+
+        gameManager.inOptionsAccessibilityMenu = false;
+        Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, false);
+        Utils.ActivateObject(optionsUI.optionsAccessibilityPage1Images, false);
+
+        //---
         Utils.ActivateObject(optionsUI.optionsInterfaceMenu, true);
+        Utils.ActivateObject(optionsUI.optionsInterfacePage1Images, true);
+        Utils.ActivateObject(optionsUI.optionsInterfacePage1Icons, true);
+        Utils.ActivateObject(optionsUI.optionsInterfacePage1Effects, true);
         gameManager.inOptionsInterfaceMenu = true;
     }
     public void ClickedAccessibilityOptions()
     {
-        Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
-        Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
-        Utils.ActivateObject(optionsUI.optionsAudioMenu, false);
-        Utils.ActivateObject(optionsUI.optionsKeyboardMenu, false);
-        Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
-        Utils.ActivateObject(optionsUI.optionsInterfaceMenu, false);
         gameManager.inOptionsGameplayMenu = false;
-        gameManager.inOptionsVideoMenu = false;
-        gameManager.inOptionsAudioMenu = false;
-        gameManager.inOptionsKeyboardMenu = false;
-        gameManager.inOptionsGamepadMenu = false;
-        gameManager.inOptionsInterfaceMenu = false;        
+        Utils.ActivateObject(optionsUI.optionsGameplayMenu, false);
+        Utils.ActivateObject(optionsUI.optionsGameplayPage1Images, false);
 
+        gameManager.inOptionsVideoMenu = false;
+        Utils.ActivateObject(optionsUI.optionsVideoMenu, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage1Images, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage2, false);
+        Utils.ActivateObject(optionsUI.optionsVideoPage2Images, false);
+
+        gameManager.inOptionsAudioMenu = false;
+        Utils.ActivateObject(optionsUI.optionsAudioMenu, false);
+        Utils.ActivateObject(optionsUI.optionsAudioPage1Images, false);
+
+        gameManager.inOptionsKeyboardMenu = false;
+        Utils.ActivateObject(optionsUI.optionsKeyboardMenu, false);
+        Utils.ActivateObject(optionsUI.optionsKeyboardPage1Images, false);
+
+        gameManager.inOptionsGamepadMenu = false;
+        Utils.ActivateObject(optionsUI.optionsGamepadMenu, false);
+        Utils.ActivateObject(optionsUI.optionsGamepadPage1Images, false);
+
+        gameManager.inOptionsInterfaceMenu = false;
+        Utils.ActivateObject(optionsUI.optionsInterfaceMenu, false);
+        Utils.ActivateObject(optionsUI.optionsInterfacePage1Images, false);
+
+        //---
         Utils.ActivateObject(optionsUI.optionsAccessibilityMenu, true);
+        Utils.ActivateObject(optionsUI.optionsAccessibilityPage1Images, true);
+        Utils.ActivateObject(optionsUI.optionsAccessibilityPage1Icons, true);
+        Utils.ActivateObject(optionsUI.optionsAccessibilityPage1Effects, true);
         gameManager.inOptionsAccessibilityMenu = true;
     }
 
@@ -781,6 +960,11 @@ public class UIManager : MonoBehaviour
     public void OnGoreHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGoreDesc;
+    }
+
+    public void OnDestructionHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDestructionDesc;
     }
 
     public void OnDisplayDeviceHover()
@@ -903,22 +1087,10 @@ public class UIManager : MonoBehaviour
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDesc;
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDescAdditional;
-    }
-    public void OnGlobalIlluminationResHover()
-    {
-        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResDesc;
-        if (gameManager.scripts.optionsManager.selectedProperties.selectedGlobalIlluminationResIndex == 1)
-        {
-            optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResStatusFullDesc;
-        }
-        else
-        {
-            optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResStatusHalfDesc;
-        }
-    }
+    }    
     public void OnGlobalIlluminationResDescHover()
     {
-        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResStatusDesc;
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResDesc;
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationResDescAdditional;
     }
     public void OnGlobalIlluminationInfoHover()

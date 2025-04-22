@@ -9,6 +9,9 @@ public class Strings
     public static string numberFormat1 = "F1";// will display 0.0
     public static string numberFormat2 = "F2";// will display 0.00
 
+    // UI
+    public static string inputSystemUIInputModuleScrollWheel = "ScrollWheel";
+
     // AUDIO
     public static string audioMaster = "audioMaster";
     public static string audioMusic = "audioMusic";

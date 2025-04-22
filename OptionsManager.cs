@@ -5,7 +5,7 @@ using System.Linq;// Works on Steamdeck
 using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.UI;
 using TMPro;
-using System;// Works on Steamdeck
+using System;
 
 public class OptionsManager : MonoBehaviour
 {
@@ -19,23 +19,29 @@ public class OptionsManager : MonoBehaviour
     [SerializeField] private Tonemapping tonemapping;
     [SerializeField] private GlobalIllumination globalIllumination;
     [SerializeField] private ScreenSpaceReflection reflections;
+    [SerializeField] private HighQualityLineRenderingVolumeComponent lineRenderer;
 
     //[SerializeField] private HDAdditionalReflectionData planarReflection; // possibly needed to determine Planar Reflection resolution based on camera distance at runtime
+
+    private Display[] displays;
+    [HideInInspector] public int lastDisplayCount; // To help automatically detect if someone connects another display, set to detect every 2 seconds at default, accessed by GameManager.
+
     private string gpuName;
-    Display[] displays;
-    FullScreenMode screenMode;
+
+    private FullScreenMode screenMode;
+
     [HideInInspector] public float refreshRate;// Accessed by UI Manager
     private Resolution[] resolutions;
     private List<Resolution> filteredResolutions = new List<Resolution>();
-    Resolution selectedResolution;
-    [HideInInspector] public int lastDisplayCount; // To help automatically detect if someone connects another display, set to detect every 2 seconds at default, accessed by GameManager.
+    private Resolution selectedResolution;
+    
 
     [SerializeField] private HDRenderPipelineAsset appliedHDRPAsset;
-    RayCastingMode rayMode;
+    private RayCastingMode rayMode;
     [HideInInspector] public bool rayTracingSupported;// Accessed by UI Manager
     
     public float FPSCounterUpdateInterval = 0.1f; // How often to update the FPS display (in seconds), accessed by GameManager
-    public float FPStimer;// Accessed by GameManager
+    [HideInInspector] public float FPStimer;// Accessed by GameManager
     [HideInInspector] public int frameCount;// Accessed by GameManager
     [HideInInspector] public float fps;// Accessed by GameManager
     public float memoryCounterUpdateInterval = 0.1f; // How often to update the memory display (in seconds), accessed by GameManager
@@ -45,18 +51,21 @@ public class OptionsManager : MonoBehaviour
     [HideInInspector] public float memoryInGB;// Accessed by GameManager
     [HideInInspector] public List<string> desiredList;// Accessed by populate methods below
 
-    public TimeSpan timeSpan; // for keep settings timer, accessed by GameManager
-    public bool requiresTimedConfirmation;
+    [HideInInspector] public TimeSpan timeSpan; // for keep settings timer, accessed by GameManager
+    [HideInInspector] public bool requiresTimedConfirmation;// Accessed by GameManager
     public float requiresTimedConfirmationTimer = 25;
 
     [System.Serializable]// Accessed by UI Manager and GameManager, selectedMouseScrollSensitivity is accessed by UI Manager for scroll wheel speed
     public class SelectedProperties
     {
-        public bool selectedAutosaves;
+        public int selectedAutosavesIndex;
         public int selectedMaximumAutosaves;
         public int selectedMaximumQuicksaves;
         public int selectedGoreIndex;
         public int selectedDestructionIndex;
+        public int selectedCrowdsIndex;
+        public int selectedTrafficIndex;
+        public int selectedWildlifeIndex;
         public int selectedDisplayIndex;
         public int selectedResolutionIndex;
         public int selectedDisplayModeIndex;
@@ -107,11 +116,14 @@ public class OptionsManager : MonoBehaviour
     public SelectedProperties selectedProperties;
 
     [Header("---- APPLIED ----------------------------------------------------")] // Accessed by Save+Load, game mostly uses these values to react at runtime
-    public bool appliedAutosaves;
+    public int appliedAutosavesIndex;
     public int appliedMaximumAutosaves;
     public int appliedMaximumQuicksaves;
     public int appliedGoreIndex;
     public int appliedDestructionIndex;
+    public int appliedCrowdsIndex;
+    public int appliedTrafficIndex;
+    public int appliedWildlifeIndex;
     [Header("Video")]
     public int appliedDisplayIndex;
     public int appliedResolutionIndex;
@@ -170,12 +182,15 @@ public class OptionsManager : MonoBehaviour
 
     void Start()
     {
-        PopulateAutosavesToggle();
+        PopulateAutosavesDropdown();
         PopulateMaximumAutoSavesSliders();
         PopulateMaximumQuickSavesSlider();
         PopulateGoreDropdown();
         PopulateDestructionDropdown();
-        DetectDisplays();// resolutions are populated inside this    
+        PopulateCrowdsDropdown();
+        PopulateTrafficDropdown();
+        PopulateWildlifeDropdown();
+        DetectDisplays();// resolutions dropdown is populated inside this    
         PopulateDisplayAdapter();
         PopulateDisplayModeDropdown();
         PopulateFrameRateCapSlider();
@@ -192,7 +207,7 @@ public class OptionsManager : MonoBehaviour
         PopulateWeatherEffectsDropdown();
         PopulateLineRenderingDropdown();
         PopulateCrevicesDropdown();
-        PopulateTonemappingDropdown();
+        PopulateTonemappingDropdown();// make sure PopulateHDRDropdown() is before this as this needs to check it
         PopulateTonemappingQualityDropdown();
         PopulateGlobalIlluminationDropdown();
         PopulateGlobalIlluminationResDropdown();
@@ -301,7 +316,6 @@ public class OptionsManager : MonoBehaviour
                     }
                 }
             }
-
 
             if (selectedProperties.selectedAntiAliasIndex != appliedAntiAliasIndex)
             {
@@ -685,6 +699,20 @@ public class OptionsManager : MonoBehaviour
                 }
             }
 
+            if (lineRenderer && selectedProperties.selectedLineRenderingIndex != appliedLineRenderingIndex)
+            {
+                if (selectedProperties.selectedLineRenderingIndex == 1)
+                {
+                    lineRenderer.active = true;
+                    lineRenderer.enable.value = true;
+                }
+                else
+                {                    
+                    lineRenderer.enable.value = false;
+                    lineRenderer.active = false;
+                }
+            }
+
             if (selectedProperties.selectedShadowQualityIndex != appliedShadowQualityIndex)
             {
                 if (selectedProperties.selectedShadowQualityIndex == 0)
@@ -758,11 +786,14 @@ public class OptionsManager : MonoBehaviour
     public void ApplySettingsPermanent()
     {  
         //GAMEPLAY
-        appliedAutosaves = selectedProperties.selectedAutosaves;
+        appliedAutosavesIndex = selectedProperties.selectedAutosavesIndex;
         appliedMaximumAutosaves = selectedProperties.selectedMaximumAutosaves;
         appliedMaximumQuicksaves = selectedProperties.selectedMaximumQuicksaves;
         appliedGoreIndex = selectedProperties.selectedGoreIndex;
-        appliedDestructionIndex = selectedProperties.selectedDestructionIndex; 
+        appliedDestructionIndex = selectedProperties.selectedDestructionIndex;
+        appliedCrowdsIndex = selectedProperties.selectedCrowdsIndex;
+        appliedTrafficIndex = selectedProperties.selectedTrafficIndex;
+        appliedWildlifeIndex = selectedProperties.selectedWildlifeIndex;
         //VIDEO
         appliedResolutionIndex = selectedProperties.selectedResolutionIndex;
         appliedDisplayModeIndex = selectedProperties.selectedDisplayModeIndex;
@@ -819,10 +850,13 @@ public class OptionsManager : MonoBehaviour
     public void RevertChanges()
     {
         //GAMEPLAY
-        gameManager.scripts.uiManager.optionsUI.autosavesToggle.isOn = appliedAutosaves;
+        gameManager.scripts.uiManager.optionsUI.autosavesDropdown.value = appliedAutosavesIndex;
         gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider.value = appliedMaximumAutosaves;
         gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider.value = appliedMaximumQuicksaves;
         gameManager.scripts.uiManager.optionsUI.destructionDropdown.value = appliedDestructionIndex;
+        gameManager.scripts.uiManager.optionsUI.crowdsDropdown.value = appliedCrowdsIndex;
+        gameManager.scripts.uiManager.optionsUI.trafficDropdown.value = appliedTrafficIndex;
+        gameManager.scripts.uiManager.optionsUI.wildlifeDropdown.value = appliedWildlifeIndex;
         //VIDEO
         gameManager.scripts.uiManager.optionsUI.goreDropdown.value = appliedGoreIndex;
         gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.value = appliedResolutionIndex;
@@ -891,10 +925,14 @@ public class OptionsManager : MonoBehaviour
     }
     public void CheckModified()
     {
-        Utils.CheckToggleValueModified(ref gameManager.scripts.uiManager.optionsUI.autosavesToggle, appliedAutosaves, ref gameManager.scripts.uiManager.optionsUI.autosavesModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.autosavesDropdown, appliedAutosavesIndex, ref gameManager.scripts.uiManager.optionsUI.autosavesModifiedIcon);
         Utils.CheckSliderValueModified(ref gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider, appliedMaximumAutosaves, ref gameManager.scripts.uiManager.optionsUI.maximumAutosavesModifiedIcon);
         Utils.CheckSliderValueModified(ref gameManager.scripts.uiManager.optionsUI.maximumQuicksavesSlider, appliedMaximumQuicksaves, ref gameManager.scripts.uiManager.optionsUI.maximumQuicksavesModifiedIcon);
         Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.goreDropdown, appliedGoreIndex, ref gameManager.scripts.uiManager.optionsUI.goreModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.destructionDropdown, appliedDestructionIndex, ref gameManager.scripts.uiManager.optionsUI.destructionModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.crowdsDropdown, appliedCrowdsIndex, ref gameManager.scripts.uiManager.optionsUI.crowdsModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.trafficDropdown, appliedTrafficIndex, ref gameManager.scripts.uiManager.optionsUI.trafficModifiedIcon);
+        Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.wildlifeDropdown, appliedWildlifeIndex, ref gameManager.scripts.uiManager.optionsUI.wildlifeModifiedIcon);
 
         Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.displayDevicesDropdown, appliedDisplayIndex, ref gameManager.scripts.uiManager.optionsUI.displayDeviceModifiedIcon);
         Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.resolutionsDropdown, appliedResolutionIndex, ref gameManager.scripts.uiManager.optionsUI.resolutionsModifiedIcon);
@@ -927,33 +965,36 @@ public class OptionsManager : MonoBehaviour
         Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.hdrDropdown, appliedHDRIndex, ref gameManager.scripts.uiManager.optionsUI.hdrModifiedIcon);        
         Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.tonemappingDropdown, appliedTonemappingIndex, ref gameManager.scripts.uiManager.optionsUI.tonemappingModifiedIcon);
 
-        if (selectedProperties.selectedTonemappingIndex == 0)
-        {
-            Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown, 0, ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityModifiedIcon);
-        }
-        else if (selectedProperties.selectedTonemappingIndex == 1)
+        if (selectedProperties.selectedTonemappingIndex == 1)
         {
             Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown, appliedTonemappingQualityIndex, ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityModifiedIcon);
         }
-        else if (selectedProperties.selectedTonemappingIndex == 2)
+        else if (selectedProperties.selectedTonemappingIndex == 2 && selectedProperties.selectedHDRIndex == 1)
         {
             Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown, appliedTonemappingQualityACESIndex, ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityModifiedIcon);
+        }
+        else
+        {
+            Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown, 0, ref gameManager.scripts.uiManager.optionsUI.tonemappingQualityModifiedIcon);
         }
 
         Utils.CheckToggleValueModified(ref gameManager.scripts.uiManager.optionsUI.fpsCounterToggle, appliedFPSCounter, ref gameManager.scripts.uiManager.optionsUI.fpsCounterModifiedIcon);
         Utils.CheckToggleValueModified(ref gameManager.scripts.uiManager.optionsUI.memoryCounterToggle, appliedMemoryCounter, ref gameManager.scripts.uiManager.optionsUI.memoryCounterModifiedIcon);
 
         Utils.CheckSliderValueModified(ref gameManager.scripts.uiManager.optionsUI.audioMasterSlider, appliedMasterVolume, ref gameManager.scripts.uiManager.optionsUI.audioMasterModifiedIcon);
-
     }
 
     #region Setup
-    void PopulateAutosavesToggle()
+    void PopulateAutosavesDropdown()
     {
-        gameManager.scripts.uiManager.optionsUI.autosavesToggle.onValueChanged.RemoveAllListeners();
-        gameManager.scripts.uiManager.optionsUI.autosavesToggle.onValueChanged.AddListener(OnAutosavesToggleChanged);
-        gameManager.scripts.uiManager.optionsUI.autosavesToggle.isOn = true;// Default value
-        OnAutosavesToggleChanged(gameManager.scripts.uiManager.optionsUI.autosavesToggle.isOn);
+        gameManager.scripts.uiManager.optionsUI.autosavesDropdown.ClearOptions();
+        desiredList.Clear();
+        desiredList = new List<string>{"Off", "On"};
+        gameManager.scripts.uiManager.optionsUI.autosavesDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.autosavesDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.autosavesDropdown.onValueChanged.AddListener(OnAutosavesChanged);
+        gameManager.scripts.uiManager.optionsUI.autosavesDropdown.value = 1;// Default value
+        OnAutosavesChanged(gameManager.scripts.uiManager.optionsUI.autosavesDropdown.value);
     }
     void PopulateMaximumAutoSavesSliders()
     {
@@ -971,30 +1012,22 @@ public class OptionsManager : MonoBehaviour
     {
         gameManager.scripts.uiManager.optionsUI.goreDropdown.ClearOptions();
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Off",
-            "On"
-        };
+        desiredList = new List<string>{"Off", "Blood", "Limbs", "Full"};
         gameManager.scripts.uiManager.optionsUI.goreDropdown.AddOptions(desiredList);
         gameManager.scripts.uiManager.optionsUI.goreDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.goreDropdown.onValueChanged.AddListener(OnGoreChanged);
-        gameManager.scripts.uiManager.optionsUI.goreDropdown.value = 1;// Default value
+        gameManager.scripts.uiManager.optionsUI.goreDropdown.value = 3;// Default value
         OnGoreChanged(gameManager.scripts.uiManager.optionsUI.goreDropdown.value);
     }
     void PopulateDestructionDropdown()
     {
         gameManager.scripts.uiManager.optionsUI.destructionDropdown.ClearOptions();
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Off",
-            "On"
-        };
+        desiredList = new List<string>{"Off", "Rigidbodies", "Destruction", "Full"};
         gameManager.scripts.uiManager.optionsUI.destructionDropdown.AddOptions(desiredList);
         gameManager.scripts.uiManager.optionsUI.destructionDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.destructionDropdown.onValueChanged.AddListener(OnDestructionChanged);
-        gameManager.scripts.uiManager.optionsUI.destructionDropdown.value = 1;// Default value
+        gameManager.scripts.uiManager.optionsUI.destructionDropdown.value = 3;// Default value
         OnDestructionChanged(gameManager.scripts.uiManager.optionsUI.destructionDropdown.value);
     }
     public void DetectDisplays()
@@ -1105,13 +1138,8 @@ public class OptionsManager : MonoBehaviour
     void PopulateDisplayModeDropdown()
     {
         gameManager.scripts.uiManager.optionsUI.displayModeDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Fullscreen",
-            "Windowed",
-        };
+        desiredList = new List<string>{"Fullscreen", "Windowed"};
         gameManager.scripts.uiManager.optionsUI.displayModeDropdown.AddOptions(desiredList);
         gameManager.scripts.uiManager.optionsUI.displayModeDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.displayModeDropdown.onValueChanged.AddListener(OnDisplayModeChanged);
@@ -1144,14 +1172,8 @@ public class OptionsManager : MonoBehaviour
     void PopulateVSyncDropdown()
     {
         gameManager.scripts.uiManager.optionsUI.vSyncDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Off",
-            "V<color=red>-</color>Blank",
-            "Second V<color=red>-</color>Blank",
-        };
+        desiredList = new List<string>{"Off", "V<color=red>-</color>Blank", "Second V<color=red>-</color>Blank"};
         gameManager.scripts.uiManager.optionsUI.vSyncDropdown.AddOptions(desiredList);
         gameManager.scripts.uiManager.optionsUI.vSyncDropdown.value = 1;// Default value 
         gameManager.scripts.uiManager.optionsUI.vSyncDropdown.onValueChanged.RemoveAllListeners();
@@ -1185,16 +1207,9 @@ public class OptionsManager : MonoBehaviour
     void PopulateTAAQualityDropdown()
     {
         gameManager.scripts.uiManager.optionsUI.taaQualityDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Low Quality",
-            "Post Sharpen",
-            "Contrast Adapt"
-        };
+        desiredList = new List<string>{"Low Quality", "Post Sharpen", "Contrast Adapt"};
         gameManager.scripts.uiManager.optionsUI.taaQualityDropdown.AddOptions(desiredList);
-
         gameManager.scripts.uiManager.optionsUI.taaQualityDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.taaQualityDropdown.onValueChanged.AddListener(OnTaaQualityChanged);        
         gameManager.scripts.uiManager.optionsUI.taaQualityDropdown.value = 1;// Default value
@@ -1204,15 +1219,8 @@ public class OptionsManager : MonoBehaviour
     {
         appliedHDRPAsset = QualitySettings.renderPipeline as HDRenderPipelineAsset;
         gameManager.scripts.uiManager.optionsUI.qualityDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Ultra",
-            "High",
-            "Medium",
-            "Low",
-        };
+        desiredList = new List<string>{"Low", "Medium", "High", "Ultra"};
         gameManager.scripts.uiManager.optionsUI.qualityDropdown.AddOptions(desiredList);        
         gameManager.scripts.uiManager.optionsUI.qualityDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.qualityDropdown.onValueChanged.AddListener(OnQualitySettingsChanged);        
@@ -1227,18 +1235,16 @@ public class OptionsManager : MonoBehaviour
     }    
     void PopulateFogDropdown()
     {
-        if (postProcess.profile.TryGet(out fog)){}
-
         gameManager.scripts.uiManager.optionsUI.fogDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
+        if (postProcess.profile.TryGet(out fog))
         {
-            "Off",
-            "Low",
-            "Medium",
-            "High"
-        };
+            desiredList = new List<string>{"Off", "Low", "Medium", "High"};
+        }
+        else
+        {
+            desiredList = new List<string>{"ERROR"};
+        }
         gameManager.scripts.uiManager.optionsUI.fogDropdown.AddOptions(desiredList);        
         gameManager.scripts.uiManager.optionsUI.fogDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.fogDropdown.onValueChanged.AddListener(OnFogChanged);        
@@ -1261,18 +1267,16 @@ public class OptionsManager : MonoBehaviour
     }
     void PopulateBloomDropdown()
     {
-        if (postProcess.profile.TryGet(out bloom)) { }
-
         gameManager.scripts.uiManager.optionsUI.bloomDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
+        if (postProcess.profile.TryGet(out bloom))
         {
-            "Off",
-            "Low",
-            "Medium",
-            "High"
-        };
+            desiredList = new List<string> { "Off", "Low", "Medium", "High" };
+        }
+        else
+        {
+            desiredList = new List<string> { "ERROR" };
+        }
         gameManager.scripts.uiManager.optionsUI.bloomDropdown.AddOptions(desiredList);        
         gameManager.scripts.uiManager.optionsUI.bloomDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.bloomDropdown.onValueChanged.AddListener(OnBloomChanged);        
@@ -1282,13 +1286,8 @@ public class OptionsManager : MonoBehaviour
     void PopulateHDRDropdown()
     {
         gameManager.scripts.uiManager.optionsUI.hdrDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Off",
-            "On"
-        };
+        desiredList = new List<string>{"Off", "On"};
         gameManager.scripts.uiManager.optionsUI.hdrDropdown.AddOptions(desiredList);
         gameManager.scripts.uiManager.optionsUI.hdrDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.hdrDropdown.onValueChanged.AddListener(OnHDRChanged);
@@ -1299,16 +1298,8 @@ public class OptionsManager : MonoBehaviour
     {
         QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
         gameManager.scripts.uiManager.optionsUI.ansioDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Off",
-            "2<color=red>x</color>",
-            "4<color=red>x</color>",
-            "8<color=red>x</color>",
-            "16<color=red>x</color>",
-        };
+        desiredList = new List<string>{"Off", "2<color=red>x</color>", "4<color=red>x</color>", "8<color=red>x</color>", "16<color=red>x</color>"};
         gameManager.scripts.uiManager.optionsUI.ansioDropdown.AddOptions(desiredList);        
         gameManager.scripts.uiManager.optionsUI.ansioDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.ansioDropdown.onValueChanged.AddListener(OnAnsioChanged);        
@@ -1320,12 +1311,7 @@ public class OptionsManager : MonoBehaviour
     {
         gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown.ClearOptions();
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Off",
-            "Half",
-            "Full"
-        };
+        desiredList = new List<string>{"Off", "Half", "Full"};
         gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown.AddOptions(desiredList);
         gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.weatherEffectsDropdown.onValueChanged.AddListener(OnWeatherEffectsChanged);
@@ -1336,11 +1322,15 @@ public class OptionsManager : MonoBehaviour
     {
         gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown.ClearOptions();
         desiredList.Clear();
-        desiredList = new List<string>
+        if (postProcess.profile.TryGet(out lineRenderer))
         {
-            "Standard",
-            "High Quality"
-        };
+            desiredList = new List<string>{"Standard", "High Quality"};
+        }
+        else
+        {
+            desiredList = new List<string> { "ERROR" };
+        }
+        
         gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown.AddOptions(desiredList);
         gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.lineRenderingDropdown.onValueChanged.AddListener(OnLineRenderingChanged);
@@ -1351,11 +1341,7 @@ public class OptionsManager : MonoBehaviour
     {
         gameManager.scripts.uiManager.optionsUI.crevicesDropdown.ClearOptions();
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Off",
-            "On"
-        };
+        desiredList = new List<string>{"Off", "On"};
         gameManager.scripts.uiManager.optionsUI.crevicesDropdown.AddOptions(desiredList);
         gameManager.scripts.uiManager.optionsUI.crevicesDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.crevicesDropdown.onValueChanged.AddListener(OnCrevicesChanged);
@@ -1364,16 +1350,15 @@ public class OptionsManager : MonoBehaviour
     }
     void PopulateTonemappingDropdown()
     {
-        if (postProcess.profile.TryGet(out tonemapping)){}
         gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.ClearOptions();
-
-        desiredList.Clear();
-        desiredList = new List<string>
-        {            
-            "Off",
-            "Neutral",
-            "ACES"
-        };
+        if (postProcess.profile.TryGet(out tonemapping))
+        {
+            desiredList = new List<string> { "Off", "Neutral", "ACES" };
+        }
+        else
+        {
+            desiredList = new List<string> { "ERROR" };
+        }  
         gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.AddOptions(desiredList);        
         gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.onValueChanged.AddListener(OnTonemappingChanged);        
@@ -1383,15 +1368,11 @@ public class OptionsManager : MonoBehaviour
     }
     void PopulateTonemappingQualityDropdown()
     {
-        if (gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value == 0)
+        if (gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value == 0 || selectedProperties.selectedHDRIndex == 0)
         {
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.ClearOptions();
-
             desiredList.Clear();
-            desiredList = new List<string>
-            {
-                "N/A"
-            };
+            desiredList = new List<string>{"N/A"};
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.AddOptions(desiredList);
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.RemoveAllListeners();
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);
@@ -1401,13 +1382,8 @@ public class OptionsManager : MonoBehaviour
         else if (gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value == 1)
         {
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.ClearOptions();
-
             desiredList.Clear();
-            desiredList = new List<string>
-            {
-                "Reinhard",
-                "BT2390"
-            };
+            desiredList = new List<string>{"Reinhard", "BT2390"};
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.AddOptions(desiredList);
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.RemoveAllListeners();
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);
@@ -1417,14 +1393,8 @@ public class OptionsManager : MonoBehaviour
         else
         {
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.ClearOptions();
-
             desiredList.Clear();
-            desiredList = new List<string>
-            {
-                "ACES1000",
-                "ACES2000",
-                "ACES4000"
-            };
+            desiredList = new List<string>{"ACES1000", "ACES2000", "ACES4000"};
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.AddOptions(desiredList);
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.RemoveAllListeners();
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);
@@ -1436,21 +1406,26 @@ public class OptionsManager : MonoBehaviour
         desiredList.Clear();
     }
     void PopulateGlobalIlluminationDropdown()
-    {        
-        if (postProcess.profile.TryGet(out globalIllumination)) { }
+    {
         gameManager.scripts.uiManager.optionsUI.giDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
+        if (postProcess.profile.TryGet(out globalIllumination))
         {
-            "Realtime",
-            "SSGI Low",
-            "SSGI Medium",
-            "SSGI High",
-            "RTGI Low",
-            "RTGI Medium",
-            "RTGI High"
-        };
+            desiredList = new List<string>
+            {
+                "Realtime",
+                "SSGI Low",
+                "SSGI Medium",
+                "SSGI High",
+                "RTGI Low",
+                "RTGI Medium",
+                "RTGI High"
+            };
+        }
+        else
+        {
+            desiredList = new List<string> { "ERROR" };
+        }
         gameManager.scripts.uiManager.optionsUI.giDropdown.AddOptions(desiredList);        
         gameManager.scripts.uiManager.optionsUI.giDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.giDropdown.onValueChanged.AddListener(OnGlobalIlluminationChanged);        
@@ -1460,13 +1435,8 @@ public class OptionsManager : MonoBehaviour
     void PopulateGlobalIlluminationResDropdown()
     {
         gameManager.scripts.uiManager.optionsUI.giResolutionDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Half",
-            "Full"
-        };
+        desiredList = new List<string>{"Half", "Full"};
         gameManager.scripts.uiManager.optionsUI.giResolutionDropdown.AddOptions(desiredList);
         gameManager.scripts.uiManager.optionsUI.giResolutionDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.giResolutionDropdown.onValueChanged.AddListener(OnGiResolutionChanged);
@@ -1475,21 +1445,26 @@ public class OptionsManager : MonoBehaviour
     }
     void PopulateReflectionsDropdown()
     {
-        if (postProcess.profile.TryGet(out reflections)) { }
         gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
+        if (postProcess.profile.TryGet(out reflections))
         {
-            "Off",
-            "SSR Low",
-            "SSR Medium",
-            "SSR High",
-            "RTR Low",
-            "RTR Medium",
-            "RTR High",
-            "Realtime"
-        };
+            desiredList = new List<string>
+            {
+                "Off",
+                "SSR Low",
+                "SSR Medium",
+                "SSR High",
+                "RTR Low",
+                "RTR Medium",
+                "RTR High",
+                "Realtime"
+            };
+        }
+        else
+        {
+            desiredList = new List<string> { "ERROR" };
+        }
         gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.AddOptions(desiredList);        
         gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.reflectionsDropdown.onValueChanged.AddListener(OnReflectionsChanged);        
@@ -1499,15 +1474,8 @@ public class OptionsManager : MonoBehaviour
     void PopulatePlanarReflectionsDropdown()
     {
         gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Off",
-            "Low",
-            "Medium",
-            "High"
-        };
+        desiredList = new List<string>{"Off", "Low", "Medium", "High"};
         gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown.AddOptions(desiredList);
         gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.planarReflectionsDropdown.onValueChanged.AddListener(OnPlanarRelectionsChanged);
@@ -1519,16 +1487,8 @@ public class OptionsManager : MonoBehaviour
         QualitySettings.shadows = ShadowQuality.All;
         QualitySettings.shadowCascades = 4;
         gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.ClearOptions();
-
         desiredList.Clear();
-        desiredList = new List<string>
-        {
-            "Off",
-            "Low",
-            "Medium",
-            "High",
-            "Ultra"
-        };
+        desiredList = new List<string>{"Off", "Low", "Medium", "High", "Ultra"};
         gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.AddOptions(desiredList);        
         gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.shadowQualityDropdown.onValueChanged.AddListener(OnShadowQualityChanged);        
@@ -1542,6 +1502,40 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value = 2000;// Default value
         OnShadowDistanceChanged(gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value);
     }
+    void PopulateCrowdsDropdown()
+    {
+        gameManager.scripts.uiManager.optionsUI.crowdsDropdown.ClearOptions();
+        desiredList.Clear();
+        desiredList = new List<string> { "Minimum", "Standard", "Full" };
+        gameManager.scripts.uiManager.optionsUI.crowdsDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.crowdsDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.crowdsDropdown.onValueChanged.AddListener(OnCrowdsChanged);
+        gameManager.scripts.uiManager.optionsUI.crowdsDropdown.value = 1;// Default value
+        OnCrowdsChanged(gameManager.scripts.uiManager.optionsUI.crowdsDropdown.value);
+    }
+    void PopulateTrafficDropdown()
+    {
+        gameManager.scripts.uiManager.optionsUI.trafficDropdown.ClearOptions();
+        desiredList.Clear();
+        desiredList = new List<string> { "Minimum", "Standard", "Full" };
+        gameManager.scripts.uiManager.optionsUI.trafficDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.trafficDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.trafficDropdown.onValueChanged.AddListener(OnTrafficChanged);
+        gameManager.scripts.uiManager.optionsUI.trafficDropdown.value = 1;// Default value
+        OnTrafficChanged(gameManager.scripts.uiManager.optionsUI.trafficDropdown.value);
+    }
+    void PopulateWildlifeDropdown()
+    {
+        gameManager.scripts.uiManager.optionsUI.wildlifeDropdown.ClearOptions();
+        desiredList.Clear();
+        desiredList = new List<string> { "Minimum", "Standard", "Full" };
+        gameManager.scripts.uiManager.optionsUI.wildlifeDropdown.AddOptions(desiredList);
+        gameManager.scripts.uiManager.optionsUI.wildlifeDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.wildlifeDropdown.onValueChanged.AddListener(OnWildlifeChanged);
+        gameManager.scripts.uiManager.optionsUI.wildlifeDropdown.value = 1;// Default value
+        OnWildlifeChanged(gameManager.scripts.uiManager.optionsUI.wildlifeDropdown.value);
+    }
+
     void PopulateFPSCounterToggle()
     {        
         gameManager.scripts.uiManager.optionsUI.fpsCounterToggle.onValueChanged.RemoveAllListeners();
@@ -1636,16 +1630,9 @@ public class OptionsManager : MonoBehaviour
 
     #region Runtime
     // GAMEPLAY
-    void OnAutosavesToggleChanged(bool autosavesChanged)
+    void OnAutosavesChanged(int autosavesIndex)
     {
-        if (gameManager.scripts.uiManager.optionsUI.autosavesToggle.isOn)
-        {
-            selectedProperties.selectedAutosaves = true;
-        }
-        else if (!gameManager.scripts.uiManager.optionsUI.autosavesToggle.isOn)
-        {
-            selectedProperties.selectedAutosaves = false;
-        }
+        selectedProperties.selectedAutosavesIndex = gameManager.scripts.uiManager.optionsUI.autosavesDropdown.value;
         CheckModified();
     }
     void OnAutosavesSliderChanged(float sliderValue)
@@ -1702,13 +1689,29 @@ public class OptionsManager : MonoBehaviour
     // VIDEO
     public void VideoPage1()
     {
+        gameManager.scripts.uiManager.TintUIScriptTrigger(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2UIScript, false);
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2, false);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Images, false);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Icons, false);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Effects, false);
+
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1, true);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Images, true);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Icons, true);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Effects, true);
     }
     public void VideoPage2()
     {
+        gameManager.scripts.uiManager.TintUIScriptTrigger(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1UIScript, false);
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1, false);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Images, false);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Icons, false);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage1Effects, false);
+
         Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2, true);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Images, true);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Icons, true);
+        Utils.ActivateObject(gameManager.scripts.uiManager.optionsUI.optionsVideoPage2Effects, true);
     }
     public void VideoPageIncrease()
     {
@@ -1812,7 +1815,6 @@ public class OptionsManager : MonoBehaviour
     void OnQualitySettingsChanged(int qualityIndex)
     {
         selectedProperties.selectedQualityAssetIndex = gameManager.scripts.uiManager.optionsUI.qualityDropdown.value;
-        gameManager.scripts.uiManager.optionsUI.qualityDropdown.RefreshShownValue();
         CheckModified();
     }
     public void OnFOVChanged(float sliderValue)
@@ -1864,6 +1866,7 @@ public class OptionsManager : MonoBehaviour
     void OnHDRChanged(int hdrChanged)
     {
         selectedProperties.selectedHDRIndex = gameManager.scripts.uiManager.optionsUI.hdrDropdown.value;
+        OnTonemappingChanged(gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value);
         CheckModified();
     }
     void OnAnsioChanged(int ansioIndex)
@@ -1974,19 +1977,22 @@ public class OptionsManager : MonoBehaviour
 
     void OnTonemappingChanged(int tonemappingIndex)
     {
-        selectedProperties.selectedTonemappingIndex = gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value;
-        
-        if (gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value == 0)// Re-Populate Tonemapping Quality
+        selectedProperties.selectedTonemappingIndex = gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value;        
+
+
+        if (gameManager.scripts.uiManager.optionsUI.tonemappingDropdown.value == 2 && selectedProperties.selectedHDRIndex == 1)// Re-Populate Tonemapping Quality
         {
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.ClearOptions();
 
             desiredList.Clear();
             desiredList = new List<string>
             {
-                "N/A"
+                "ACES1000",
+                "ACES2000",
+                "ACES4000"
             };
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.AddOptions(desiredList);
-            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = 0;// Default value
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = appliedTonemappingQualityACESIndex;// Default value
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.RemoveAllListeners();
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);            
         }
@@ -2003,7 +2009,7 @@ public class OptionsManager : MonoBehaviour
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.AddOptions(desiredList);
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = appliedTonemappingQualityIndex;// Default value
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.RemoveAllListeners();
-            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);            
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);
         }
         else
         {
@@ -2012,22 +2018,20 @@ public class OptionsManager : MonoBehaviour
             desiredList.Clear();
             desiredList = new List<string>
             {
-                "ACES1000",
-                "ACES2000",
-                "ACES4000"
+                "N/A"
             };
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.AddOptions(desiredList);
-            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = appliedTonemappingQualityACESIndex;// Default value
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value = 0;// Default value
             gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.RemoveAllListeners();
-            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);            
+            gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.onValueChanged.AddListener(OnTonemappingQualityChanged);
         }
+
         desiredList.Clear();
         CheckModified();
     }
-
-    void OnTonemappingQualityChanged(int tonemappingIndex)
+    void OnTonemappingQualityChanged(int tonemappingQualityIndex)
     {
-        if (selectedProperties.selectedTonemappingIndex == 0)
+        if (selectedProperties.selectedTonemappingIndex == 0 || selectedProperties.selectedHDRIndex == 1)
         {            
             selectedProperties.selectedTonemappingQualityIndex = gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value;
         }
@@ -2035,7 +2039,7 @@ public class OptionsManager : MonoBehaviour
         {
             selectedProperties.selectedTonemappingQualityIndex = gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value;
         }
-        else if (selectedProperties.selectedTonemappingIndex == 2)
+        else
         {
             selectedProperties.selectedTonemappingQualityACESIndex = gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value;
         }        
@@ -2127,7 +2131,21 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.optionsUI.shadowDistanceSliderText.text = gameManager.scripts.uiManager.optionsUI.shadowDistanceSlider.value.ToString();
         CheckModified();
     }
-
+    void OnCrowdsChanged(int crowdsIndex)
+    {
+        selectedProperties.selectedCrowdsIndex = gameManager.scripts.uiManager.optionsUI.crowdsDropdown.value;
+        CheckModified();
+    }
+    void OnTrafficChanged(int trafficIndex)
+    {
+        selectedProperties.selectedTrafficIndex = gameManager.scripts.uiManager.optionsUI.trafficDropdown.value;
+        CheckModified();
+    }
+    void OnWildlifeChanged(int wildlifeIndex)
+    {
+        selectedProperties.selectedWildlifeIndex = gameManager.scripts.uiManager.optionsUI.wildlifeDropdown.value;
+        CheckModified();
+    }
     void OnFPSCounterChanged(bool fpsCounterChanged)
     {
         if (gameManager.scripts.uiManager.optionsUI.fpsCounterToggle.isOn)

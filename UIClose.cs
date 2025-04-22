@@ -13,4 +13,8 @@ public class UIClose : MonoBehaviour
     {
         gameManager.scripts.uiManager.CloseOptions();
     }
+    public void ActivateOptionsImages()
+    {
+        gameManager.scripts.uiManager.ActivateOptionsImages();
+    }
 }

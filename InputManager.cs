@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 
 public class InputManager : MonoBehaviour
 {
@@ -7,7 +8,11 @@ public class InputManager : MonoBehaviour
     public InputActionAsset playerInputActions;
     public InputActionMap keyboardActionMap;
     public InputActionMap gamepadActionMap;
+    [Space(10)]
+    public InputActionAsset uiInputActions;
+    public InputSystemUIInputModule inputSystemUIInputModule;
     public InputActionMap uiActionMap;
+    public Vector2 uiActionMapScrollDelta;
     public bool keyboard;
     public bool gamepad;
 
@@ -21,8 +26,8 @@ public class InputManager : MonoBehaviour
     {
         keyboardActionMap = playerInputActions.FindActionMap("KeyboardControls");
         gamepadActionMap = playerInputActions.FindActionMap("GamePadControls");
-        uiActionMap = playerInputActions.FindActionMap("UI");
-        gameManager.scripts.uiManager.scrollAction = gameManager.scripts.inputManager.uiActionMap.FindAction("Scroll");
+        uiInputActions = inputSystemUIInputModule.actionsAsset;
+        uiActionMap = uiInputActions.FindActionMap("UI");
 
         keyboardActionMap.Enable();
         gamepadActionMap.Enable();
@@ -33,6 +38,9 @@ public class InputManager : MonoBehaviour
 
         foreach (var action in gamepadActionMap.actions)
             action.performed += OnGamepadInput;
+
+        foreach (var action in uiActionMap.actions)
+            action.performed += OnUIInput;
     }
 
     private void OnKeyboardInput(InputAction.CallbackContext context)
@@ -49,12 +57,20 @@ public class InputManager : MonoBehaviour
         // POPUP DEVICE CHANGED! MESSAGE
     }
 
-    private void OnDisable()// Unsubscribe from events to prevent memory leaks, no need to bother with UI map as either of these will determine keyboard / gamepad anyways
+    private void OnUIInput(InputAction.CallbackContext context)
+    {
+        uiActionMapScrollDelta = uiActionMap.FindAction(Strings.inputSystemUIInputModuleScrollWheel).ReadValue<Vector2>();
+    }
+
+    private void OnDisable()// Unsubscribe from events to prevent memory leaks
     {        
         foreach (var action in keyboardActionMap.actions)
             action.performed -= OnKeyboardInput;
 
         foreach (var action in gamepadActionMap.actions)
+            action.performed -= OnGamepadInput;
+
+        foreach (var action in uiActionMap.actions)
             action.performed -= OnGamepadInput;
     }
 }
