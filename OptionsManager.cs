@@ -54,7 +54,7 @@ public class OptionsManager : MonoBehaviour
     [HideInInspector] public TimeSpan timeSpan; // for keep settings timer, accessed by GameManager
     [HideInInspector] public bool requiresTimedConfirmation;// Accessed by GameManager
     public float requiresTimedConfirmationTimer = 25;
-
+    [SerializeField] private bool loadingDefaults;// Accessed by StartGame
     [System.Serializable]// Accessed by UI Manager and GameManager, selectedMouseScrollSensitivity is accessed by UI Manager for scroll wheel speed
     public class SelectedProperties
     {
@@ -182,6 +182,7 @@ public class OptionsManager : MonoBehaviour
 
     void Start()
     {
+        loadingDefaults = true;
         PopulateAutosavesDropdown();
         PopulateMaximumAutoSavesSliders();
         PopulateMaximumQuickSavesSlider();
@@ -190,8 +191,9 @@ public class OptionsManager : MonoBehaviour
         PopulateCrowdsDropdown();
         PopulateTrafficDropdown();
         PopulateWildlifeDropdown();
-        DetectDisplays();// resolutions dropdown is populated inside this    
+        DetectDisplays(); 
         PopulateDisplayAdapter();
+        PopulateResolutionsDropdown();
         PopulateDisplayModeDropdown();
         PopulateFrameRateCapSlider();
         PopulateVSyncDropdown();
@@ -240,9 +242,21 @@ public class OptionsManager : MonoBehaviour
 
             if (selectedProperties.selectedDisplayModeIndex != appliedDisplayModeIndex)
             {
-                if (selectedProperties.selectedDisplayModeIndex == 1)
+                if (selectedProperties.selectedDisplayModeIndex == 0)
+                {
+                    screenMode = FullScreenMode.ExclusiveFullScreen;
+                }
+                else if (selectedProperties.selectedDisplayModeIndex == 1)
+                {                    
+                    screenMode = FullScreenMode.FullScreenWindow;
+                }
+                else if (selectedProperties.selectedDisplayModeIndex == 2)
                 {
                     screenMode = FullScreenMode.Windowed;
+                }
+                else if (selectedProperties.selectedDisplayModeIndex == 3)
+                {
+                    screenMode = FullScreenMode.MaximizedWindow;
                 }
                 else
                 {
@@ -253,23 +267,35 @@ public class OptionsManager : MonoBehaviour
 
             if (filteredResolutions.Count > selectedProperties.selectedResolutionIndex)
             {
-                selectedResolution = filteredResolutions[selectedProperties.selectedResolutionIndex];// Get the chosen resolution from the filtered list
+                Resolution selectedResolution = filteredResolutions[selectedProperties.selectedResolutionIndex];
 
-                if (selectedProperties.selectedResolutionIndex != appliedResolutionIndex || selectedProperties.selectedDisplayModeIndex != appliedDisplayModeIndex)
+                // Only apply resolution if it's different from the last applied one
+                bool shouldApply = selectedProperties.selectedResolutionIndex != appliedResolutionIndex
+                                || selectedProperties.selectedDisplayModeIndex != appliedDisplayModeIndex;
+
+                if (shouldApply)
                 {
-                    Screen.SetResolution(selectedResolution.width, selectedResolution.height, screenMode, selectedResolution.refreshRateRatio);
-                    //Debug.Log($"Applied resolution: {selectedResolution.width}<color=red>x</color>{selectedResolution.height} {selectedResolution.refreshRateRatio.numerator}/{selectedResolution.refreshRateRatio.denominator}<color=red>Hz</color>");
+                    // Ensure refresh rate is valid (defensive check)
+                    var refreshRate = selectedResolution.refreshRateRatio;
+                    if (refreshRate.numerator == 0 || refreshRate.denominator == 0)
+                    {
+                        Debug.LogWarning("Invalid refresh rate ratio; using default refresh rate.");
+                        Screen.SetResolution(selectedResolution.width, selectedResolution.height, screenMode);
+                    }
+                    else
+                    {
+                        Screen.SetResolution(selectedResolution.width, selectedResolution.height, screenMode, refreshRate);
+                    }
+
+                    //Debug.Log($"Applied resolution: {selectedResolution.width}<color=red>x</color>{selectedResolution.height} @ {(float)refreshRate.numerator / refreshRate.denominator}<color=red>Hz</color>");
                     requiresTimedConfirmation = true;
                 }
             }
             else
             {
-                //Debug.Log("Tried to switch to a resolution index that doesn't exist.");
-                if (selectedProperties.selectedDisplayModeIndex != appliedDisplayModeIndex)// If Display Mode has changed
-                {
-                    Screen.SetResolution(Screen.width, Screen.height, screenMode, selectedResolution.refreshRateRatio);// Default back to screen.width + height to avoid error
-                    requiresTimedConfirmation = true;
-                }                
+                Resolution fallbackResolution = Screen.currentResolution;
+                //Debug.LogWarning("Could not apply selected resolution — reverting to current system resolution.");
+                Screen.SetResolution(fallbackResolution.width, fallbackResolution.height, screenMode, fallbackResolution.refreshRateRatio);
             }
 
             if (selectedProperties.selectedVsyncIndex != appliedVsyncIndex)
@@ -715,21 +741,30 @@ public class OptionsManager : MonoBehaviour
 
             if (selectedProperties.selectedShadowQualityIndex != appliedShadowQualityIndex)
             {
+                QualitySettings.shadows = ShadowQuality.All;
                 if (selectedProperties.selectedShadowQualityIndex == 0)
                 {
-                    QualitySettings.shadowResolution = ShadowResolution.High;
+                    QualitySettings.shadows = ShadowQuality.Disable;// Set off
                 }
-                if (selectedProperties.selectedShadowQualityIndex == 1)
+                else if (selectedProperties.selectedShadowQualityIndex == 1)
+                {
+                    QualitySettings.shadowResolution = ShadowResolution.Low;
+                }
+                else if (selectedProperties.selectedShadowQualityIndex == 2)
                 {
                     QualitySettings.shadowResolution = ShadowResolution.Medium;
                 }
-                if (selectedProperties.selectedShadowQualityIndex == 2)
+                else if (selectedProperties.selectedShadowQualityIndex == 3)
                 {
                     QualitySettings.shadowResolution = ShadowResolution.High;
                 }
-                if (selectedProperties.selectedShadowQualityIndex == 3)
+                else if (selectedProperties.selectedShadowQualityIndex == 4)
                 {
                     QualitySettings.shadowResolution = ShadowResolution.VeryHigh;
+                }
+                else
+                {
+                    QualitySettings.shadowResolution = ShadowResolution.Low;
                 }
             }
 
@@ -765,7 +800,7 @@ public class OptionsManager : MonoBehaviour
             }
 
 
-            if (requiresTimedConfirmation && !gameManager.inSplashScreen)
+            if (requiresTimedConfirmation && !loadingDefaults)
             {                
                 requiresTimedConfirmationTimer -= Time.deltaTime;
 
@@ -779,7 +814,11 @@ public class OptionsManager : MonoBehaviour
             else
             {
                 ApplySettingsPermanent();
-                requiresTimedConfirmationTimer = 24f;                
+                requiresTimedConfirmationTimer = 24f;
+                if (loadingDefaults)
+                {
+                    loadingDefaults = false;
+                }
             }
         }
     }
@@ -1041,104 +1080,97 @@ public class OptionsManager : MonoBehaviour
         }
 
         gameManager.scripts.uiManager.optionsUI.displayDevicesDropdown.AddOptions(displayNames);
-
-        if (displays.Length > 0)// Automatically populate resolutions for the display
-        {
-            PopulateResolutionsDropdown(0);
-        }
         selectedProperties.selectedDisplayIndex = gameManager.scripts.uiManager.optionsUI.displayDevicesDropdown.value;// Default value
         gameManager.scripts.uiManager.optionsUI.displayDevicesDropdown.onValueChanged.RemoveAllListeners();
-        gameManager.scripts.uiManager.optionsUI.displayDevicesDropdown.onValueChanged.AddListener(PopulateResolutionsDropdown);
         gameManager.scripts.uiManager.optionsUI.displayDevicesDropdown.onValueChanged.AddListener(OnDisplayDeviceChanged);
     }
+
+    void PopulateResolutionsDropdown()
+    {
+        gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.ClearOptions();
+        filteredResolutions.Clear();
+
+        resolutions = Screen.resolutions;
+
+        if (resolutions == null || resolutions.Length == 0)
+        {
+            //Debug.LogWarning("No available resolutions found.");
+            return;
+        }
+
+        var resolutionOptions = new List<string>();
+        Resolution detectedStartResolution = Screen.currentResolution;
+
+        var grouped = resolutions
+            .GroupBy(r => (r.width, r.height))
+            .Select(g =>
+            {
+                // Prefer 59.94Hz
+                var preferred = g.FirstOrDefault(r =>
+                    Mathf.Approximately((float)r.refreshRateRatio.numerator / r.refreshRateRatio.denominator, 59.94f));
+
+                // Fallback to max refresh rate
+                if (preferred.refreshRateRatio.numerator == 0)
+                {
+                    preferred = g.OrderByDescending(r =>
+                        (float)r.refreshRateRatio.numerator / r.refreshRateRatio.denominator).First();
+                }
+
+                return preferred;
+            })
+            .ToList();
+
+        // Sort by width then height
+        grouped.Sort((a, b) =>
+        {
+            int w = a.width.CompareTo(b.width);
+            return w != 0 ? w : a.height.CompareTo(b.height);
+        });
+
+        //Debug.Log($"[BUILD] {resolutions.Length} total resolutions found:");
+        foreach (var res in resolutions)
+        {
+            float hz = (float)res.refreshRateRatio.numerator / res.refreshRateRatio.denominator;
+            //Debug.Log($"[BUILD] {res.width}x{res.height} @ {hz}Hz");
+        }
+
+        for (int i = 0; i < grouped.Count; i++)
+        {
+            var res = grouped[i];
+            filteredResolutions.Add(res);
+
+            string resolutionText = $"{res.width}<color=red>x</color>{res.height}";
+            resolutionOptions.Add(resolutionText);
+
+            if (res.width == 1920 && res.height == 1080)
+            {
+                selectedProperties.selectedResolutionIndex = i;
+            }
+        }
+
+        gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.AddOptions(resolutionOptions);
+        gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.onValueChanged.RemoveAllListeners();
+        gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.onValueChanged.AddListener(OnResolutionChanged);
+        gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.value = selectedProperties.selectedResolutionIndex;
+        OnResolutionChanged(selectedProperties.selectedResolutionIndex);
+    }
+
+
+
     void PopulateDisplayAdapter()
     {
         gpuName = SystemInfo.graphicsDeviceName;// DISPLAY ADAPTER
         gameManager.scripts.uiManager.optionsUI.gpuName.text = gpuName;// DISPLAY ADAPTER
     }
-    void PopulateResolutionsDropdown(int displayIndex)
-    {
-        if (gameManager.scripts.uiManager.optionsUI.resolutionsDropdown == null)
-        {
-            return;
-        }
-
-        gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.ClearOptions();
-        resolutions = Display.displays.Length > displayIndex ? Display.displays[displayIndex].systemWidth > 0 ? Screen.resolutions : new Resolution[0] : new Resolution[0];
-
-        if (resolutions.Length == 0)
-        {
-            Debug.LogWarning("Detected no resolutions available on selected Display Device.");
-            return;
-        }
-
-        var resolutionOptions = new List<string>();
-        filteredResolutions.Clear();
-
-        int bootResolutionIndex = 0;
-        int preferredResolutionIndex = -1;
-
-        Resolution detectedStartResolution = Screen.currentResolution;
-
-        // display only a single list of resolutions at the monitors max refresh rate, the refresh rate can then be changed via VSync / Framerate Cap
-        int maxRefreshRate = resolutions.Max(res => (int)res.refreshRateRatio.numerator / (int)res.refreshRateRatio.denominator);
-
-        List<(int width, int height, float refreshRate)> seenResolutions = new List<(int, int, float)>();
-
-        // Store resolutions first, filtering out any below 1024x768
-        foreach (var res in resolutions)
-        {
-            refreshRate = res.refreshRateRatio.numerator / res.refreshRateRatio.denominator;
-            var resolutionTuple = (res.width, res.height, refreshRate);
-
-            if (res.width >= 1024 && res.height >= 768 && refreshRate == maxRefreshRate && !seenResolutions.Contains(resolutionTuple))
-            {
-                filteredResolutions.Add(res);
-                seenResolutions.Add(resolutionTuple);
-            }
-        }
-
-        // Sort resolutions in DESCENDING order (first by width, then by height)
-        filteredResolutions.Sort((a, b) =>
-        {
-            if (a.width != b.width)
-             return b.width.CompareTo(a.width); // Reverse order
-            return b.height.CompareTo(a.height); // Reverse order
-        });
-        
-        for (int i = 0; i < filteredResolutions.Count; i++)// Create dropdown list and list the results
-        {
-            Resolution res = filteredResolutions[i];
-            string resolutionText = $"{res.width}<color=red>x</color>{res.height}";
-            resolutionOptions.Add(resolutionText);
-
-            if (res.width == detectedStartResolution.width && res.height == detectedStartResolution.height)
-            {
-                bootResolutionIndex = i;
-            }
-
-            if (res.width == 1920 && res.height == 1080)// If 1080p is available, choose that as default preferred
-            {
-                preferredResolutionIndex = i;
-            }
-        }
-
-        selectedProperties.selectedResolutionIndex = (preferredResolutionIndex != -1) ? preferredResolutionIndex : bootResolutionIndex;
-        gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.AddOptions(resolutionOptions);        
-        gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.onValueChanged.RemoveAllListeners();
-        gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.onValueChanged.AddListener(OnResolutionChanged);
-        gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.value = selectedProperties.selectedResolutionIndex;// Default value
-        OnResolutionChanged(gameManager.scripts.uiManager.optionsUI.resolutionsDropdown.value);
-    }
     void PopulateDisplayModeDropdown()
     {
         gameManager.scripts.uiManager.optionsUI.displayModeDropdown.ClearOptions();
         desiredList.Clear();
-        desiredList = new List<string>{"Fullscreen", "Windowed"};
+        desiredList = new List<string>{ "Excl Fullscreen", "Fullscreen", "Windowed", "Max Window" };
         gameManager.scripts.uiManager.optionsUI.displayModeDropdown.AddOptions(desiredList);
         gameManager.scripts.uiManager.optionsUI.displayModeDropdown.onValueChanged.RemoveAllListeners();
         gameManager.scripts.uiManager.optionsUI.displayModeDropdown.onValueChanged.AddListener(OnDisplayModeChanged);
-        gameManager.scripts.uiManager.optionsUI.displayModeDropdown.value = 0;// Default value
+        gameManager.scripts.uiManager.optionsUI.displayModeDropdown.value = 1;// Default value
         OnDisplayModeChanged(gameManager.scripts.uiManager.optionsUI.displayModeDropdown.value);
     }
     void PopulateFrameRateCapSlider()

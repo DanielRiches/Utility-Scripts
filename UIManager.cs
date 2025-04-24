@@ -11,15 +11,20 @@ using System.Collections.Generic;
 public class UIManager : MonoBehaviour
 {
     [SerializeField] GameManager gameManager;
-    [SerializeField] private GameObject activeDropdownList;
-    [SerializeField] private Scrollbar activeScrollbar;
-    [SerializeField] private Transform dropdownViewport;
-    [SerializeField] private Transform dropdownContent;
-    [SerializeField] private List<GameObject> activeItems = new List<GameObject>();
+    
+    [System.Serializable]
+    public class InputUI
+    {
+        public Scrollbar activeScrollbar;
+        public Transform activeDropdownList;
+        public Transform dropdownViewport;
+        public Transform dropdownContent;
+        public List<GameObject> activeItems = new List<GameObject>();
+        [HideInInspector] public float scrollAmount = 0f;
+        [HideInInspector] public string inputText;
+    }
+    public InputUI inputUI;  
 
-    private float scrollAmount = 0f;
-    private string inputText;
-    [Header("-------------------------------------------------------------------")]
     [SerializeField] private GameObject mainMenu;
 
     [System.Serializable]
@@ -493,72 +498,104 @@ public class UIManager : MonoBehaviour
         sliderText.text = slider.wholeNumbers? inputValue.ToString(Strings.numberFormat0)  : inputValue.ToString("F2");// Format text output based on wholeNumbers
     }
 
-
-
     public void ScrollbarActive()
     {
-        Scrollbar[] scrollbars = optionsUI.optionsMenu.GetComponentsInChildren<Scrollbar>(true);
-        foreach (Scrollbar scrollbar in scrollbars)
+        if (inputUI.activeItems != null)
         {
-            if (scrollbar.gameObject.activeInHierarchy)
+            inputUI.activeItems.Clear();
+        }
+        
+        if (gameManager.inOptionsMenu)
+        {
+            foreach (Transform child in optionsUI.optionsMenu.GetComponentsInChildren<Transform>(true)) // true = include inactive
             {
-                activeScrollbar = scrollbar;
-                scrollbars = null;
-
-                activeDropdownList = activeScrollbar.transform.parent?.gameObject;
-
-                if (activeDropdownList)
+                if (child.name == Strings.dropdownList)
                 {
-                    dropdownViewport = activeDropdownList.transform.Find(Strings.dropdownViewport);
+                    inputUI.activeDropdownList = child;
+                }
+            }
+        }
+        else
+        {
+            // SEARCH ACTIVE SCENE FOR SCROLLBAR
+        }
 
-                    if (dropdownViewport)
+        if (gameManager.inOptionsMenu)
+        {
+            if (inputUI.activeDropdownList)
+            {
+                Scrollbar[] scrollbars = inputUI.activeDropdownList.GetComponentsInChildren<Scrollbar>(true);
+
+                foreach (Scrollbar scrollbar in scrollbars)
+                {
+                    if (scrollbar.gameObject.activeInHierarchy)
                     {
-                        dropdownContent = dropdownViewport.transform.Find(Strings.dropdownContent);
-                    }                    
+                        inputUI.activeScrollbar = scrollbar;
+                        scrollbars = null;
 
-                    if (dropdownContent)
-                    {
-                        activeItems.RemoveAll(item => item == null);
+                        inputUI.dropdownViewport = inputUI.activeDropdownList.transform.Find(Strings.dropdownViewport);
 
-                        for (int i = 0; i < dropdownContent.childCount; i++)
+                        if (inputUI.dropdownViewport)
                         {
-                            GameObject child = dropdownContent.GetChild(i).gameObject;
-                            if (child.activeSelf)
+                            inputUI.dropdownContent = inputUI.dropdownViewport.transform.Find(Strings.dropdownContent);
+                        }
+
+                        if (inputUI.dropdownContent)
+                        {
+                            for (int i = 0; i < inputUI.dropdownContent.childCount; i++)
                             {
-                                activeItems.Add(child);
+                                GameObject child = inputUI.dropdownContent.GetChild(i).gameObject;
+                                if (child.activeSelf)
+                                {
+                                    inputUI.activeItems.Add(child);
+                                }
                             }
                         }
+                        return;
                     }
                 }
-                return;
             }
-        }        
+        }
+        else
+        {
+            //Scrollbar[] scrollbars = ACTIVESCENEGAMEOBJECT.GetComponentsInChildren<Scrollbar>(true);
+            /*
+            foreach (Scrollbar scrollbar in scrollbars)
+            {
+                if (scrollbar.gameObject.activeInHierarchy)
+                {
+                    inputUI.activeScrollbar = scrollbar;
+                    scrollbars = null;
+                    return;
+                }
+            }*/
+        }
     }
     private void Scrollbar()
     {
-        if (!activeScrollbar) return;
+        if (!inputUI.activeScrollbar) return;
         if (gameManager.scripts.inputManager.keyboard)
         {            
             if (gameManager.scripts.inputManager.uiActionMapScrollDelta.y != 0)
             {
                 if (gameManager.scripts.inputManager.uiActionMapScrollDelta.y > 0)
                 {
-                    scrollAmount = 0.01f * gameManager.scripts.optionsManager.selectedProperties.selectedMouseScrollSensitivity;
+                    inputUI.scrollAmount = 0.01f * gameManager.scripts.optionsManager.selectedProperties.selectedMouseScrollSensitivity;
                 }
                 else
                 {
-                    scrollAmount = -0.01f * gameManager.scripts.optionsManager.selectedProperties.selectedMouseScrollSensitivity;
+                    inputUI.scrollAmount = -0.01f * gameManager.scripts.optionsManager.selectedProperties.selectedMouseScrollSensitivity;
                 }
             }
             else
             {
-                scrollAmount = 0f;
+                inputUI.scrollAmount = 0f;
             }        
         }
 
-        if (scrollAmount != 0f)
+        if (inputUI.scrollAmount != 0f)
         {
-            activeScrollbar.value += scrollAmount;
+            inputUI.activeScrollbar.value += inputUI.scrollAmount;
         }
     }
 
@@ -587,7 +624,10 @@ public class UIManager : MonoBehaviour
         gameManager.inOptionsInterfaceMenu = false;
         gameManager.inOptionsAccessibilityMenu = false;
 
-        activeItems = null;
+        if (inputUI.activeItems != null)
+        {
+            inputUI.activeItems.Clear();
+        }
         optionsUI.optionsMenuAnimator.Play(Strings.off);// Calls CloseOptions() via animation event
     }// Calls CloseOptions()
     public void CloseOptions()// Called from animation events
@@ -875,11 +915,30 @@ public class UIManager : MonoBehaviour
     public void OnGoreHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGoreDesc;
+        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
     }
 
     public void OnDestructionHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsDestructionDesc;
+        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+
+    public void OnCrowdsHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsCrowdsDesc;
+        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+
+    public void OnTrafficHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsTrafficDesc;
+        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
+    }
+    public void OnWildlifeHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsWildlifeDesc;
+        gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
     }
 
     public void OnDisplayDeviceHover()

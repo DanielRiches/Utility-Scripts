@@ -46,6 +46,12 @@ public static class GameStrings
 
         public static string optionsDestructionDesc = "Enable <color=" + Colors.textRed + ">rigidbodies</color> so objects fly around, <color=" + Colors.textRed + ">destruction</color> effects so objects shatter or both.";
 
+        public static string optionsCrowdsDesc = "The density of <color=" + Colors.textRed + ">crowds</color> and <color=" + Colors.textRed + ">non interactable NPCs</color> in the game.";
+
+        public static string optionsTrafficDesc = "The density of <color=" + Colors.textRed + ">traffic</color> in the game.";
+
+        public static string optionsWildlifeDesc = "The density of <color=" + Colors.textRed + ">wildlife</color> in the game.";
+
         public static string optionsDisplayDeviceDesc = "Which <color=" + Colors.textRed + ">monitor</color> you wish to use.";
         public static string optionsDisplayAdapterDesc = "The <color=" + Colors.textRed + ">GPU</color> the game is using.";
         
@@ -104,7 +110,9 @@ public static class GameStrings
         public static string optionsShadowQualityDescAdditional = "<color=red>[</color>Low<color=red>]</color>\r\n<color=green><b>+++</b></color> Performance\r\n<color=red><b>---</b></color> Quality\r\n\r\n<color=red>[</color>Medium<color=red>]</color>\r\n<color=red><b>-</b> </color>Performance\r\n<color=green><b>+</b></color> Quality\r\n\r\n<color=red>[</color>High<color=red>]</color>\r\n<color=red><b>--</b> </color>Performance\r\n<color=green><b>++</b></color> Quality\r\n\r\n<color=red>[</color>Very High<color=red>]</color>\r\n<color=red><b>---</b> </color>Performance\r\n<color=green><b>+++</b></color> Quality";
         
         public static string optionsShadowDistanceDesc = "The distance at which <color=" + Colors.textRed + ">shadows</color> will be rendered.";
-        
+
+
+
         public static string optionsDiagnosticsDesc = "Diagnostics to show the <color=" + Colors.textRed + ">Resources</color> the game is using.";
         
         public static string optionsFPSDesc = "Activate to display the <color=" + Colors.textRed + ">Frames Per Second</color> the game is using.";
