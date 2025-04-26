@@ -32,7 +32,7 @@ public class GameManager : MonoBehaviour
     public bool inOptionsInterfaceMenu;
     public bool inOptionsAccessibilityMenu;
     public bool inOptionsVideoMenu;
-    public bool inOptionsVideoMenu2;
+    public bool inOptionsVideoMenuPage2;
 
     /*  Muscle(Strength)
         Awareness(Perception)
@@ -74,7 +74,7 @@ public class GameManager : MonoBehaviour
         {
             scripts.optionsManager.requiresTimedConfirmationTimer -= Time.deltaTime;
             scripts.optionsManager.timeSpan = TimeSpan.FromSeconds(scripts.optionsManager.requiresTimedConfirmationTimer);
-            scripts.uiManager.optionsUI.confirmOptionsChangesTimerText.text = string.Format("{0:D2} <color=" + Colors.textRed + ">:</color> {1:D2} <color=" + Colors.textRed + ">:</color> {2:D2}", scripts.optionsManager.timeSpan.Hours, scripts.optionsManager.timeSpan.Minutes, scripts.optionsManager.timeSpan.Seconds);
+            scripts.uiManager.optionsUI.confirmOptionsChangesTimerText.text = string.Format("{0:D2} <color=" + Colors.textRed + "><b>:</b></color> {1:D2} <color=" + Colors.textRed + "><b>:</b></color> {2:D2}", scripts.optionsManager.timeSpan.Hours, scripts.optionsManager.timeSpan.Minutes, scripts.optionsManager.timeSpan.Seconds);
 
             if (scripts.optionsManager.requiresTimedConfirmationTimer <= 0f)
             {

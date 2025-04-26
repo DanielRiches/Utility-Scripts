@@ -23,7 +23,9 @@ public class UIManager : MonoBehaviour
         [HideInInspector] public float scrollAmount = 0f;
         [HideInInspector] public string inputText;
     }
-    public InputUI inputUI;  
+    public InputUI inputUI;
+
+    public GameObject fullscreenBorder;// Accessed by OptionsManager
 
     [SerializeField] private GameObject mainMenu;
 
@@ -81,6 +83,7 @@ public class UIManager : MonoBehaviour
         public GameObject optionsVideoPage2BG;
         [Space(5)]
         //public GameObject displayAdapterEffect;
+        public TextMeshProUGUI cpuName;
         public TextMeshProUGUI gpuName;
         [Space(5)]
         public TMP_Dropdown displayDevicesDropdown;
@@ -873,11 +876,13 @@ public class UIManager : MonoBehaviour
     {
         if (gameManager.scripts.optionsManager.rayTracingSupported)
         {
-            gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.raytracingOnDesc;
+            gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.raytracingOnDesc;
+            gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.raytracingOnDescAdditional;
         }
         else
         {
-            gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.raytracingOffDesc;
+            gameManager.scripts.uiManager.optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.raytracingOffDesc;
+            gameManager.scripts.uiManager.optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.raytracingOffDescAdditional;
         }
     }
 
@@ -1052,10 +1057,30 @@ public class UIManager : MonoBehaviour
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsAnsioDesc;
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsAnsioDescAdditional;
     }
+    public void OnWeatherEffectsHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsWeatherEffectsDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsWeatherEffectsDescAdditional;
+    }
+    public void OnLineRenderingHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsLineRenderingDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsLineRenderingDescAdditional;
+    }
+    public void OnCrevicesHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsCrevicesDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsCrevicesDescAdditional;
+    }
     public void OnTonemappingHover()
     {
         optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsTonemappingDesc;
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsTonemappingDescAdditional;
+    }
+    public void OnTonemappingQualityHover()
+    {
+        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsTonemappingQualityDesc;
+        optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsTonemappingQualityDescAdditional;
     }
     public void OnGlobalIlluminationHover()
     {
@@ -1069,7 +1094,6 @@ public class UIManager : MonoBehaviour
     }
     public void OnGlobalIlluminationInfoHover()
     {
-        optionsUI.optionsDescription.text = GameStrings.GameStringsEnglish.optionsGlobalIlluminationDesc;
         OnRaytracingInfoHover();
     }
     public void OnReflectionsHover()

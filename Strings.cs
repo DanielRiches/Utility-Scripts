@@ -51,4 +51,7 @@ public class Strings
     public static readonly int animRunning = Animator.StringToHash("running");
     public static readonly int animJumping = Animator.StringToHash("jumping");
     public static readonly int animFalling = Animator.StringToHash("falling");
+
+    // MATERIALS
+    public static string fullscreenMaterialHalftoneRegion = "_Halftone_Region";
 }
