@@ -48,7 +48,6 @@ public class GameManager : MonoBehaviour
             Utils.ClearMemory();
             lastGCTime = Time.realtimeSinceStartup;
         }
-
         Options();
     }
 

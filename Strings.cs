@@ -9,7 +9,12 @@ public class Strings
     public static string numberFormat1 = "F1";// will display 0.0
     public static string numberFormat2 = "F2";// will display 0.00
 
+    // INPUT
+    public static string keyboardActionMap = "KeyboardControls";
+    public static string gamepadActionMap = "GamepadControls";
+
     // UI
+    public static string uiActionMap = "UI";
     public static string dropdownList = "Dropdown List";
     public static string dropdownViewport = "Viewport";
     public static string dropdownContent = "Content";
@@ -18,6 +23,7 @@ public class Strings
     // AUDIO
     public static string audioMaster = "audioMaster";
     public static string audioMusic = "audioMusic";
+    public static string audioMusicLayer = "audioMusicLayer";
     public static string audioAmbient = "audioAmbient";
     public static string audioSFX = "audioSFX";
     public static string audioUI = "audioUI";
@@ -29,6 +35,8 @@ public class Strings
     // SCENES
     public const string menuSceneName = "Menus";
     public const string loadingSceneName = "LevelTransitionLoadingScreen";
+    public const string menuKeyboardStartGame = "KeyboardAnyKey";
+    public const string menuGamepadStartGame = "GamepadStartGame";
 
     // TAGS
     public const string gameManagerTag = "GameManager";

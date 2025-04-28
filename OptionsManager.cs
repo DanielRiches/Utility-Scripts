@@ -7,6 +7,7 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 using static UnityEngine.Rendering.LineRendering;
+using static OptionsManager;
 
 public class OptionsManager : MonoBehaviour
 {
@@ -226,7 +227,15 @@ public class OptionsManager : MonoBehaviour
         PopulateShadowDistanceSlider();
         PopulateFPSCounterToggle();
         PopulateMemoryCounterToggle();
-        PopulateAudioSliders();
+
+        PopulateMasterAudioSlider();
+        PopulateMusicAudioSlider();
+        PopulateAmbientAudioSlider();
+        PopulateSFXAudioSlider();
+        PopulateUIAudioSlider();
+        PopulateVoiceAudioSlider();
+        PopulateEventAudioSlider();
+
         PopulateMouseSliders();
         PopulateGamepadSliders();
 
@@ -1624,32 +1633,50 @@ public class OptionsManager : MonoBehaviour
         gameManager.scripts.uiManager.optionsUI.memoryCounterToggle.isOn = false;// Default value
         OnMemoryCounterChanged(gameManager.scripts.uiManager.optionsUI.memoryCounterToggle.isOn);
     }
-    void PopulateAudioSliders()
+    void PopulateMasterAudioSlider()
     {
-        ChangeAudioSliderValue(ref selectedProperties.selectedMasterVolume, Strings.audioMaster, gameManager.scripts.uiManager.optionsUI.audioMasterSlider, gameManager.scripts.uiManager.optionsUI.audioMasterNumberText, false, false, true);
-
-        ChangeAudioSliderValue(ref selectedProperties.selectedMusicVolume, Strings.audioMusic, gameManager.scripts.uiManager.optionsUI.audioMusicSlider, gameManager.scripts.uiManager.optionsUI.audioMusicNumberText, false, false, true);
-
-        ChangeAudioSliderValue(ref selectedProperties.selectedAmbientVolume, Strings.audioAmbient, gameManager.scripts.uiManager.optionsUI.audioAmbientSlider, gameManager.scripts.uiManager.optionsUI.audioAmbientNumberText, false, false, true);
-
-        ChangeAudioSliderValue(ref selectedProperties.selectedSfxVolume, Strings.audioSFX, gameManager.scripts.uiManager.optionsUI.audioSFXSlider, gameManager.scripts.uiManager.optionsUI.audioSFXNumberText, false, false, true);
-
-        ChangeAudioSliderValue(ref selectedProperties.selectedUiVolume, Strings.audioUI, gameManager.scripts.uiManager.optionsUI.audioUISlider, gameManager.scripts.uiManager.optionsUI.audioUINumberText, false, false, true);
-        ChangeAudioSliderValue(ref selectedProperties.selectedUiVolume, Strings.audioUIPitchShiftVolume, gameManager.scripts.uiManager.optionsUI.audioUISlider, gameManager.scripts.uiManager.optionsUI.audioUINumberText, false, false, true);
-
-        ChangeAudioSliderValue(ref selectedProperties.selectedVoiceVolume, Strings.audioVoice, gameManager.scripts.uiManager.optionsUI.audioVoiceSlider, gameManager.scripts.uiManager.optionsUI.audioVoiceNumberText, false, false, true);
-
-        ChangeAudioSliderValue(ref selectedProperties.selectedEventVolume, Strings.audioEvent, gameManager.scripts.uiManager.optionsUI.audioEventSlider, gameManager.scripts.uiManager.optionsUI.audioEventNumberText, false, false, true);
-
-        // Add listeners
-        gameManager.scripts.uiManager.optionsUI.audioMasterSlider.onValueChanged.AddListener(SetMasterVolume);
-        gameManager.scripts.uiManager.optionsUI.audioMusicSlider.onValueChanged.AddListener(SetMusicVolume);
-        gameManager.scripts.uiManager.optionsUI.audioAmbientSlider.onValueChanged.AddListener(SetAmbientVolume);
-        gameManager.scripts.uiManager.optionsUI.audioSFXSlider.onValueChanged.AddListener(SetSFXVolume);
-        gameManager.scripts.uiManager.optionsUI.audioUISlider.onValueChanged.AddListener(SetUIVolume);
-        gameManager.scripts.uiManager.optionsUI.audioVoiceSlider.onValueChanged.AddListener(SetVoiceVolume);
-        gameManager.scripts.uiManager.optionsUI.audioEventSlider.onValueChanged.AddListener(SetEventVolume);
+        gameManager.scripts.uiManager.optionsUI.audioMasterSlider.value = 100;       
+        gameManager.scripts.uiManager.optionsUI.audioMasterSlider.onValueChanged.AddListener(OnMasterVolumeChanged);
+        OnMasterVolumeChanged(gameManager.scripts.uiManager.optionsUI.audioMasterSlider.value);
     }
+    void PopulateMusicAudioSlider()
+    {
+        gameManager.scripts.uiManager.optionsUI.audioMusicSlider.value = 60;
+        gameManager.scripts.uiManager.optionsUI.audioMusicSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
+        OnMusicVolumeChanged(gameManager.scripts.uiManager.optionsUI.audioMusicSlider.value);
+    }
+    void PopulateAmbientAudioSlider()
+    {
+        gameManager.scripts.uiManager.optionsUI.audioAmbientSlider.value = 45;
+        gameManager.scripts.uiManager.optionsUI.audioAmbientSlider.onValueChanged.AddListener(OnAmbientVolumeChanged);
+        OnAmbientVolumeChanged(gameManager.scripts.uiManager.optionsUI.audioAmbientSlider.value);
+    }
+    void PopulateSFXAudioSlider()
+    {
+        gameManager.scripts.uiManager.optionsUI.audioSFXSlider.value = 100;
+        gameManager.scripts.uiManager.optionsUI.audioSFXSlider.onValueChanged.AddListener(OnSFXVolumeChanged);
+        OnSFXVolumeChanged(gameManager.scripts.uiManager.optionsUI.audioSFXSlider.value);
+    }
+    void PopulateUIAudioSlider()
+    {
+        gameManager.scripts.uiManager.optionsUI.audioUISlider.value = 65;
+        gameManager.scripts.uiManager.optionsUI.audioUISlider.onValueChanged.AddListener(OnUIVolumeChanged);
+        OnUIVolumeChanged(gameManager.scripts.uiManager.optionsUI.audioUISlider.value);
+    }
+    void PopulateVoiceAudioSlider()
+    {
+        gameManager.scripts.uiManager.optionsUI.audioVoiceSlider.value = 100;
+        gameManager.scripts.uiManager.optionsUI.audioVoiceSlider.onValueChanged.AddListener(OnVoiceVolumeChanged);
+        OnVoiceVolumeChanged(gameManager.scripts.uiManager.optionsUI.audioVoiceSlider.value);
+    }
+    void PopulateEventAudioSlider()
+    {
+        gameManager.scripts.uiManager.optionsUI.audioEventSlider.value = 100;
+        gameManager.scripts.uiManager.optionsUI.audioEventSlider.onValueChanged.AddListener(OnEventVolumeChanged);
+        OnEventVolumeChanged(gameManager.scripts.uiManager.optionsUI.audioEventSlider.value);
+    }
+
+
     void PopulateMouseSliders()
     {
         gameManager.scripts.uiManager.optionsUI.cameraZoomSensitivitySlider.onValueChanged.RemoveAllListeners();
@@ -2108,25 +2135,18 @@ public class OptionsManager : MonoBehaviour
     }
     void OnTonemappingQualityChanged(int tonemappingQualityIndex)
     {
-        Debug.Log(selectedProperties.selectedTonemappingIndex);
-        Debug.Log(selectedProperties.selectedHDRIndex);
         if (selectedProperties.selectedTonemappingIndex == 2 && selectedProperties.selectedHDRIndex == 1)
-        {
-            Debug.Log("HDR ACES");
+        {            
             selectedProperties.selectedTonemappingQualityACESIndex = gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value;
         }
         else if (selectedProperties.selectedTonemappingIndex == 0 || selectedProperties.selectedHDRIndex == 1)
         {
-            Debug.Log("HDR NEUTRAL");
             selectedProperties.selectedTonemappingQualityIndex = gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value;
         }
         else if (selectedProperties.selectedTonemappingIndex == 1 && selectedProperties.selectedHDRIndex == 0)
         {
-            Debug.Log("NON-HDR NEUTRAL");
             selectedProperties.selectedTonemappingQualityIndex = gameManager.scripts.uiManager.optionsUI.tonemappingQualityDropdown.value;
-        }
-
-       
+        }       
         CheckModified();
     }
 
@@ -2261,24 +2281,98 @@ public class OptionsManager : MonoBehaviour
     }
 
     // AUDIO
-    public void SetMasterVolume(float sliderValue)
+    public void OnMasterVolumeChanged(float sliderValue)
     {
-        ChangeAudioSliderValue(ref selectedProperties.selectedMasterVolume, Strings.audioMaster, gameManager.scripts.uiManager.optionsUI.audioMasterSlider, gameManager.scripts.uiManager.optionsUI.audioMasterNumberText, true, false, false);
-
+        ChangeAudioSliderValue(ref selectedProperties.selectedMasterVolume, Strings.audioMaster, gameManager.scripts.uiManager.optionsUI.audioMasterSlider, gameManager.scripts.uiManager.optionsUI.audioMasterSliderText, false, false, false);
     }
     public void IncreaseMasterVolume()
     {
-        ChangeAudioSliderValue(ref selectedProperties.selectedMasterVolume, Strings.audioMaster, gameManager.scripts.uiManager.optionsUI.audioMasterSlider, gameManager.scripts.uiManager.optionsUI.audioMasterNumberText, true, true, false);
+        ChangeAudioSliderValue(ref selectedProperties.selectedMasterVolume, Strings.audioMaster, gameManager.scripts.uiManager.optionsUI.audioMasterSlider, gameManager.scripts.uiManager.optionsUI.audioMasterSliderText, true, true, false);
     }
     public void DecreaseMasterVolume()
     {
-        ChangeAudioSliderValue(ref selectedProperties.selectedMasterVolume, Strings.audioMaster, gameManager.scripts.uiManager.optionsUI.audioMasterSlider, gameManager.scripts.uiManager.optionsUI.audioMasterNumberText, false, true, false);
+        ChangeAudioSliderValue(ref selectedProperties.selectedMasterVolume, Strings.audioMaster, gameManager.scripts.uiManager.optionsUI.audioMasterSlider, gameManager.scripts.uiManager.optionsUI.audioMasterSliderText, false, true, false);
     }
 
-    public void SetMusicVolume(float sliderValue)
+    public void OnMusicVolumeChanged(float sliderValue)
     {
-        ChangeAudioSliderValue(ref selectedProperties.selectedMusicVolume, Strings.audioMusic, gameManager.scripts.uiManager.optionsUI.audioMusicSlider, gameManager.scripts.uiManager.optionsUI.audioMusicNumberText, true, false, false);
+        ChangeAudioSliderValue(ref selectedProperties.selectedMusicVolume, Strings.audioMusic, gameManager.scripts.uiManager.optionsUI.audioMusicSlider, gameManager.scripts.uiManager.optionsUI.audioMusicSliderText, false, false, false);
     }
+    public void IncreaseMusicVolume()
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedMusicVolume, Strings.audioMusic, gameManager.scripts.uiManager.optionsUI.audioMusicSlider, gameManager.scripts.uiManager.optionsUI.audioMusicSliderText, true, true, false);
+    }
+    public void DecreaseMusicVolume()
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedMusicVolume, Strings.audioMusic, gameManager.scripts.uiManager.optionsUI.audioMusicSlider, gameManager.scripts.uiManager.optionsUI.audioMusicSliderText, false, true, false);
+    }
+
+    public void OnAmbientVolumeChanged(float sliderValue)
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedAmbientVolume, Strings.audioAmbient, gameManager.scripts.uiManager.optionsUI.audioAmbientSlider, gameManager.scripts.uiManager.optionsUI.audioAmbientSliderText, false, false, false);
+    }
+    public void IncreaseAmbientVolume()
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedAmbientVolume, Strings.audioAmbient, gameManager.scripts.uiManager.optionsUI.audioAmbientSlider, gameManager.scripts.uiManager.optionsUI.audioAmbientSliderText, true, true, false);
+    }
+    public void DecreaseAmbientVolume()
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedAmbientVolume, Strings.audioAmbient, gameManager.scripts.uiManager.optionsUI.audioAmbientSlider, gameManager.scripts.uiManager.optionsUI.audioAmbientSliderText, false, true, false);
+    }
+
+    public void OnSFXVolumeChanged(float sliderValue)
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedSfxVolume, Strings.audioSFX, gameManager.scripts.uiManager.optionsUI.audioSFXSlider, gameManager.scripts.uiManager.optionsUI.audioSFXSliderText, false, false, false);
+    }
+    public void IncreaseSFXVolume()
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedSfxVolume, Strings.audioSFX, gameManager.scripts.uiManager.optionsUI.audioSFXSlider, gameManager.scripts.uiManager.optionsUI.audioSFXSliderText, true, true, false);
+    }
+    public void DecreaseSFXVolume()
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedSfxVolume, Strings.audioSFX, gameManager.scripts.uiManager.optionsUI.audioSFXSlider, gameManager.scripts.uiManager.optionsUI.audioSFXSliderText, false, true, false);
+    }
+
+    public void OnUIVolumeChanged(float sliderValue)
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedUiVolume, Strings.audioUI, gameManager.scripts.uiManager.optionsUI.audioUISlider, gameManager.scripts.uiManager.optionsUI.audioUISliderText, false, false, false);
+    }
+    public void IncreaseUIVolume()
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedUiVolume, Strings.audioUI, gameManager.scripts.uiManager.optionsUI.audioUISlider, gameManager.scripts.uiManager.optionsUI.audioUISliderText, true, true, false);
+    }
+    public void DecreaseUIVolume()
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedUiVolume, Strings.audioUI, gameManager.scripts.uiManager.optionsUI.audioUISlider, gameManager.scripts.uiManager.optionsUI.audioUISliderText, false, true, false);
+    }
+
+    public void OnVoiceVolumeChanged(float sliderValue)
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedVoiceVolume, Strings.audioVoice, gameManager.scripts.uiManager.optionsUI.audioVoiceSlider, gameManager.scripts.uiManager.optionsUI.audioVoiceSliderText, false, false, false);
+    }
+    public void IncreaseVoiceVolume()
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedVoiceVolume, Strings.audioVoice, gameManager.scripts.uiManager.optionsUI.audioVoiceSlider, gameManager.scripts.uiManager.optionsUI.audioVoiceSliderText, true, true, false);
+    }
+    public void DecreaseVoiceVolume()
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedVoiceVolume, Strings.audioVoice, gameManager.scripts.uiManager.optionsUI.audioVoiceSlider, gameManager.scripts.uiManager.optionsUI.audioVoiceSliderText, false, true, false);
+    }
+
+    public void OnEventVolumeChanged(float sliderValue)
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedEventVolume, Strings.audioEvent, gameManager.scripts.uiManager.optionsUI.audioEventSlider, gameManager.scripts.uiManager.optionsUI.audioEventSliderText, false, false, false);
+    }
+    public void IncreaseEventVolume()
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedEventVolume, Strings.audioEvent, gameManager.scripts.uiManager.optionsUI.audioEventSlider, gameManager.scripts.uiManager.optionsUI.audioEventSliderText, true, true, false);
+    }
+    public void DecreaseEventVolume()
+    {
+        ChangeAudioSliderValue(ref selectedProperties.selectedEventVolume, Strings.audioEvent, gameManager.scripts.uiManager.optionsUI.audioEventSlider, gameManager.scripts.uiManager.optionsUI.audioEventSliderText, false, true, false);
+    }
+
+    /*
     public void IncreaseMusicVolume()
     {
         ChangeAudioSliderValue(ref selectedProperties.selectedMusicVolume, Strings.audioMusic, gameManager.scripts.uiManager.optionsUI.audioMusicSlider, gameManager.scripts.uiManager.optionsUI.audioMusicNumberText, true, true, false);
@@ -2354,13 +2448,26 @@ public class OptionsManager : MonoBehaviour
         ChangeAudioSliderValue(ref selectedProperties.selectedEventVolume, Strings.audioEvent, gameManager.scripts.uiManager.optionsUI.audioEventSlider, gameManager.scripts.uiManager.optionsUI.audioEventNumberText, false, true, false);
     }
 
-    private void ChangeAudioSliderValue(ref float optionsProperty, string mixerProperty, Slider slider, TextMeshProUGUI sliderText, bool increase, bool button, bool setup)
-    {
-        const float MIN_DB = -80f;// Min + Max is set to full possible range of the mixer, don't change.
-        const float MAX_DB = 20f;
+    */
+
+
+
+    public void ChangeAudioSliderValue(ref float optionsProperty, string mixerProperty, Slider slider, TMP_InputField sliderText, bool increase, bool button, bool setup)
+    {        
+        const float MIN_DB = -80f;// Min range of the mixer, don't change.
+        const float MAX_DB = 5f;// Min range of the mixer, usually 20 but decreased to 5 to prevent distortion.
         float newSliderValue;
-        float dB;        
-        float change = increase ? 1 : -1;
+        float dB;
+        float change;
+
+        if (slider.wholeNumbers)
+        {
+            change = increase ? 1 : -1;
+        }
+        else
+        {
+            change = increase ? 0.1f : -0.1f;
+        }
 
         if (!setup)
         {
@@ -2372,16 +2479,17 @@ public class OptionsManager : MonoBehaviour
             else
             {
                 newSliderValue = Mathf.Clamp(slider.value, slider.minValue, slider.maxValue);
+                slider.value = newSliderValue;
             }
         }
         else
         {
-            if(slider == gameManager.scripts.uiManager.optionsUI.audioMasterSlider)// Master volume set to 100% by default
+            if (slider == gameManager.scripts.uiManager.optionsUI.audioMasterSlider)// Master volume is set to 100% by default
             {
                 newSliderValue = Mathf.InverseLerp(MIN_DB, MAX_DB, MAX_DB) * slider.maxValue;// Convert master dB to slider range (0 - 100)
             }
             else
-            {                
+            {
                 newSliderValue = Mathf.InverseLerp(MIN_DB, MAX_DB, -30f) * slider.maxValue;
             }
             slider.value = newSliderValue;
@@ -2389,8 +2497,21 @@ public class OptionsManager : MonoBehaviour
 
         dB = Mathf.Lerp(MIN_DB, MAX_DB, newSliderValue / slider.maxValue);
         gameManager.scripts.audioManager.mainMixer.SetFloat(mixerProperty, dB);
+
+        if (optionsProperty == selectedProperties.selectedUiVolume)// match ui pitch channel to ui volume
+        {
+            gameManager.scripts.audioManager.mainMixer.SetFloat(Strings.audioUIPitchShiftVolume, dB);
+        }
+
+        if (optionsProperty == selectedProperties.selectedMusicVolume)// match music layer channel to music volume
+        {
+            gameManager.scripts.audioManager.mainMixer.SetFloat(Strings.audioMusicLayer, dB);
+        }
+
         optionsProperty = dB;
-        sliderText.text = slider.value.ToString(Strings.numberFormat0) + "<color=red>%</color>";        
+        string numberText = slider.value.ToString(Strings.numberFormat1);
+        sliderText.text = numberText + "<color=red><b>%</b></color>";
+        CheckModified();
     }
 
     void OnCameraZoomSensitivityChanged(float sliderValue)

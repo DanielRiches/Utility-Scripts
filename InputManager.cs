@@ -24,10 +24,10 @@ public class InputManager : MonoBehaviour
 
     void Start()
     {
-        keyboardActionMap = playerInputActions.FindActionMap("KeyboardControls");
-        gamepadActionMap = playerInputActions.FindActionMap("GamePadControls");
+        keyboardActionMap = playerInputActions.FindActionMap(Strings.keyboardActionMap);
+        gamepadActionMap = playerInputActions.FindActionMap(Strings.gamepadActionMap);
         uiInputActions = inputSystemUIInputModule.actionsAsset;
-        uiActionMap = uiInputActions.FindActionMap("UI");
+        uiActionMap = uiInputActions.FindActionMap(Strings.uiActionMap);
 
         keyboardActionMap.Enable();
         gamepadActionMap.Enable();

@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 using System.Text.RegularExpressions; // Needed for regex filtering
 using System.Text;
 using System.Collections.Generic;
+using static OptionsManager;
 
 public class UIManager : MonoBehaviour
 {
@@ -25,9 +26,23 @@ public class UIManager : MonoBehaviour
     }
     public InputUI inputUI;
 
+    public GameObject blackscreen;
+    public Image blackscreenImage;
     public GameObject fullscreenBorder;// Accessed by OptionsManager
 
-    [SerializeField] private GameObject mainMenu;
+    [System.Serializable]
+    public class SplashUI
+    {
+        public GameObject splashMenu;
+        public GameObject gameTitle;
+        public GameObject epilepsyWarning;
+        public GameObject saveWarning;
+        public GameObject pressAnyKey;
+    }
+    public SplashUI splashUI;
+
+    [Space(5)]
+    public GameObject mainMenu;
 
     [System.Serializable]
     public class OptionsUI
@@ -219,26 +234,33 @@ public class UIManager : MonoBehaviour
         public Image optionsAudioMenuButtonBG;
         public UI optionsAudioMenuButtonUIScript;
         [Space(5)]
-        public TextMeshProUGUI audioMasterNumberText;
+        public TMP_InputField audioMasterSliderText;
         public Slider audioMasterSlider;
+        public GameObject audioMasterSliderModifiedIcon;
         [Space(5)]
-        public TextMeshProUGUI audioMusicNumberText;
+        public TMP_InputField audioMusicSliderText;
         public Slider audioMusicSlider;
+        public GameObject audioMusicSliderModifiedIcon;
         [Space(5)]
-        public TextMeshProUGUI audioAmbientNumberText;
+        public TMP_InputField audioAmbientSliderText;
         public Slider audioAmbientSlider;
+        public GameObject audioAmbientSliderModifiedIcon;
         [Space(5)]
-        public TextMeshProUGUI audioSFXNumberText;
+        public TMP_InputField audioSFXSliderText;
         public Slider audioSFXSlider;
+        public GameObject audioSFXSliderModifiedIcon;
         [Space(5)]
-        public TextMeshProUGUI audioUINumberText;
+        public TMP_InputField audioUISliderText;
         public Slider audioUISlider;
+        public GameObject audioUISliderModifiedIcon;
         [Space(5)]
-        public TextMeshProUGUI audioVoiceNumberText;
+        public TMP_InputField audioVoiceSliderText;
         public Slider audioVoiceSlider;
+        public GameObject audioVoiceSliderModifiedIcon;
         [Space(5)]
-        public TextMeshProUGUI audioEventNumberText;
+        public TMP_InputField audioEventSliderText;
         public Slider audioEventSlider;
+        public GameObject audioEventSliderModifiedIcon;
         [Header("---- Keyboard ----")]
         public GameObject optionsKeyboardMenu;
         public Image optionsKeyboardMenuButtonBG;
@@ -289,7 +311,12 @@ public class UIManager : MonoBehaviour
     void Awake()
     {
         gameManager = GameObject.FindWithTag(Strings.gameManagerTag).GetComponent<GameManager>();
-        gameManager.scripts.uiManager = this;        
+        gameManager.scripts.uiManager = this;
+
+        if (blackscreen)
+        {
+            blackscreenImage = blackscreen.GetComponent<Image>();
+        }        
     }
 
     private void Update()
@@ -439,66 +466,107 @@ public class UIManager : MonoBehaviour
             }
         }
     }
-
-    void TrimInput(Slider slider, TMP_InputField sliderText, bool decimals)
+    public void TrimInput(Slider slider, TMP_InputField sliderText, bool decimals, bool isAudioMasterSlider = false)
     {
-        if (string.IsNullOrEmpty(sliderText.text))
+        // Get the trimmed text from the input field
+        string trimmedText = sliderText.text.Trim();
+
+        // Prevent recursive calls if no change was made
+        if (sliderText.text == trimmedText) return;
+
+        // Assign the cleaned text back to the input field
+        sliderText.text = trimmedText;
+
+        // Add the '%' symbol dynamically if it's the audio master slider
+        if (isAudioMasterSlider)
         {
-            sliderText.text = slider.minValue.ToString(decimals ? Strings.numberFormat1 : Strings.numberFormat0);
-            return;
+            // Add '%' only if it's not already at the end of the string
+            if (!trimmedText.EndsWith("%"))
+            {
+                // Append '%' if it's not already there
+                sliderText.text = trimmedText + "%";
+                return;
+            }
         }
 
-        StringBuilder numericText = new StringBuilder();
-        bool decimalPointAdded = false;
-
-        foreach (char c in sliderText.text)
+        // Handle decimals and percentage logic
+        if (decimals)
         {
-            if (char.IsDigit(c))
+            if (float.TryParse(trimmedText.Replace("%", ""), out float value))
             {
-                numericText.Append(c);
-            }
-            else if (decimals && c == '.' && !decimalPointAdded)
-            {
-                numericText.Append(c);
-                decimalPointAdded = true;
+                // If the value is a percentage, convert it to a normalized value for the slider
+                if (isAudioMasterSlider)
+                {
+                    value = Mathf.Clamp(value / 100f, 0f, 1f); // Convert percentage to range [0,1]
+                }
+
+                // Round to 2 decimal places and set the slider value
+                slider.value = Mathf.Round(value * 100f) / 100f;
+
+                // Update the text after trimming to avoid decimal issues
+                string numberText = slider.value.ToString(decimals ? Strings.numberFormat1 : Strings.numberFormat0);
+
+                // If it's AudioMasterSlider, append the % sign after rounding the value
+                sliderText.text = isAudioMasterSlider ? numberText + "%" : numberText;
             }
         }
-
-        sliderText.text = numericText.ToString();
-
-        int maxDigits = slider.maxValue.ToString(decimals ? Strings.numberFormat1 : Strings.numberFormat0).Length;
-
-        if (sliderText.text.Length > maxDigits)
+        else
         {
-            sliderText.text = sliderText.text.Remove(sliderText.text.Length - 1);
+            // If decimals aren't allowed, just set the slider to the integer value
+            if (int.TryParse(trimmedText.Replace("%", ""), out int intValue))
+            {
+                slider.value = Mathf.Clamp(intValue, slider.minValue, slider.maxValue); // Clamp to slider range
+                sliderText.text = intValue.ToString(); // Update text with integer value
+            }
         }
     }
 
     public void OnInputEntered(Slider slider, TMP_InputField sliderText)
     {
-        string input = sliderText.text;// Get the text directly from the input field
-        //Debug.Log($"Raw Input: '{input}'");
-        input = input.Trim();// Trim whitespace to avoid false "empty" detections
-        //Debug.Log($"Trimmed Input: '{input}'");        
-        input = slider.wholeNumbers? Regex.Replace(input, @"[^0-9]", "") : Regex.Replace(input, @"[^0-9.]", "");// Filter out non-numeric characters (including decimal point if allowed)
+        string input = sliderText.text; // Get the text directly from the input field
+        input = input.Trim(); // Trim whitespace to avoid false "empty" detections
+        input = slider.wholeNumbers ? Regex.Replace(input, @"[^0-9]", "") : Regex.Replace(input, @"[^0-9.]", ""); // Filter out non-numeric characters
 
         float minValue = slider.minValue;
         float maxValue = slider.maxValue;
         float inputValue;
+
         if (string.IsNullOrEmpty(input))
         {
-            inputValue = maxValue / 2f;
+            inputValue = maxValue / 2f; // Default value if no input
         }
         else
-        {            
-            if (!float.TryParse(input, out inputValue))// Try parse as float
+        {
+            if (!float.TryParse(input, out inputValue)) // Try parse as float
             {
-                inputValue = maxValue / 2f; // fallback if parsing fails
+                inputValue = maxValue / 2f; // Fallback if parsing fails
             }
-        }        
-        inputValue = Mathf.Clamp(inputValue, minValue, maxValue);// Clamp to slider bounds
-        slider.value = inputValue;        
-        sliderText.text = slider.wholeNumbers? inputValue.ToString(Strings.numberFormat0)  : inputValue.ToString("F2");// Format text output based on wholeNumbers
+        }
+
+        inputValue = Mathf.Clamp(inputValue, minValue, maxValue); // Clamp to slider bounds
+        slider.value = inputValue;
+
+        string numberText;
+
+        // For whole numbers, check if the value is effectively an integer
+        if (slider.wholeNumbers)
+        {
+            numberText = slider.value.ToString(Strings.numberFormat0); // Use "0" format to avoid decimal places (e.g., 50 instead of 50.0)
+        }
+        else
+        {
+            numberText = slider.value.ToString(Strings.numberFormat1); // For non-whole numbers, keep one decimal place
+        }
+
+        // Add '%' for audio sliders
+        if (slider == optionsUI.audioMasterSlider)
+        {
+            sliderText.text = numberText + "<color=" + Colors.textRed + "><b>%</b></color>";
+        }
+        else
+        {
+            sliderText.text = numberText;
+        }
     }
 
     public void ScrollbarActive()
@@ -1142,6 +1210,69 @@ public class UIManager : MonoBehaviour
         optionsUI.optionsDescriptionAdditional.text = GameStrings.GameStringsEnglish.optionsDescClear;
     }
 
+    // AUDIO
+    public void OnMasterAudioVolumeInputField()
+    {
+        OnInputEntered(optionsUI.audioMasterSlider, optionsUI.audioMasterSliderText);
+    }
+    public void OnMasterAudioVolumeInputChanged()
+    {
+        TrimInput(optionsUI.audioMasterSlider, optionsUI.audioMasterSliderText, true);
+    }
+
+    public void OnMusicAudioVolumeInputField()
+    {
+        OnInputEntered(optionsUI.audioMusicSlider, optionsUI.audioMusicSliderText);
+    }
+    public void OnMusicAudioVolumeInputChanged()
+    {
+        TrimInput(optionsUI.audioMusicSlider, optionsUI.audioMusicSliderText, true);
+    }
+
+    public void OnAmbientAudioVolumeInputField()
+    {
+        OnInputEntered(optionsUI.audioAmbientSlider, optionsUI.audioAmbientSliderText);
+    }
+    public void OnAmbientAudioVolumeInputChanged()
+    {
+        TrimInput(optionsUI.audioAmbientSlider, optionsUI.audioAmbientSliderText, true);
+    }
+
+    public void OnSFXAudioVolumeInputField()
+    {
+        OnInputEntered(optionsUI.audioSFXSlider, optionsUI.audioSFXSliderText);
+    }
+    public void OnSFXAudioVolumeInputChanged()
+    {
+        TrimInput(optionsUI.audioSFXSlider, optionsUI.audioSFXSliderText, true);
+    }
+
+    public void OnUIAudioVolumeInputField()
+    {
+        OnInputEntered(optionsUI.audioUISlider, optionsUI.audioUISliderText);
+    }
+    public void OnUIAudioVolumeInputChanged()
+    {
+        TrimInput(optionsUI.audioUISlider, optionsUI.audioUISliderText, true);
+    }
+
+    public void OnVoiceAudioVolumeInputField()
+    {
+        OnInputEntered(optionsUI.audioVoiceSlider, optionsUI.audioVoiceSliderText);
+    }
+    public void OnVoiceAudioVolumeInputChanged()
+    {
+        TrimInput(optionsUI.audioVoiceSlider, optionsUI.audioVoiceSliderText, true);
+    }
+
+    public void OnEventAudioVolumeInputField()
+    {
+        OnInputEntered(optionsUI.audioEventSlider, optionsUI.audioEventSliderText);
+    }
+    public void OnEventAudioVolumeInputChanged()
+    {
+        TrimInput(optionsUI.audioEventSlider, optionsUI.audioEventSliderText, true);
+    }
     // ---------------------------------
     public void TintUIScriptTrigger(UI uiScript, bool on)
     {
