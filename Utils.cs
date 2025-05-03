@@ -6,6 +6,9 @@ using System.Globalization;// Works on Steamdeck
 using System.IO;
 using System;
 using TMPro;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using UnityEngine.Events;
 
 public static class Utils
 {
@@ -249,20 +252,7 @@ public static class Utils
     // Utils.ActivateObject(object, true);
     public static void ActivateObject(GameObject gameObject, bool activate)
     {
-        if (activate)
-        {
-            if (!gameObject.activeSelf)
-            {
-                gameObject.SetActive(true);
-            }
-        }
-        else
-        {
-            if (gameObject.activeSelf)
-            {
-                gameObject.SetActive(false);
-            }
-        }
+        if (gameObject.activeSelf != activate) gameObject.SetActive(activate);
     }
 
     // Utils.DontDestroyObjectOnLoad(this.gameObject);
@@ -283,68 +273,63 @@ public static class Utils
         image.color = desiredColor;
     }
 
-    // Utils.CheckToggleValueModified(gameManager.scripts.uiManager.optionsUI.frameRateCapToggle, appliedFrameRateCap, gameManager.scripts.uiManager.optionsUI.framerateCapModifiedIcon);
+    // Utils.PopulateDropdown(gameManager.scripts.uiManager.optionsUI.autosavesDropdown, new List<string> { "Off", "On" }, 1, gameManager.scripts.optionsManager.OnAutosavesChanged);
     public static void CheckToggleValueModified(ref Toggle toggle, bool optionsAppliedBool, ref GameObject valueModifiedImage)
     {
-        if (toggle)
+        if (toggle && valueModifiedImage.activeSelf != (optionsAppliedBool != toggle.isOn))
         {
-            if (optionsAppliedBool != toggle.isOn)
-            {
-                if (!valueModifiedImage.activeSelf)
-                {
-                    valueModifiedImage.SetActive(true);
-                }
-            }
-            else
-            {
-                if (valueModifiedImage.activeSelf)
-                {
-                    valueModifiedImage.SetActive(false);
-                }
-            }
+            valueModifiedImage.SetActive(optionsAppliedBool != toggle.isOn);
         }
+    }
+
+    // Utils.PopulateToggle(gameManager.scripts.uiManager.optionsUI.frameRateCapToggle, true, gameManager.scripts.optionsManager.OnFrameRateCapToggleChanged);
+    public static void PopulateToggle(Toggle toggle, bool defaultState, UnityAction<bool> callback)
+    {
+        toggle.onValueChanged.RemoveAllListeners();
+        toggle.onValueChanged.AddListener(callback);
+        toggle.isOn = defaultState;
+        callback.Invoke(toggle.isOn); // Immediately call it with the current value
+    }
+
+    // Utils.PopulateSlider(gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider, 10, gameManager.scripts.optionsManager.OnAutosavesSliderChanged);
+    public static void PopulateSlider(Slider slider, float defaultValue, TMP_InputField sliderNumberInputField, string numberFormat, UnityAction<float> callback)
+    {
+        slider.onValueChanged.AddListener(callback);
+        slider.value = defaultValue;// Default value
+        callback.Invoke(slider.value);
+
+        if (sliderNumberInputField)
+        {
+            sliderNumberInputField.text = slider.value.ToString(numberFormat);
+        }        
     }
 
     // Utils.CheckSliderValueModified(gameManager.scripts.uiManager.optionsUI.frameRateCapSlider, appliedFrameRateCapValue, gameManager.scripts.uiManager.optionsUI.framerateCapModifiedIcon);
     public static void CheckSliderValueModified(ref Slider slider, float optionsAppliedFloat, ref GameObject valueModifiedImage)
     {
-        if (slider)
+        if (slider && valueModifiedImage.activeSelf != (optionsAppliedFloat != slider.value))
         {
-            if (optionsAppliedFloat != slider.value)
-            {
-                if (!valueModifiedImage.activeSelf)
-                {
-                    valueModifiedImage.SetActive(true);
-                }
-            }
-            else
-            {
-                if (valueModifiedImage.activeSelf)
-                {
-                    valueModifiedImage.SetActive(false);
-                }
-            }
+            valueModifiedImage.SetActive(optionsAppliedFloat != slider.value);
         }
     }
 
+    // Utils.PopulateDropdown(gameManager.scripts.uiManager.optionsUI.autosavesDropdown, gameManager.scripts.optionsManager.desiredList, 1, gameManager.scripts.optionsManager.OnAutosavesChanged);
+    public static void PopulateDropdown(TMP_Dropdown dropdown, List<string> list, int defaultValue, UnityAction<int> callback)
+    {
+        dropdown.ClearOptions();
+        dropdown.AddOptions(list);
+        dropdown.onValueChanged.RemoveAllListeners();
+        dropdown.onValueChanged.AddListener(callback);
+        dropdown.value = defaultValue; // Default value
+        callback.Invoke(dropdown.value); // Immediately call it with the current value
+    }
+
+    // Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.fogDropdown, appliedFogIndex, ref gameManager.scripts.uiManager.optionsUI.fogModifiedIcon);
     public static void CheckDropdownValueModified(ref TMP_Dropdown dropdown, int optionsAppliedInt, ref GameObject valueModifiedImage)
     {
-        if (dropdown)
+        if (dropdown && valueModifiedImage.activeSelf != (optionsAppliedInt != dropdown.value))
         {
-            if (optionsAppliedInt != dropdown.value)
-            {
-                if (!valueModifiedImage.activeSelf)
-                {
-                    valueModifiedImage.SetActive(true);
-                }
-            }
-            else
-            {
-                if (valueModifiedImage.activeSelf)
-                {
-                    valueModifiedImage.SetActive(false);
-                }
-            }
+            valueModifiedImage.SetActive(optionsAppliedInt != dropdown.value);
         }
     }
 

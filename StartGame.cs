@@ -63,6 +63,7 @@ public class StartGame : MonoBehaviour
 
                 //Debug.Log("Input detected on splash screen!");
                 gameManager.inSplashScreen = false;
+                Utils.ActivateObject(gameManager.scripts.uiManager.splashUI.pressAnyKey, false);
                 Utils.ActivateObject(gameManager.scripts.uiManager.splashUI.splashMenu, false);
                 Utils.ActivateObject(gameManager.scripts.uiManager.mainMenu, true);
             }
