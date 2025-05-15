@@ -9,6 +9,8 @@ using TMPro;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using UnityEngine.Events;
+using System.Collections;
+using UnityEngine.SceneManagement;
 
 public static class Utils
 {
@@ -246,6 +248,46 @@ public static class Utils
         else
         {
             return false;
+        }
+    }
+
+    public static IEnumerator LoadUnloadScene(string sceneName, bool load)
+    {
+        // Check if the scene exists in the build settings
+        if (!Application.CanStreamedLevelBeLoaded(sceneName))
+        {
+            yield break;
+        }
+        var scene = SceneManager.GetSceneByName(sceneName);
+        
+        if (load)
+        {
+            if (scene.isLoaded)
+            {
+                yield break;
+            }
+
+            AsyncOperation sceneAsync = SceneManager.LoadSceneAsync(sceneName);
+            sceneAsync.allowSceneActivation = true;
+
+            while (!sceneAsync.isDone)
+            {
+                yield return null;
+            }
+        }
+        else
+        {
+            if (!scene.isLoaded)
+            {
+                yield break;
+            }
+
+            AsyncOperation sceneAsync = SceneManager.UnloadSceneAsync(sceneName);
+
+            while (!sceneAsync.isDone)
+            {
+                yield return null;
+            }
         }
     }
 
