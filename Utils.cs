@@ -11,6 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using UnityEngine.Events;
 using System.Collections;
 using UnityEngine.SceneManagement;
+using UnityEngine.Audio;
 
 public static class Utils
 {
@@ -252,9 +253,8 @@ public static class Utils
     }
 
     public static IEnumerator LoadUnloadScene(string sceneName, bool load)
-    {
-        // Check if the scene exists in the build settings
-        if (!Application.CanStreamedLevelBeLoaded(sceneName))
+    {        
+        if (!Application.CanStreamedLevelBeLoaded(sceneName))// Check if the scene exists in the build settings
         {
             yield break;
         }
@@ -294,7 +294,25 @@ public static class Utils
     // Utils.ActivateObject(object, true);
     public static void ActivateObject(GameObject gameObject, bool activate)
     {
-        if (gameObject.activeSelf != activate) gameObject.SetActive(activate);
+        if (!gameObject)
+        {
+            return;
+        }
+
+        if (activate)
+        {
+            if (!gameObject.activeSelf)
+            {
+                gameObject.SetActive(true);
+            }            
+        }
+        else
+        {
+            if(gameObject.activeSelf)
+            {
+                gameObject.SetActive(false);
+            }
+        }
     }
 
     // Utils.DontDestroyObjectOnLoad(this.gameObject);
@@ -315,8 +333,32 @@ public static class Utils
         image.color = desiredColor;
     }
 
-    // Utils.PopulateDropdown(gameManager.scripts.uiManager.optionsUI.autosavesDropdown, new List<string> { "Off", "On" }, 1, gameManager.scripts.optionsManager.OnAutosavesChanged);
-    public static void CheckToggleValueModified(ref Toggle toggle, bool optionsAppliedBool, ref GameObject valueModifiedImage)
+    // StartCoroutine(Utils.FadeImageAlpha(gameManager.scripts.uiManager.blackscreenImageComponent, 7f, false));
+    public static IEnumerator FadeImageAlpha(Image image, float duration, bool fadeIn)
+    {
+        if (image == null)
+            yield break;
+
+        Color color = image.color;
+        float startAlpha = color.a;
+        float endAlpha = fadeIn ? 1f : 0f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            color.a = Mathf.Lerp(startAlpha, endAlpha, t);
+            image.color = color;
+            yield return null;
+        }
+
+        color.a = endAlpha;
+        image.color = color;
+    }
+
+    //Utils.CheckToggleValueModified(gameManager.scripts.uiManager.optionsUI.frameRateCapToggle, appliedProperties.appliedFrameRateCap, ref gameManager.scripts.uiManager.optionsUI.framerateCapModifiedIcon);
+    public static void CheckToggleValueModified(Toggle toggle, bool optionsAppliedBool, GameObject valueModifiedImage)
     {
         if (toggle && valueModifiedImage.activeSelf != (optionsAppliedBool != toggle.isOn))
         {
@@ -347,12 +389,43 @@ public static class Utils
     }
 
     // Utils.CheckSliderValueModified(gameManager.scripts.uiManager.optionsUI.frameRateCapSlider, appliedFrameRateCapValue, gameManager.scripts.uiManager.optionsUI.framerateCapModifiedIcon);
-    public static void CheckSliderValueModified(ref Slider slider, float optionsAppliedFloat, ref GameObject valueModifiedImage)
+    public static void CheckSliderValueModified(Slider slider, float optionsAppliedFloat, GameObject valueModifiedImage)
     {
         if (slider && valueModifiedImage.activeSelf != (optionsAppliedFloat != slider.value))
         {
             valueModifiedImage.SetActive(optionsAppliedFloat != slider.value);
         }
+    }
+
+    // Utils.SliderScaleUI(gameManager.scripts.uiManager.optionsUI.gamepadLeftDeadzoneSlider, gameManager.scripts.uiManager.optionsUI.gamepadLeftDeadzoneEffect.transform);
+    public static void SliderScaleUI(Slider slider, Transform UIToScale)
+    {
+        if (slider)
+        {
+            Vector3 newScale;
+            newScale.z = 1;
+            newScale.x = slider.value;
+            newScale.y = slider.value;
+            UIToScale.localScale = newScale;
+        }
+    }
+
+    //Action sliderAction;
+    // sliderAction = Utils.CreateSliderScaleUIAction(Slider, ObjectToScale.transform);
+    //sliderAction();
+    public static Action CreateSliderScaleUIAction(Slider slider, Transform UIToScale)
+    {
+        return () =>
+        {
+            if (slider)
+            {
+                Vector3 newScale;
+                newScale.z = 1;
+                newScale.x = slider.value;
+                newScale.y = slider.value;
+                UIToScale.localScale = newScale;
+            }
+        };
     }
 
     // Utils.PopulateDropdown(gameManager.scripts.uiManager.optionsUI.autosavesDropdown, gameManager.scripts.optionsManager.desiredList, 1, gameManager.scripts.optionsManager.OnAutosavesChanged);
@@ -367,13 +440,97 @@ public static class Utils
     }
 
     // Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.fogDropdown, appliedFogIndex, ref gameManager.scripts.uiManager.optionsUI.fogModifiedIcon);
-    public static void CheckDropdownValueModified(ref TMP_Dropdown dropdown, int optionsAppliedInt, ref GameObject valueModifiedImage)
+    public static void CheckDropdownValueModified(TMP_Dropdown dropdown, int optionsAppliedInt, GameObject valueModifiedImage)
     {
         if (dropdown && valueModifiedImage.activeSelf != (optionsAppliedInt != dropdown.value))
         {
             valueModifiedImage.SetActive(optionsAppliedInt != dropdown.value);
         }
     }
+
+    //Action sliderAction;
+    //sliderAction = Utils.CreateSliderAction(SLIDER, () => FLOATPROPERTY, v => FLOATPROPERTY = v, -1, INPUTFIELD, "F0", null, null);
+    //sliderAction = Utils.CreateSliderAction(SLIDER, () => 0f, _ => { }, 0, null, null, MIXER, MIXERPROPERTY);
+    //sliderAction();
+    public static Action CreateSliderAction(Slider slider, Func<float> getter, Action<float> setter, float change, TMP_InputField text, string desiredNumberFormat, AudioMixer mainMixer, string mixerProperty)
+    {
+        return () =>
+        {
+            const float MIN_DB = -80f;
+            const float MAX_DB = 5f;
+            float dB;
+            string desiredText;
+
+            if (slider)
+            {
+                slider.value = Mathf.Clamp(slider.value + change, slider.minValue, slider.maxValue);
+                
+                float roundedValue;
+                if (!string.IsNullOrEmpty(desiredNumberFormat))
+                {
+                    if (float.TryParse(slider.value.ToString(desiredNumberFormat), out float parsed))
+                    {
+                        roundedValue = parsed;
+                    }                        
+                    else
+                    {
+                        roundedValue = Mathf.Round(slider.value * 100f) / 100f; // fallback
+                    }                        
+                }
+                else if (slider.wholeNumbers)
+                {
+                    roundedValue = Mathf.Round(slider.value);
+                }
+                else
+                {
+                    roundedValue = Mathf.Round(slider.value * 10f) / 10f;
+                }
+
+                slider.value = roundedValue;
+
+                if (mainMixer && mixerProperty != null)
+                {                    
+                    if (desiredNumberFormat != null && text)
+                    {
+                        desiredText = roundedValue.ToString(desiredNumberFormat) + "<color=red>%</color>";
+                        text.text = desiredText;
+                        desiredText = null;
+                    }
+                    else if (text)
+                    {
+                        desiredText = roundedValue.ToString("F2") + "<color=red>%</color>";
+                        text.text = desiredText;                        
+                        desiredText = null;
+                    }
+                    dB = Mathf.Lerp(MIN_DB, MAX_DB, roundedValue / slider.maxValue);
+                    mainMixer.SetFloat(mixerProperty, dB);
+                }
+                else if (text)
+                {
+                    if (desiredNumberFormat != null)
+                    {
+                        text.text = roundedValue.ToString(desiredNumberFormat);
+                    }
+                    else
+                    {
+                        if (slider.wholeNumbers)
+                        {
+                            text.text = roundedValue.ToString("F0");
+                        }
+                        else
+                        {
+                            // ROUND SLIDER.VALUE TO F1
+                            text.text = roundedValue.ToString("F1");
+                        }
+                    }
+                }
+
+                setter(slider.value);
+            }
+        };
+    }
+
+
 
     // -----------------------------------------------------
     public static Ray CursorRay3D(Camera camera = null)

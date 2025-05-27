@@ -12,6 +12,8 @@ public class Strings
     // INPUT
     public static string keyboardActionMap = "KeyboardControls";
     public static string gamepadActionMap = "GamepadControls";
+    public static string keyboardMouseLeftClick = "MouseLeftClick";
+    public static string keyboardMouseRightClick = "MouseRightClick";
 
     // UI
     public static string uiActionMap = "UI";
@@ -29,6 +31,8 @@ public class Strings
     public static string audioMusicLayer = "audioMusicLayer";
     public static string audioAmbient = "audioAmbient";
     public static string audioSFX = "audioSFX";
+    public static string audioSFXPitchShift = "audioSFXPitchShift";
+    public static string audioSFXPitchShiftVolume = "audioSFXPitchShiftVolume";
     public static string audioUI = "audioUI";
     public static string audioUIPitchShift = "audioUIPitchShift";
     public static string audioUIPitchShiftVolume = "audioUIPitchShiftVolume";
