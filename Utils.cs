@@ -7,7 +7,7 @@ using System.IO;
 using System;
 using TMPro;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+//using System.Diagnostics.CodeAnalysis;
 using UnityEngine.Events;
 using System.Collections;
 using UnityEngine.SceneManagement;
@@ -239,7 +239,7 @@ public static class Utils
     }
 
 
-    //if (Utils.CheckForOptionsSave(gameManager.saveManager.optionsFilePath)){//SAVE EXISTS, DO SOMETHING};
+    //if (Utils.CheckForOptionsSave(gameManager.saveManager.optionsFilePath)){/*SAVE EXISTS, DO SOMETHING*/};
     public static bool CheckForOptionsSave(string filePath)
     {
         if (File.Exists(filePath))
@@ -333,8 +333,9 @@ public static class Utils
         image.color = desiredColor;
     }
 
-    // StartCoroutine(Utils.FadeImageAlpha(gameManager.scripts.uiManager.blackscreenImageComponent, 7f, false));
-    public static IEnumerator FadeImageAlpha(Image image, float duration, bool fadeIn)
+    // Gives full control over constant-duration fade or proportional-duration fade based on starting alpha with scaled or unscaled delta time.
+    // StartCoroutine(Utils.FadeImageAlpha(gameManager.scripts.uiManager.blackscreenImageComponent, 7f, false, false, false));
+    public static IEnumerator FadeImageAlpha(Image image, float duration, bool overFullDuration, bool deltaTime, bool fadeIn)
     {
         if (image == null)
             yield break;
@@ -342,17 +343,27 @@ public static class Utils
         Color color = image.color;
         float startAlpha = color.a;
         float endAlpha = fadeIn ? 1f : 0f;
-        float elapsed = 0f;
 
-        while (elapsed < duration)
+        float alphaDifference = Mathf.Abs(endAlpha - startAlpha);
+        float scaledDuration = overFullDuration ? duration : duration * alphaDifference;
+        
+        if (scaledDuration <= 0f)// Skip if no fading needed
         {
-            elapsed += Time.unscaledDeltaTime;
-            float t = Mathf.Clamp01(elapsed / duration);
+            color.a = endAlpha;
+            image.color = color;
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < scaledDuration)
+        {
+            elapsed += deltaTime ? Time.deltaTime : Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / scaledDuration);
             color.a = Mathf.Lerp(startAlpha, endAlpha, t);
             image.color = color;
             yield return null;
         }
-
+        
         color.a = endAlpha;
         image.color = color;
     }
@@ -410,9 +421,9 @@ public static class Utils
         }
     }
 
-    //Action sliderAction;
+    // Action sliderAction;
     // sliderAction = Utils.CreateSliderScaleUIAction(Slider, ObjectToScale.transform);
-    //sliderAction();
+    // sliderAction();
     public static Action CreateSliderScaleUIAction(Slider slider, Transform UIToScale)
     {
         return () =>
@@ -428,15 +439,15 @@ public static class Utils
         };
     }
 
-    // Utils.PopulateDropdown(gameManager.scripts.uiManager.optionsUI.autosavesDropdown, gameManager.scripts.optionsManager.desiredList, 1, gameManager.scripts.optionsManager.OnAutosavesChanged);
+    // Utils.PopulateDropdown(gameManager.scripts.uiManager.optionsUI.autosavesDropdown, new List<string> { "Off", "On" }, 1, gameManager.scripts.optionsManager.OnAutosavesChanged);
     public static void PopulateDropdown(TMP_Dropdown dropdown, List<string> list, int defaultValue, UnityAction<int> callback)
     {
         dropdown.ClearOptions();
         dropdown.AddOptions(list);
         dropdown.onValueChanged.RemoveAllListeners();
         dropdown.onValueChanged.AddListener(callback);
-        dropdown.value = defaultValue; // Default value
-        callback.Invoke(dropdown.value); // Immediately call it with the current value
+        dropdown.value = defaultValue;
+        callback.Invoke(dropdown.value); // Immediately call it with the current value to trigger OnValueChanged
     }
 
     // Utils.CheckDropdownValueModified(ref gameManager.scripts.uiManager.optionsUI.fogDropdown, appliedFogIndex, ref gameManager.scripts.uiManager.optionsUI.fogModifiedIcon);
