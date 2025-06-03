@@ -3,6 +3,7 @@ using UnityEngine;
 public class Strings
 {
     // CORE
+    public const string StartGame = "StartGame";
     public static string loadingProgressFormat = "{0}%";
     public static string cameraMain = "MainCamera";
     public static string numberFormat0 = "F0";// will display 0
@@ -11,12 +12,15 @@ public class Strings
 
     // INPUT
     public static string keyboardActionMap = "KeyboardControls";
+    public static string keyboardMouseLeftClick = "LeftClick";
+    public static string keyboardMouseRightClick = "RightClick";
+
     public static string gamepadActionMap = "GamepadControls";
-    public static string keyboardMouseLeftClick = "MouseLeftClick";
-    public static string keyboardMouseRightClick = "MouseRightClick";
+    public static string gamepadJump = "Jump";
 
     // UI
     public static string uiActionMap = "UI";
+    public static string uiActionMapClick = "Click";
     public static string dropdownList = "Dropdown List";
     public static string dropdownViewport = "Viewport";
     public static string dropdownContent = "Content";
@@ -40,9 +44,7 @@ public class Strings
     public static string audioEvent = "audioEvent";
 
     // SCENES
-    public const string menuSceneName = "MenuScene";
-    public const string menuKeyboardStartGame = "KeyboardAnyKey";
-    public const string menuGamepadStartGame = "GamepadStartGame";
+    public const string menuSceneName = "MenuScene";    
 
     // TAGS
     public const string gameManagerTag = "GameManager";
