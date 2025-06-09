@@ -9,22 +9,28 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using static GridGeneratorFull;
+using UnityEngine.InputSystem;
 
 public class GridGeneratorFull : MonoBehaviour
 {
-    // Multithreaded and BurstCompiled Grid creation script, no specific components needed as the script will add those automatically.    
+    //----------------------------------------------------------------------------------------------------------------------------------------
+    // Multithreaded and BurstCompiled Grid creation script, no specific components needed as the script will add those automatically.
+    // Primarily designed for games that have a large desired grid size with a lot of data per-tile.
+    //----------------------------------------------------------------------------------------------------------------------------------------
 
-    // Each cell is added to a Dictionary that can then be used to store values for each grid cell, using the cell's gridLayout.CellToWorld as the key for each entry.
-    // Code has already been added which will save the EXACT center of the cell as a Vector3 (inside CellProperties Struct below), since gridLayout.CellToWorld actually returns
+    // - Each cell is added to a Dictionary that can then be used to store values for each grid cell, using the cell's gridLayout.CellToWorld as the key for each entry.
+
+    // - Code has already been added which will save the EXACT center of the cell as a Vector3 (inside CellProperties Struct below), since gridLayout.CellToWorld actually returns
     // the bottom left position of the cell and GetCellCenter takes into account the Z axis of cellSize, the center position has been manually worked out for you.
     // these Vector3's can be used for A* pathfinding, as well as placement of objects on the grid.
 
-    // Intended Purpose: Primarily designed for games that have a large desired grid size with a lot of data per-tile.
+    // - Although heavier operations inside GridDebug class are using jobs, it can take a while to debug large grids, use cautiously.
 
-    // PLEASE NOTE: Although heavier operations inside GridDebug class are using jobs, it can take a while to debug large grids, use cautiously.
+    // - The grid generation Memory Limiter will prevent you from generating grids if it estimated you dont have enough system memory to cater
+    // for it,this can be overriden in the inspector, use cautiously.
 
     [Serializable]
-    public struct CellProperties // Add cell properties here
+    public struct CellProperties // Add per-cell properties here
     {
         [SerializeField] public Vector3 cellCenterPosition;
         // Add more properties as needed
@@ -37,6 +43,9 @@ public class GridGeneratorFull : MonoBehaviour
     [SerializeField] private List<Vector3> guideCellList = new List<Vector3>();
     [SerializeField] private List<Vector3> cornerCellList = new List<Vector3>();
     [SerializeField] private Vector3 centerCellPosition;
+
+    [SerializeField] private GameObject floor;
+    [SerializeField] private Material floorMaterial;
 
     #region Hidden Properties
     public enum GridOrientation
@@ -53,13 +62,15 @@ public class GridGeneratorFull : MonoBehaviour
     private BoxCollider gridCollider;
     private bool ready;
     private bool gridDone;
+
+    private GameObject floorAnchor;
     #endregion
 
     #region Inspector
     [Space(5)]
     [Header("Debug")]
     [Tooltip("Will add all the cells to the Cells List during initial grid generation to aid debugging.")]
-    [SerializeField] private bool showCells;
+    [SerializeField] private bool showCells = true;
     [Tooltip("Draws the cells visually, requires GridDebug class if not already in this script.")]
     [SerializeField] private bool drawCells;
     [Tooltip("Highlights important points on the grid by drawing them green.")]
@@ -72,6 +83,8 @@ public class GridGeneratorFull : MonoBehaviour
     [SerializeField] private bool debugCellProperties;
     [Tooltip("Estimate the runtime cost of the grid, given the properties you put in the CellProperties struct and the inspector values selected.")]
     [SerializeField] private bool debugMemoryRequirements;
+    [Tooltip("Override grid generation limiter - USE CAUTIOUSLY.")]
+    [SerializeField] private bool overrideMemoryLimiter;
     [Space(5)]
     [Header("Grid Settings")]
     [Tooltip("Style of grid")]
@@ -99,16 +112,36 @@ public class GridGeneratorFull : MonoBehaviour
             gridLayout = grid;
         }
 
-        if (!TryGetComponent<BoxCollider>(out gridCollider))
+        if (gridLayout)
         {
-            gridCollider = gameObject.AddComponent<BoxCollider>();
+            ready = true;
+        }
 
-        }
-        else
+        // Create floor
+        floorAnchor = new GameObject("GridFloorAnchor");
+        floorAnchor.transform.position = this.gameObject.transform.position;
+        floorAnchor.isStatic = true;        
+        floor = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        floor.name = "GridFloor";
+        if (floor.TryGetComponent(out Renderer r)) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        floor.transform.parent = floorAnchor.transform;
+        Quaternion newRotation;
+        switch (gridOrientation)
         {
-            gridCollider = gameObject.GetComponent<BoxCollider>();
+            case GridOrientation.Vertical:
+                newRotation = Quaternion.Euler(0f, 0f, 0f);
+                floor.transform.SetLocalPositionAndRotation(new Vector3(0.5f, 0.5f, cellSize.z / 2), newRotation);
+                floorAnchor.transform.localScale = new Vector3(gridSize.x, gridSize.y, 1);
+                break;
+            case GridOrientation.Horizontal:
+                newRotation = Quaternion.Euler(90f, 0f, 0f);
+                floor.transform.SetLocalPositionAndRotation(new Vector3(0.5f, -cellSize.z / 2, 0.5f), newRotation);
+                floorAnchor.transform.localScale = new Vector3(gridSize.x, 1, gridSize.y);
+                break;
         }
-        ready = true;
+        floor.isStatic = true;        
+        floor.AddComponent<BoxCollider>();
+        if (floor.TryGetComponent(out MeshCollider collider)) Destroy(collider);
     }
 
     private void Start()
@@ -116,7 +149,22 @@ public class GridGeneratorFull : MonoBehaviour
         if (ready)
         {
             SetGrid();
-            StartCoroutine(GenerateGrid(cellsList, cornerCellList, guideCellList));
+
+            if (HasEnoughMemory(gridSize, typeof(CellProperties)))
+            {
+                StartCoroutine(GenerateGrid(cellsList, cornerCellList, guideCellList));
+            }
+            else
+            {
+                if (overrideMemoryLimiter)
+                {
+                    StartCoroutine(GenerateGrid(cellsList, cornerCellList, guideCellList));
+                }
+                else
+                {
+                    Debug.LogWarning("Not enough system memory to create grid given estimated memory cost!");
+                }
+            }            
         }
     }
 
@@ -195,7 +243,30 @@ public class GridGeneratorFull : MonoBehaviour
     void GridDone()
     {
         gridDone = true;
-        // Let the manager know the grid is done
+    }
+
+    // To make sure you dont generate a grid too large
+    public static bool HasEnoughMemory(Vector2Int gridSize, Type cellPropertiesType)
+    {
+        // Estimate the memory requirement in megabytes
+        FieldInfo[] fields = cellPropertiesType.GetFields();
+        int structSize = 0;
+        foreach (FieldInfo field in fields)
+        {
+            structSize += Marshal.SizeOf(field.FieldType);
+        }
+
+        int totalCells = gridSize.x * gridSize.y;
+        float memoryBytes = structSize * totalCells;
+        float memoryMB = memoryBytes / (1024f * 1024f);
+
+        // Total system memory in MB (not necessarily available memory!)
+        float systemMemoryMB = SystemInfo.systemMemorySize;
+
+        // Optional: Reserve headroom (e.g., 500MB buffer)
+        const float safetyBufferMB = 500f;
+
+        return memoryMB + safetyBufferMB < systemMemoryMB;
     }
 
     #region Jobs
@@ -350,10 +421,6 @@ public class GridGeneratorFull : MonoBehaviour
             cellsList.Clear();
         }
 
-        gridCollider.center = gridCollider.transform.InverseTransformPoint(centerCellPosition);
-
-        // If you know the exact size of your grid at runtime, scale the collider to fit it here if you wish
-
         yield return null;
 
         GridDone();        
@@ -418,94 +485,97 @@ public class GridGeneratorFull : MonoBehaviour
             debugMemoryRequirements = false;
         }
 
-        if (!drawCells) return;
-
-        Color gizmoColor;
-        Vector3 desiredCellSize;
-        Vector3 offset;
-
-        foreach (var kvp in cellsDictionary)
+        if (gridDone)
         {
-            switch (gridStyle)
+            if (!drawCells) return;
+
+            Color gizmoColor;
+            Vector3 desiredCellSize;
+            Vector3 offset;
+
+            foreach (var kvp in cellsDictionary)
             {
-                case GridStyle.Rectangle:
-                    switch (gridOrientation)
-                    {
-                        case GridOrientation.Vertical:
-                            if (drawGuideCells)
-                            {
-                                if (kvp.Key == centerCellPosition)
+                switch (gridStyle)
+                {
+                    case GridStyle.Rectangle:
+                        switch (gridOrientation)
+                        {
+                            case GridOrientation.Vertical:
+                                if (drawGuideCells)
                                 {
-                                    desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.y, cellSize.z + 3f);
-                                    gizmoColor = Color.red;
-                                }
-                                else if (guideCellList.Contains(kvp.Key) || cornerCellList.Contains(kvp.Key))
-                                {
-                                    desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.y, cellSize.z + 1f);
-                                    gizmoColor = Color.green;
+                                    if (kvp.Key == centerCellPosition)
+                                    {
+                                        desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.y, cellSize.z + 3f);
+                                        gizmoColor = Color.red;
+                                    }
+                                    else if (guideCellList.Contains(kvp.Key) || cornerCellList.Contains(kvp.Key))
+                                    {
+                                        desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.y, cellSize.z + 1f);
+                                        gizmoColor = Color.green;
+                                    }
+                                    else
+                                    {
+                                        desiredCellSize = cellSize;
+                                        gizmoColor = Color.white;
+                                    }
                                 }
                                 else
                                 {
                                     desiredCellSize = cellSize;
                                     gizmoColor = Color.white;
                                 }
-                            }
-                            else
-                            {
-                                desiredCellSize = cellSize;
-                                gizmoColor = Color.white;
-                            }
-                            GridDebug.AddToBatch(kvp.Key + (gridLayout.cellSize * 0.5f), gizmoColor, GridDebug.GizmoType.Cube, desiredCellSize);
-                            break;
+                                GridDebug.AddToBatch(kvp.Key + (gridLayout.cellSize * 0.5f), gizmoColor, GridDebug.GizmoType.Cube, desiredCellSize);
+                                break;
 
-                        case GridOrientation.Horizontal:
-                            if (drawGuideCells)
-                            {
-                                if (kvp.Key == centerCellPosition)
+                            case GridOrientation.Horizontal:
+                                if (drawGuideCells)
                                 {
-                                    desiredCellSize = new Vector3(grid.cellSize.x, cellSize.z + 3f, cellSize.y);
-                                    gizmoColor = Color.red;
-                                }
-                                else if (guideCellList.Contains(kvp.Key) || cornerCellList.Contains(kvp.Key))
-                                {
-                                    desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.z + 1f, grid.cellSize.y);
-                                    gizmoColor = Color.green;
+                                    if (kvp.Key == centerCellPosition)
+                                    {
+                                        desiredCellSize = new Vector3(grid.cellSize.x, cellSize.z + 3f, cellSize.y);
+                                        gizmoColor = Color.red;
+                                    }
+                                    else if (guideCellList.Contains(kvp.Key) || cornerCellList.Contains(kvp.Key))
+                                    {
+                                        desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.z + 1f, grid.cellSize.y);
+                                        gizmoColor = Color.green;
+                                    }
+                                    else
+                                    {
+                                        desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.z, grid.cellSize.y);
+                                        gizmoColor = Color.white;
+                                    }
                                 }
                                 else
                                 {
-                                    desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.z, grid.cellSize.y);
+                                    desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.z, cellSize.y);
                                     gizmoColor = Color.white;
                                 }
-                            }
-                            else
-                            {
-                                desiredCellSize = new Vector3(grid.cellSize.x, grid.cellSize.z, cellSize.y);
-                                gizmoColor = Color.white;
-                            }
-                            offset = new Vector3(gridLayout.cellSize.x * 0.5f, -0.05f, gridLayout.cellSize.y * 0.5f);
-                            GridDebug.AddToBatch(kvp.Key + offset, gizmoColor, GridDebug.GizmoType.Cube, desiredCellSize);
-                            break;
-                    }
-                    break;
+                                offset = new Vector3(gridLayout.cellSize.x * 0.5f, -0.05f, gridLayout.cellSize.y * 0.5f);
+                                GridDebug.AddToBatch(kvp.Key + offset, gizmoColor, GridDebug.GizmoType.Cube, desiredCellSize);
+                                break;
+                        }
+                        break;
 
-                case GridStyle.Hexagon:
-                    if (kvp.Key == centerCellPosition)
-                    {
-                        gizmoColor = Color.red;
-                    }
-                    else if (guideCellList.Contains(kvp.Key))
-                    {
-                        gizmoColor = Color.green;
-                    }
-                    else
-                    {
-                        gizmoColor = Color.white;
-                    }
-                    GridDebug.AddToBatch(kvp.Key, gizmoColor, GridDebug.GizmoType.Hexagon, grid.cellSize);
-                    break;
+                    case GridStyle.Hexagon:
+                        if (kvp.Key == centerCellPosition)
+                        {
+                            gizmoColor = Color.red;
+                        }
+                        else if (guideCellList.Contains(kvp.Key))
+                        {
+                            gizmoColor = Color.green;
+                        }
+                        else
+                        {
+                            gizmoColor = Color.white;
+                        }
+                        GridDebug.AddToBatch(kvp.Key, gizmoColor, GridDebug.GizmoType.Hexagon, grid.cellSize);
+                        break;
+                }
             }
+            GridDebug.ExecuteGizmoBatch(gridOrientation); // Execute the batched Gizmos calls...they deserved it
         }
-        GridDebug.ExecuteGizmoBatch(gridOrientation); // Execute the batched Gizmos calls...they deserved it
     }
     #endregion
 }
