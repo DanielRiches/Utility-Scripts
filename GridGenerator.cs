@@ -8,11 +8,15 @@ using System.Collections;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using static GridGeneratorRectangle;
+using static GridGenerator;
 using UnityEngine.InputSystem;
 using UnityEditor;
+using UnityEngine.UIElements;
+using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.AI;
+using Unity.AI.Navigation;
 
-public class GridGeneratorRectangle : MonoBehaviour
+public class GridGenerator : MonoBehaviour
 {
     //----------------------------------------------------------------------------------------------------------------------------------------
     // Multithreaded and BurstCompiled Grid creation script, no specific components needed as the script will add those automatically.
@@ -27,18 +31,10 @@ public class GridGeneratorRectangle : MonoBehaviour
 
     // - Although heavier operations inside GridDebug class are using jobs, it can take a while to debug large grids, use cautiously.
 
-    // - The grid generation Memory Limiter will prevent you from generating grids if it estimated you dont have enough system memory to cater
-    // for it but this can be overriden in the inspector, use cautiously.
-
-
+    [SerializeField] GameManager gameManager;
     private bool ready;
     private bool gridDone;
 
-    public enum GridOrientation
-    {
-        Vertical,
-        Horizontal
-    }
     [System.Serializable]
     public class GridProperties
     {
@@ -46,33 +42,37 @@ public class GridGeneratorRectangle : MonoBehaviour
         [HideInInspector] public GridLayout gridLayout;
         public Dictionary<Vector3, CellProperties> cellsDictionary = new Dictionary<Vector3, CellProperties>();
         public List<Vector3> cellsList = new List<Vector3>();
+        public List<Vector3> edgeCellList = new List<Vector3>();
         public List<Vector3> guideCellList = new List<Vector3>();
         public List<Vector3> cornerCellList = new List<Vector3>();
-
         public Vector3 centerCellPosition;
-
-        [Space(5)]
+        [Space(10)]
         [Header("Grid Settings")]
-        [Tooltip("World Space grid orientation.")]
-        public GridOrientation gridOrientation = GridOrientation.Vertical;
         [Tooltip("The desired grid size.")]
         public Vector2Int gridSize = new Vector2Int(20, 20);
         [Tooltip("The desired cell size.")]
         public Vector3 cellSize = new Vector3(1f, 1f, 0.1f);
         [Tooltip("The desired gap between each cell.")]
         public Vector2 cellGap = new Vector3(0f, 0f);
-        [Space(5)]
-        [Tooltip("Override grid generation limiter - USE CAUTIOUSLY.")]
-        public bool overrideMemoryLimiter;
-
-        [HideInInspector] public GameObject floorAnchor;
+        [Space(10)]
         [Header("Floor Settings")]
-        public GameObject floor;
-        public BoxCollider floorCollider;
-        public Material floorMaterial;
+        public bool createFloor;
+        [HideInInspector] public GameObject floorAnchor;
+        [HideInInspector] public GameObject floor;
         public int desiredFloorLayerIndex;
-        [Header("Current Estimated Memory Cost")]
-        public string estimatedMemoryCost;
+        public BoxCollider floorCollider;
+        [Space(10)]
+        [Tooltip("Tile the material to match the grid size.")]
+        public bool tileMaterial;
+        [Tooltip("If not assigned, will use Unity Default Material.")]
+        public Material floorMaterial;
+        [Space(10)]
+        [Range(0.1f, 10000)] public float probeThickness = 6.5f;
+        public PlanarReflectionProbe floorPlanarReflectionProbe;
+        [Header("NavMesh Settings")]
+        public bool createNavMesh;
+        public bool createNavMeshGridEdgeBlockers;
+        [HideInInspector] public NavMeshSurface navMeshSurface;
     }
     public GridProperties gridProperties;
 
@@ -100,13 +100,12 @@ public class GridGeneratorRectangle : MonoBehaviour
     [SerializeField] private bool debugDictionary;
     [Tooltip("Information on the contents of each CellProperties in the dictionary.")]
     [SerializeField] private bool debugCellProperties;
-    [Tooltip("Estimate the runtime cost of the grid, given the properties you put in the CellProperties struct and the inspector values selected.")]
-    [SerializeField] private bool debugMemoryRequirements;
-
     #endregion
 
     private void Awake()
     {
+        gameManager = GameObject.FindWithTag(Strings.gameManagerTag).GetComponent<GameManager>();
+        gameManager.scripts.gridGenerator = this;
         ready = false;
         if (!TryGetComponent<Grid>(out gridProperties.grid))
         {
@@ -121,9 +120,25 @@ public class GridGeneratorRectangle : MonoBehaviour
         if (gridProperties.gridLayout)
         {
             ready = true;
-        }
+        }        
+    }
 
-        // Create floor
+    private void Start()
+    {
+        if (ready)
+        {
+            SetGrid();
+            StartCoroutine(GenerateGrid(gridProperties.cellsList, gridProperties.cornerCellList, gridProperties.guideCellList));
+        }
+    }
+
+    private void Update()
+    {
+        DebugGrid();
+    }
+
+    void CreateFloor()
+    {
         gridProperties.floorAnchor = new GameObject("GridFloorAnchor");
         gridProperties.floorAnchor.transform.position = this.gameObject.transform.position;
         gridProperties.floorAnchor.isStatic = true;
@@ -134,67 +149,99 @@ public class GridGeneratorRectangle : MonoBehaviour
 
         MeshRenderer floorRenderer;
         gridProperties.floor.TryGetComponent(out floorRenderer);
-        if (floorRenderer)
-        {
-            floorRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
-            if (gridProperties.floorMaterial)
+        if (gridProperties.createFloor)
+        {
+            if (floorRenderer)
             {
-                floorRenderer.material = gridProperties.floorMaterial;
+                floorRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+                if (gridProperties.floorMaterial)
+                {
+                    floorRenderer.material = gridProperties.floorMaterial;
+                    floorRenderer.material.mainTextureScale = new Vector2(gridProperties.gridSize.x, gridProperties.gridSize.y);
+                    floorRenderer.material.SetTextureScale("_NormalMap", new Vector2(gridProperties.gridSize.x, gridProperties.gridSize.y));
+                    floorRenderer.material.SetTextureScale("_EmissiveColorMap", new Vector2(gridProperties.gridSize.x, gridProperties.gridSize.y));
+                }   
+            }
+        }
+        else
+        {
+            if (floorRenderer)
+            {
+                Destroy(floorRenderer);
+                floorRenderer = null;
             }
         }
 
-        gridProperties.floor.transform.parent = gridProperties.floorAnchor.transform;
         MeshCollider mc = gridProperties.floor.GetComponent<MeshCollider>();
         if (mc != null) Destroy(mc);
-        gridProperties.floorCollider = gridProperties.floor.AddComponent<BoxCollider>();
+        gridProperties.floor.transform.parent = gridProperties.floorAnchor.transform;
+        gridProperties.floorCollider = gridProperties.floor.AddComponent<BoxCollider>();   
         gridProperties.floor.layer = gridProperties.desiredFloorLayerIndex;
-        Quaternion newRotation;
-        switch (gridProperties.gridOrientation)
+        gridProperties.floorCollider.center = new Vector3(0, 0, (gridProperties.cellSize.z / 2) / 2);
+        gridProperties.floorCollider.size = new Vector3(1, 1, gridProperties.cellSize.z);
+
+        Quaternion newRotation = Quaternion.Euler(90f, 0f, 0f);
+        gridProperties.floor.transform.SetLocalPositionAndRotation(new Vector3(0.5f, gridProperties.floorAnchor.transform.position.y, 0.5f), newRotation);
+        gridProperties.floorAnchor.transform.localScale = new Vector3(gridProperties.gridSize.x * gridProperties.cellSize.x + (gridProperties.gridSize.x - 1) * gridProperties.cellGap.x, 1f, gridProperties.gridSize.y * gridProperties.cellSize.y + (gridProperties.gridSize.y - 1) * gridProperties.cellGap.y);
+
+        if (gridProperties.floorPlanarReflectionProbe)
         {
-            case GridOrientation.Vertical:
-                newRotation = Quaternion.Euler(0f, 0f, 0f);
-                gridProperties.floor.transform.SetLocalPositionAndRotation(new Vector3(0.5f, 0.5f, gridProperties.cellSize.z / 2), newRotation);
-
-                gridProperties.floorAnchor.transform.localScale = new Vector3(gridProperties.gridSize.x * gridProperties.cellSize.x + (gridProperties.gridSize.x - 1) * gridProperties.cellGap.x, gridProperties.gridSize.y * gridProperties.cellSize.y + (gridProperties.gridSize.y - 1) * gridProperties.cellGap.y, 1f);
-                break;
-
-            case GridOrientation.Horizontal:
-                newRotation = Quaternion.Euler(90f, 0f, 0f);
-                gridProperties.floor.transform.SetLocalPositionAndRotation(new Vector3(0.5f, -gridProperties.cellSize.z / 2, 0.5f), newRotation);
-
-                gridProperties.floorAnchor.transform.localScale = new Vector3(gridProperties.gridSize.x * gridProperties.cellSize.x + (gridProperties.gridSize.x - 1) * gridProperties.cellGap.x, 1f, gridProperties.gridSize.y * gridProperties.cellSize.y + (gridProperties.gridSize.y - 1) * gridProperties.cellGap.y);
-                break;
+            float worldWidth = gridProperties.gridSize.x * (gridProperties.cellSize.x + gridProperties.cellGap.x);
+            float worldDepth = gridProperties.gridSize.y * (gridProperties.cellSize.y + gridProperties.cellGap.y);
+            //float verticalThickness = 6.5f;
+            gridProperties.floorPlanarReflectionProbe.influenceVolume.boxSize = new Vector3(worldWidth, gridProperties.probeThickness, worldDepth);
+            gridProperties.floorPlanarReflectionProbe.transform.position = new Vector3(gridProperties.centerCellPosition.x, 0, gridProperties.centerCellPosition.z);
         }
-    }
 
-    private void Start()
-    {
-        if (ready)
+        if (gridProperties.createNavMesh)
         {
-            SetGrid();
+            gridProperties.navMeshSurface = this.gameObject.AddComponent<NavMeshSurface>();
+            gridProperties.navMeshSurface.buildHeightMesh = true;
+            gridProperties.navMeshSurface.overrideVoxelSize = true;
+            gridProperties.navMeshSurface.voxelSize = 0.125f;
+            gridProperties.navMeshSurface.overrideTileSize = true;
+            gridProperties.navMeshSurface.tileSize = 24;
+            gridProperties.navMeshSurface.layerMask = 1 << gridProperties.desiredFloorLayerIndex;
+            gridProperties.navMeshSurface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
 
-            if (HasEnoughMemory(gridProperties.gridSize, typeof(CellProperties)))
+            if (gridProperties.createNavMeshGridEdgeBlockers && gridProperties.guideCellList != null)
             {
-                StartCoroutine(GenerateGrid(gridProperties.cellsList, gridProperties.cornerCellList, gridProperties.guideCellList));
-            }
-            else
-            {
-                if (gridProperties.overrideMemoryLimiter)
+                foreach (Vector3 key in gridProperties.guideCellList)
                 {
-                    StartCoroutine(GenerateGrid(gridProperties.cellsList, gridProperties.cornerCellList, gridProperties.guideCellList));
-                }
-                else
-                {
-                    Debug.LogWarning("Not enough system memory to create grid given estimated memory cost!");
+                    GameObject blocker = new GameObject("NavMeshEdgeBlocker");
+                    Vector3 blockerPos = gridProperties.cellsDictionary[key].cellCenterPosition;
+                    blocker.transform.position = blockerPos;
+
+                    // Get direction to center on the XZ plane only
+                    Vector3 toCenter = gridProperties.centerCellPosition - blockerPos;
+                    toCenter.y = 0f; // flatten
+
+                    Vector3 forward;
+
+                    // Snap to the closest world axis (X or Z)
+                    if (Mathf.Abs(toCenter.x) > Mathf.Abs(toCenter.z))
+                    {
+                        forward = toCenter.x > 0 ? Vector3.right : Vector3.left;
+                    }
+                    else
+                    {
+                        forward = toCenter.z > 0 ? Vector3.forward : Vector3.back;
+                    }
+
+                    // Rotate the blocker so its forward points toward the grid center
+                    blocker.transform.rotation = Quaternion.LookRotation(forward, Vector3.up);
+
+                    NavMeshObstacle blockerObstacle = blocker.AddComponent<NavMeshObstacle>();
+                    blockerObstacle.size = new Vector3(100000, gridProperties.cellSize.y - 1, gridProperties.cellSize.x - 1); // Swapped Y/Z size if needed
+                    blockerObstacle.carving = true;
+                    blockerObstacle.carveOnlyStationary = true;
+                    blockerObstacle.gameObject.layer = gridProperties.desiredFloorLayerIndex;
                 }
             }
+            gridProperties.navMeshSurface.BuildNavMesh();
         }
-    }
-
-    private void Update()
-    {
-        DebugGrid();
     }
 
     IEnumerator GenerateGrid(List<Vector3> cellsList, List<Vector3> cornerCellList, List<Vector3> guideCellList)
@@ -207,22 +254,31 @@ public class GridGeneratorRectangle : MonoBehaviour
 
                 cellsList.Add(cell);
 
-                if ((x == gridProperties.gridSize.x / 2 && (y == 0 || y == gridProperties.gridSize.y - 1)) || (y == gridProperties.gridSize.y / 2 && (x == 0 || x == gridProperties.gridSize.x - 1))) // Check if the cell is at the halfway point along each edge
+                // Guide cells (midpoints on edges)
+                if ((x == gridProperties.gridSize.x / 2 && (y == 0 || y == gridProperties.gridSize.y - 1)) ||
+                    (y == gridProperties.gridSize.y / 2 && (x == 0 || x == gridProperties.gridSize.x - 1)))
                 {
                     guideCellList.Add(cell);
                 }
 
-                if (x == 0 || x == gridProperties.gridSize.x - 1)// Check if the cell is a corner cell
+                // Corner cells
+                if ((x == 0 || x == gridProperties.gridSize.x - 1) &&
+                    (y == 0 || y == gridProperties.gridSize.y - 1))
                 {
-                    if (y == 0 || y == gridProperties.gridSize.y - 1)
-                    {
-                        cornerCellList.Add(cell);
-                    }
+                    cornerCellList.Add(cell);
                 }
 
-                if (x == gridProperties.gridSize.x / 2 && y == gridProperties.gridSize.y / 2)// Check if the cell is the center of the grid
+                // Center cell
+                if (x == gridProperties.gridSize.x / 2 && y == gridProperties.gridSize.y / 2)
                 {
                     gridProperties.centerCellPosition = cell;
+                }
+
+                // Edge cells (perimeter, includes corners and guide cells)
+                if (x == 0 || x == gridProperties.gridSize.x - 1 ||
+                    y == 0 || y == gridProperties.gridSize.y - 1)
+                {
+                    gridProperties.edgeCellList.Add(cell);
                 }
             }
         }
@@ -231,6 +287,7 @@ public class GridGeneratorRectangle : MonoBehaviour
 
         StartCoroutine(PopulateDictionary(cellsList, gridProperties.cellsDictionary));
     }
+
     void SetGrid()
     {
         if (gridProperties.cellSize.x < 0.1f)
@@ -242,77 +299,30 @@ public class GridGeneratorRectangle : MonoBehaviour
             gridProperties.cellSize.y = 0.1f;
         }
 
-        //grid.cellLayout = (GridLayout.CellLayout)GridStyle.Rectangle;
-        gridProperties.grid.cellGap = gridProperties.cellGap;
-
-        switch (gridProperties.gridOrientation)
+        if (gridProperties.gridSize.x < 3)
         {
-            case GridOrientation.Vertical:
-                gridProperties.grid.cellSwizzle = GridLayout.CellSwizzle.XYZ;
-                gridProperties.grid.cellSize = gridProperties.cellSize;
-                break;
-            case GridOrientation.Horizontal:
-                gridProperties.grid.cellSwizzle = GridLayout.CellSwizzle.XZY;
-                gridProperties.grid.cellSize = gridProperties.cellSize;
-                break;
+            if (debugCells)
+            {
+                Debug.Log("Must use minimum 3x3 grid size, adjusting....");
+            }            
+            gridProperties.gridSize.x = 3;
         }
+        if (gridProperties.gridSize.y < 3)
+        {
+            if (debugCells)
+            {
+                Debug.Log("Must use minimum 3x3 grid size, adjusting....");
+            }
+            gridProperties.gridSize.y = 3;
+        }
+
+        gridProperties.grid.cellGap = gridProperties.cellGap;
+        gridProperties.grid.cellSwizzle = GridLayout.CellSwizzle.XZY;
+        gridProperties.grid.cellSize = gridProperties.cellSize;
     }
     void GridDone()
     {
         gridDone = true;
-    }
-
-    // To make sure you dont generate a grid too large
-    public static bool HasEnoughMemory(Vector2Int gridSize, Type cellPropertiesType)
-    {
-        // Estimate the memory requirement in megabytes
-        FieldInfo[] fields = cellPropertiesType.GetFields();
-        int structSize = 0;
-        foreach (FieldInfo field in fields)
-        {
-            structSize += Marshal.SizeOf(field.FieldType);
-        }
-
-        int totalCells = gridSize.x * gridSize.y;
-        float memoryBytes = structSize * totalCells;
-        float memoryMB = memoryBytes / (1024f * 1024f);
-
-        // Total system memory in MB (not necessarily available memory!)
-        float systemMemoryMB = SystemInfo.systemMemorySize;
-
-        // Optional: Reserve headroom (e.g., 500MB buffer)
-        const float safetyBufferMB = 500f;
-
-        return memoryMB + safetyBufferMB < systemMemoryMB;
-    }
-
-    [InitializeOnLoad]
-    public static class EstimateMemoryUpdater
-    {
-        static EstimateMemoryUpdater()
-        {
-            EditorApplication.update += UpdateEstimatedMemoryCost;
-        }
-
-        private static void UpdateEstimatedMemoryCost()
-        {
-            if (Application.isPlaying) return;
-
-            var gridGen = GameObject.FindFirstObjectByType<GridGeneratorRectangle>();
-            if (gridGen == null) return;
-
-            var props = gridGen.gridProperties;
-            string newEstimate = GridDebug.CalculateMemoryRequirement(
-                props.gridSize,
-                typeof(CellProperties)
-            );
-
-            if (props.estimatedMemoryCost != newEstimate)
-            {
-                props.estimatedMemoryCost = newEstimate;
-                EditorUtility.SetDirty(gridGen);
-            }
-        }
     }
 
     #region Jobs
@@ -321,7 +331,6 @@ public class GridGeneratorRectangle : MonoBehaviour
     {
         [ReadOnly] public NativeArray<Vector3> cellsList;
         [WriteOnly] public NativeParallelHashMap<Vector3, CellProperties>.ParallelWriter cellsDictionary;
-        public GridOrientation gridOrientation;
         public float cellSizeX;
         public float cellSizeY;
 
@@ -329,17 +338,7 @@ public class GridGeneratorRectangle : MonoBehaviour
         {
             Vector3 key = cellsList[index];
             CellProperties cellProperties = new CellProperties();
-
-            switch (gridOrientation)
-            {
-                case GridOrientation.Vertical:
-                    cellProperties.cellCenterPosition = key + new Vector3(cellSizeX * 0.5f, cellSizeY * 0.5f, 0f);
-                    break;
-                case GridOrientation.Horizontal:
-                    cellProperties.cellCenterPosition = key + new Vector3(cellSizeX * 0.5f, 0f, cellSizeY * 0.5f);
-                    break;
-            }
-
+            cellProperties.cellCenterPosition = key + new Vector3(cellSizeX * 0.5f, 0f, cellSizeY * 0.5f);
             cellsDictionary.TryAdd(key, cellProperties);
         }
     }
@@ -352,7 +351,6 @@ public class GridGeneratorRectangle : MonoBehaviour
         {
             cellsList = nativeCellsArray, // Pass nativeCellsArray to job
             cellsDictionary = nativeCellsDictionary.AsParallelWriter(),
-            gridOrientation = gridProperties.gridOrientation,
             cellSizeX = gridProperties.gridLayout.cellSize.x,
             cellSizeY = gridProperties.gridLayout.cellSize.y
         };
@@ -379,7 +377,6 @@ public class GridGeneratorRectangle : MonoBehaviour
     {
         public NativeParallelHashMap<Vector3, CellProperties> cellsDictionary;
         public NativeList<KeyValuePair<Vector3, CellProperties>> changesList;
-        public GridOrientation gridOrientation;
         public float cellSizeX;
         public float cellSizeY;
 
@@ -389,19 +386,8 @@ public class GridGeneratorRectangle : MonoBehaviour
             {
                 Vector3 key = kvp.Key;
                 CellProperties cellProperties = kvp.Value;
-
-                switch (gridOrientation)
-                {
-                    case GridOrientation.Vertical:
-                        cellProperties.cellCenterPosition = key + new Vector3(cellSizeX * 0.5f, cellSizeY * 0.5f, 0f);
-                        changesList.Add(new KeyValuePair<Vector3, CellProperties>(key, cellProperties));
-                        break;
-
-                    case GridOrientation.Horizontal:
-                        cellProperties.cellCenterPosition = key + new Vector3(cellSizeX * 0.5f, 0f, cellSizeY * 0.5f);
-                        changesList.Add(new KeyValuePair<Vector3, CellProperties>(key, cellProperties));
-                        break;
-                }
+                cellProperties.cellCenterPosition = key + new Vector3(cellSizeX * 0.5f, 0f, cellSizeY * 0.5f);
+                changesList.Add(new KeyValuePair<Vector3, CellProperties>(key, cellProperties));
             }
 
             foreach (var change in changesList)
@@ -424,7 +410,6 @@ public class GridGeneratorRectangle : MonoBehaviour
         {
             cellsDictionary = nativeCellsDictionary,
             changesList = nativeChangesList,
-            gridOrientation = gridProperties.gridOrientation,
             cellSizeX = gridProperties.gridLayout.cellSize.x,
             cellSizeY = gridProperties.gridLayout.cellSize.y
         };
@@ -448,6 +433,7 @@ public class GridGeneratorRectangle : MonoBehaviour
         yield return null;
 
         GridDone();
+        CreateFloor();
     }
     #endregion
 
@@ -494,12 +480,6 @@ public class GridGeneratorRectangle : MonoBehaviour
                 debugCornerCells = false;
             }
         }
-
-        if (debugMemoryRequirements)
-        {
-            Debug.Log("Accounting for CellProperties struct and inspector properties, estimated memory cost : " + GridDebug.CalculateMemoryRequirement(gridProperties.gridSize, typeof(CellProperties)));
-            debugMemoryRequirements = false;
-        }
     }
     private void OnDrawGizmos()
     {
@@ -513,65 +493,33 @@ public class GridGeneratorRectangle : MonoBehaviour
 
             foreach (var kvp in gridProperties.cellsDictionary)
             {
-                switch (gridProperties.gridOrientation)
+                if (drawGuideCells)
                 {
-                    case GridOrientation.Vertical:
-                        if (drawGuideCells)
-                        {
-                            if (kvp.Key == gridProperties.centerCellPosition)
-                            {
-                                desiredCellSize = new Vector3(gridProperties.grid.cellSize.x, gridProperties.grid.cellSize.y, gridProperties.cellSize.z + 3f);
-                                gizmoColor = Color.red;
-                            }
-                            else if (gridProperties.guideCellList.Contains(kvp.Key) || gridProperties.cornerCellList.Contains(kvp.Key))
-                            {
-                                desiredCellSize = new Vector3(gridProperties.grid.cellSize.x, gridProperties.grid.cellSize.y, gridProperties.cellSize.z + 1f);
-                                gizmoColor = Color.green;
-                            }
-                            else
-                            {
-                                desiredCellSize = gridProperties.cellSize;
-                                gizmoColor = Color.white;
-                            }
-                        }
-                        else
-                        {
-                            desiredCellSize = gridProperties.cellSize;
-                            gizmoColor = Color.white;
-                        }
-                        GridDebug.AddToBatch(kvp.Key + (gridProperties.gridLayout.cellSize * 0.5f), gizmoColor, desiredCellSize);
-                        break;
-
-                    case GridOrientation.Horizontal:
-                        if (drawGuideCells)
-                        {
-                            if (kvp.Key == gridProperties.centerCellPosition)
-                            {
-                                desiredCellSize = new Vector3(gridProperties.grid.cellSize.x, gridProperties.cellSize.z + 3f, gridProperties.cellSize.y);
-                                gizmoColor = Color.red;
-                            }
-                            else if (gridProperties.guideCellList.Contains(kvp.Key) || gridProperties.cornerCellList.Contains(kvp.Key))
-                            {
-                                desiredCellSize = new Vector3(gridProperties.grid.cellSize.x, gridProperties.grid.cellSize.z + 1f, gridProperties.grid.cellSize.y);
-                                gizmoColor = Color.green;
-                            }
-                            else
-                            {
-                                desiredCellSize = new Vector3(gridProperties.grid.cellSize.x, gridProperties.grid.cellSize.z, gridProperties.grid.cellSize.y);
-                                gizmoColor = Color.white;
-                            }
-                        }
-                        else
-                        {
-                            desiredCellSize = new Vector3(gridProperties.grid.cellSize.x, gridProperties.grid.cellSize.z, gridProperties.cellSize.y);
-                            gizmoColor = Color.white;
-                        }
-                        offset = new Vector3(gridProperties.gridLayout.cellSize.x * 0.5f, -0.05f, gridProperties.gridLayout.cellSize.y * 0.5f);
-                        GridDebug.AddToBatch(kvp.Key + offset, gizmoColor, desiredCellSize);
-                        break;
+                    if (kvp.Key == gridProperties.centerCellPosition)
+                    {
+                        desiredCellSize = new Vector3(gridProperties.grid.cellSize.x, gridProperties.cellSize.z + 3f, gridProperties.cellSize.y);
+                        gizmoColor = Color.red;
+                    }
+                    else if (gridProperties.guideCellList.Contains(kvp.Key) || gridProperties.cornerCellList.Contains(kvp.Key))
+                    {
+                        desiredCellSize = new Vector3(gridProperties.grid.cellSize.x, gridProperties.grid.cellSize.z + 1f, gridProperties.grid.cellSize.y);
+                        gizmoColor = Color.green;
+                    }
+                    else
+                    {
+                        desiredCellSize = new Vector3(gridProperties.grid.cellSize.x, gridProperties.grid.cellSize.z, gridProperties.grid.cellSize.y);
+                        gizmoColor = Color.white;
+                    }
                 }
+                else
+                {
+                    desiredCellSize = new Vector3(gridProperties.grid.cellSize.x, gridProperties.grid.cellSize.z, gridProperties.cellSize.y);
+                    gizmoColor = Color.white;
+                }
+                offset = new Vector3(gridProperties.gridLayout.cellSize.x * 0.5f, -0.05f, gridProperties.gridLayout.cellSize.y * 0.5f);
+                GridDebug.AddToBatch(kvp.Key + offset, gizmoColor, desiredCellSize);
             }
-            GridDebug.ExecuteGizmoBatch(gridProperties.gridOrientation); // Execute the batched Gizmos calls...they deserved it
+            GridDebug.ExecuteGizmoBatch(); // Execute the batched Gizmos calls...they deserved it
         }
     }
     #endregion
@@ -615,7 +563,6 @@ public static class GridDebug
     }
 
     #region Gizmo Batching
-
     private struct GizmoBatchData
     {
         public Vector3 position;
@@ -627,7 +574,7 @@ public static class GridDebug
     {
         gizmoBatch.Add(new GizmoBatchData { position = position, color = color, cellSize = cellSize });
     }
-    public static void ExecuteGizmoBatch(GridGeneratorRectangle.GridOrientation gridOrientation)
+    public static void ExecuteGizmoBatch()
     {
         foreach (var data in gizmoBatch)
         {
@@ -644,17 +591,17 @@ public static class GridDebug
     public struct DebugGridCellsDictionaryJob : IJobParallelFor
     {
         [ReadOnly] public NativeArray<Vector3> Keys;
-        [ReadOnly] public NativeArray<GridGeneratorRectangle.CellProperties> Values;
+        [ReadOnly] public NativeArray<GridGenerator.CellProperties> Values;
 
         public void Execute(int index)
         {
             Debug.Log($"Key: {Keys[index]}, Value: {Values[index]}");
         }
     }
-    public static void DebugGridCellsDictionary(GridGeneratorRectangle gridGenerator)
+    public static void DebugGridCellsDictionary(GridGenerator gridGenerator)
     {
         NativeArray<Vector3> keysArray = new NativeArray<Vector3>(gridGenerator.gridProperties.cellsDictionary.Keys.ToArray(), Allocator.TempJob);
-        NativeArray<GridGeneratorRectangle.CellProperties> valuesArray = new NativeArray<GridGeneratorRectangle.CellProperties>(gridGenerator.gridProperties.cellsDictionary.Values.ToArray(), Allocator.TempJob);
+        NativeArray<GridGenerator.CellProperties> valuesArray = new NativeArray<GridGenerator.CellProperties>(gridGenerator.gridProperties.cellsDictionary.Values.ToArray(), Allocator.TempJob);
 
         DebugGridCellsDictionaryJob jobData = new DebugGridCellsDictionaryJob
         {
@@ -691,7 +638,7 @@ public static class GridDebug
             logMessages.Add("-----------------------");
         }
     }
-    public static void DebugCellPropertiesDictionary(GridGeneratorRectangle gridGenerator)
+    public static void DebugCellPropertiesDictionary(GridGenerator gridGenerator)
     {
         var keysArray = new NativeArray<Vector3>(gridGenerator.gridProperties.cellsDictionary.Keys.ToArray(), Allocator.TempJob);
         var valuesArray = new NativeArray<CellProperties>(gridGenerator.gridProperties.cellsDictionary.Values.ToArray(), Allocator.TempJob);
@@ -720,3 +667,4 @@ public static class GridDebug
     }
     #endregion
 }
+
