@@ -13,7 +13,7 @@ using UnityEngine.InputSystem;
 using UnityEditor;
 using UnityEngine.UIElements;
 using UnityEngine.Rendering.HighDefinition;
-using UnityEngine.AI;
+using UnityEngine.AI;// requires AI Navigation package from Package Manager
 using Unity.AI.Navigation;
 
 public class GridGenerator : MonoBehaviour
@@ -57,8 +57,6 @@ public class GridGenerator : MonoBehaviour
         [Space(10)]
         [Header("Floor Settings")]
         public bool createFloor;
-        [HideInInspector] public GameObject floorAnchor;
-        [HideInInspector] public GameObject floor;
         public int desiredFloorLayerIndex;
         public BoxCollider floorCollider;
         [Space(10)]
@@ -67,8 +65,15 @@ public class GridGenerator : MonoBehaviour
         [Tooltip("If not assigned, will use Unity Default Material.")]
         public Material floorMaterial;
         [Space(10)]
+        public GameObject edgeObject;
+        public MeshCombiner meshCombiner;
+        [Tooltip("Combine all Game Objects around the edges into a single mesh for optimization.")]
+        public bool combineEdgeObjects;
+        [Tooltip("attaches a single Mesh Collider to the resulting merged mesh, if false will retain original colliders.")]
+        public bool combineEdgeObjectColliders;
+        [Space(10)]
         [Range(0.1f, 10000)] public float probeThickness = 6.5f;
-        public PlanarReflectionProbe floorPlanarReflectionProbe;
+        public GameObject floorPlanarReflectionProbe;
         [Header("NavMesh Settings")]
         public bool createNavMesh;
         public bool createNavMeshGridEdgeBlockers;
@@ -81,6 +86,9 @@ public class GridGenerator : MonoBehaviour
     public struct CellProperties // Add per-cell properties here
     {
         [SerializeField] public Vector3 cellCenterPosition;
+        [SerializeField] public bool objectPlaced;
+        [SerializeField] public float prefabArrayID;
+        [SerializeField] public float prefabArrayElement;
         // Add more properties as needed
     }
 
@@ -139,16 +147,23 @@ public class GridGenerator : MonoBehaviour
 
     void CreateFloor()
     {
-        gridProperties.floorAnchor = new GameObject("GridFloorAnchor");
-        gridProperties.floorAnchor.transform.position = this.gameObject.transform.position;
-        gridProperties.floorAnchor.isStatic = true;
-        gridProperties.floorAnchor.transform.parent = this.transform;
+        GameObject floorAnchor = new GameObject("GridFloorAnchor");
+        floorAnchor.transform.position = this.gameObject.transform.position;
+        floorAnchor.isStatic = true;
+        floorAnchor.transform.parent = this.transform;
 
-        gridProperties.floor = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        gridProperties.floor.name = "GridFloor";
+        GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        floor.name = "GridFloor";
+        floor.transform.parent = floorAnchor.transform;
+        floor.isStatic = true;
+
+        GameObject edgeObjectsContainer = new GameObject("EdgeObjects");        
+        edgeObjectsContainer.transform.parent = floor.transform;
+        edgeObjectsContainer.transform.position = Vector3.zero;
+        edgeObjectsContainer.isStatic = true;
 
         MeshRenderer floorRenderer;
-        gridProperties.floor.TryGetComponent(out floorRenderer);
+        floor.TryGetComponent(out floorRenderer);
 
         if (gridProperties.createFloor)
         {
@@ -159,9 +174,13 @@ public class GridGenerator : MonoBehaviour
                 if (gridProperties.floorMaterial)
                 {
                     floorRenderer.material = gridProperties.floorMaterial;
-                    floorRenderer.material.mainTextureScale = new Vector2(gridProperties.gridSize.x, gridProperties.gridSize.y);
-                    floorRenderer.material.SetTextureScale("_NormalMap", new Vector2(gridProperties.gridSize.x, gridProperties.gridSize.y));
-                    floorRenderer.material.SetTextureScale("_EmissiveColorMap", new Vector2(gridProperties.gridSize.x, gridProperties.gridSize.y));
+
+                    if (gridProperties.tileMaterial)
+                    {
+                        floorRenderer.material.mainTextureScale = new Vector2(gridProperties.gridSize.x, gridProperties.gridSize.y);
+                        floorRenderer.material.SetTextureScale("_NormalMap", new Vector2(gridProperties.gridSize.x, gridProperties.gridSize.y));
+                        floorRenderer.material.SetTextureScale("_EmissiveColorMap", new Vector2(gridProperties.gridSize.x, gridProperties.gridSize.y));
+                    }
                 }   
             }
         }
@@ -174,25 +193,30 @@ public class GridGenerator : MonoBehaviour
             }
         }
 
-        MeshCollider mc = gridProperties.floor.GetComponent<MeshCollider>();
+        MeshCollider mc = floor.GetComponent<MeshCollider>();
         if (mc != null) Destroy(mc);
-        gridProperties.floor.transform.parent = gridProperties.floorAnchor.transform;
-        gridProperties.floorCollider = gridProperties.floor.AddComponent<BoxCollider>();   
-        gridProperties.floor.layer = gridProperties.desiredFloorLayerIndex;
+        floor.transform.parent = floorAnchor.transform;
+        gridProperties.floorCollider = floor.AddComponent<BoxCollider>();   
+        floor.layer = gridProperties.desiredFloorLayerIndex;
         gridProperties.floorCollider.center = new Vector3(0, 0, (gridProperties.cellSize.z / 2) / 2);
         gridProperties.floorCollider.size = new Vector3(1, 1, gridProperties.cellSize.z);
 
         Quaternion newRotation = Quaternion.Euler(90f, 0f, 0f);
-        gridProperties.floor.transform.SetLocalPositionAndRotation(new Vector3(0.5f, gridProperties.floorAnchor.transform.position.y, 0.5f), newRotation);
-        gridProperties.floorAnchor.transform.localScale = new Vector3(gridProperties.gridSize.x * gridProperties.cellSize.x + (gridProperties.gridSize.x - 1) * gridProperties.cellGap.x, 1f, gridProperties.gridSize.y * gridProperties.cellSize.y + (gridProperties.gridSize.y - 1) * gridProperties.cellGap.y);
+        floor.transform.SetLocalPositionAndRotation(new Vector3(0.5f, floorAnchor.transform.position.y, 0.5f), newRotation);
+        floorAnchor.transform.localScale = new Vector3(gridProperties.gridSize.x * gridProperties.cellSize.x + (gridProperties.gridSize.x - 1) * gridProperties.cellGap.x, 1f, gridProperties.gridSize.y * gridProperties.cellSize.y + (gridProperties.gridSize.y - 1) * gridProperties.cellGap.y);
 
         if (gridProperties.floorPlanarReflectionProbe)
         {
-            float worldWidth = gridProperties.gridSize.x * (gridProperties.cellSize.x + gridProperties.cellGap.x);
-            float worldDepth = gridProperties.gridSize.y * (gridProperties.cellSize.y + gridProperties.cellGap.y);
-            //float verticalThickness = 6.5f;
-            gridProperties.floorPlanarReflectionProbe.influenceVolume.boxSize = new Vector3(worldWidth, gridProperties.probeThickness, worldDepth);
-            gridProperties.floorPlanarReflectionProbe.transform.position = new Vector3(gridProperties.centerCellPosition.x, 0, gridProperties.centerCellPosition.z);
+            PlanarReflectionProbe floorProbe = Instantiate(gridProperties.floorPlanarReflectionProbe).GetComponent<PlanarReflectionProbe>();
+
+            if (floorProbe)
+            {
+                float worldWidth = gridProperties.gridSize.x * (gridProperties.cellSize.x + gridProperties.cellGap.x);
+                float worldDepth = gridProperties.gridSize.y * (gridProperties.cellSize.y + gridProperties.cellGap.y);
+                floorProbe.influenceVolume.boxSize = new Vector3(worldWidth, gridProperties.probeThickness, worldDepth);
+                floorProbe.gameObject.transform.position = new Vector3(gridProperties.centerCellPosition.x, 0, gridProperties.centerCellPosition.z);
+                floorProbe.gameObject.transform.parent = floor.transform;
+            }
         }
 
         if (gridProperties.createNavMesh)
@@ -234,12 +258,91 @@ public class GridGenerator : MonoBehaviour
                     blocker.transform.rotation = Quaternion.LookRotation(forward, Vector3.up);
 
                     NavMeshObstacle blockerObstacle = blocker.AddComponent<NavMeshObstacle>();
-                    blockerObstacle.size = new Vector3(100000, gridProperties.cellSize.y - 1, gridProperties.cellSize.x - 1); // Swapped Y/Z size if needed
+                    blockerObstacle.size = new Vector3(1000000, gridProperties.cellSize.y - 1, gridProperties.cellSize.x - 1);
                     blockerObstacle.carving = true;
                     blockerObstacle.carveOnlyStationary = true;
                     blockerObstacle.gameObject.layer = gridProperties.desiredFloorLayerIndex;
+                    blockerObstacle.transform.parent = floor.transform;
+                    blockerObstacle.gameObject.isStatic = true;                    
                 }
             }
+
+            if (gridProperties.edgeObject)
+            {
+                foreach (Vector3 key in gridProperties.edgeCellList)
+                {
+                    GameObject edgeObject = Instantiate(gameManager.scripts.prefabIDManager.futureType1[0]);
+                    Vector3 placementPosition = gridProperties.cellsDictionary[key].cellCenterPosition;
+                    edgeObject.transform.position = placementPosition;
+                    edgeObject.transform.parent = edgeObjectsContainer.transform;
+                    // 1. Get a copy of the struct
+                    var cellProps = gridProperties.cellsDictionary[key];
+
+                    // 2. Modify the copy
+                    cellProps.objectPlaced = true;
+                    cellProps.prefabArrayID = 1;
+                    cellProps.prefabArrayElement = 0;
+
+                    // 3. Assign it back into the dictionary
+                    gridProperties.cellsDictionary[key] = cellProps;
+                }
+
+                if (gridProperties.combineEdgeObjects)
+                {
+                    gridProperties.meshCombiner = edgeObjectsContainer.AddComponent<MeshCombiner>();
+                    gridProperties.meshCombiner.CreateMultiMaterialMesh = true;
+                    gridProperties.meshCombiner.DeactivateCombinedChildren = false;
+                    if (gridProperties.combineEdgeObjectColliders)
+                    {
+                        gridProperties.meshCombiner.DestroyCombinedChildren = true;
+                    }
+
+                    gridProperties.meshCombiner.CombineMeshes(false);
+                }
+
+                if (gridProperties.combineEdgeObjects && gridProperties.combineEdgeObjectColliders)
+                {
+                    edgeObjectsContainer.AddComponent<MeshCollider>();
+                }
+                else if (gridProperties.combineEdgeObjects)
+                {
+                    // Get all MeshRenderers and MeshFilters in children (including inactive)
+                    var meshRenderers = edgeObjectsContainer.GetComponentsInChildren<MeshRenderer>(true);
+                    var meshFilters = edgeObjectsContainer.GetComponentsInChildren<MeshFilter>(true);
+
+                    // Cache the object with MeshCombiner to skip it
+                    GameObject meshCombinerGO = gridProperties.meshCombiner.gameObject;
+
+                    // Remove MeshRenderers, except on the MeshCombiner object
+                    foreach (var renderer in meshRenderers)
+                    {
+                        if (renderer.gameObject != meshCombinerGO)
+                        {
+                            DestroyImmediate(renderer);
+                        }
+                    }
+
+                    // Remove MeshFilters, except on the MeshCombiner object
+                    foreach (var filter in meshFilters)
+                    {
+                        if (filter.gameObject != meshCombinerGO)
+                        {
+                            DestroyImmediate(filter);
+                        }
+                    }
+                }
+
+                Renderer combinedMeshRenderer = edgeObjectsContainer.GetComponent<MeshRenderer>();
+
+                if (combinedMeshRenderer)
+                {
+                    combinedMeshRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+                    combinedMeshRenderer.staticShadowCaster = true;
+                }
+
+                DestroyImmediate(gridProperties.meshCombiner);
+            }
+
             gridProperties.navMeshSurface.BuildNavMesh();
         }
     }
@@ -299,21 +402,15 @@ public class GridGenerator : MonoBehaviour
             gridProperties.cellSize.y = 0.1f;
         }
 
-        if (gridProperties.gridSize.x < 3)
+        if (gridProperties.gridSize.x < 10)
         {
-            if (debugCells)
-            {
-                Debug.Log("Must use minimum 3x3 grid size, adjusting....");
-            }            
-            gridProperties.gridSize.x = 3;
+            //Debug.Log("Must use minimum 3x3 grid size, adjusting....");          
+            gridProperties.gridSize.x = 10;
         }
-        if (gridProperties.gridSize.y < 3)
+        if (gridProperties.gridSize.y < 10)
         {
-            if (debugCells)
-            {
-                Debug.Log("Must use minimum 3x3 grid size, adjusting....");
-            }
-            gridProperties.gridSize.y = 3;
+            //Debug.Log("Must use minimum 3x3 grid size, adjusting....");
+            gridProperties.gridSize.y = 10;
         }
 
         gridProperties.grid.cellGap = gridProperties.cellGap;

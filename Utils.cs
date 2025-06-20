@@ -7,7 +7,6 @@ using System.IO;
 using System;
 using TMPro;
 using System.Collections.Generic;
-//using System.Diagnostics.CodeAnalysis;
 using UnityEngine.Events;
 using System.Collections;
 using UnityEngine.SceneManagement;
@@ -380,6 +379,11 @@ public static class Utils
     // Utils.PopulateToggle(gameManager.scripts.uiManager.optionsUI.frameRateCapToggle, true, gameManager.scripts.optionsManager.OnFrameRateCapToggleChanged);
     public static void PopulateToggle(Toggle toggle, bool defaultState, UnityAction<bool> callback)
     {
+        if (!toggle)
+        {
+            return;
+        }
+
         toggle.onValueChanged.RemoveAllListeners();
         toggle.onValueChanged.AddListener(callback);
         toggle.isOn = defaultState;
@@ -389,6 +393,11 @@ public static class Utils
     // Utils.PopulateSlider(gameManager.scripts.uiManager.optionsUI.maximumAutosavesSlider, 10, gameManager.scripts.optionsManager.OnAutosavesSliderChanged);
     public static void PopulateSlider(Slider slider, float defaultValue, TMP_InputField sliderNumberInputField, string numberFormat, UnityAction<float> callback)
     {
+        if (!slider)
+        {
+            return;
+        }
+
         slider.onValueChanged.AddListener(callback);
         slider.value = defaultValue;// Default value
         callback.Invoke(slider.value);
@@ -442,6 +451,11 @@ public static class Utils
     // Utils.PopulateDropdown(gameManager.scripts.uiManager.optionsUI.autosavesDropdown, new List<string> { "Off", "On" }, 1, gameManager.scripts.optionsManager.OnAutosavesChanged);
     public static void PopulateDropdown(TMP_Dropdown dropdown, List<string> list, int defaultValue, UnityAction<int> callback)
     {
+        if (!dropdown)
+        {
+            return;
+        }
+
         dropdown.ClearOptions();
         dropdown.AddOptions(list);
         dropdown.onValueChanged.RemoveAllListeners();
