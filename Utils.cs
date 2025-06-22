@@ -483,77 +483,64 @@ public static class Utils
         {
             const float MIN_DB = -80f;
             const float MAX_DB = 5f;
-            float dB;
-            string desiredText;
 
-            if (slider)
+            if (slider == null) return;
+
+            // Apply change and clamp
+            slider.value = Mathf.Clamp(slider.value + change, slider.minValue, slider.maxValue);
+
+            float roundedValue;
+
+            // Use format if given, with fallback
+            if (!string.IsNullOrEmpty(desiredNumberFormat))
             {
-                slider.value = Mathf.Clamp(slider.value + change, slider.minValue, slider.maxValue);
-                
-                float roundedValue;
-                if (!string.IsNullOrEmpty(desiredNumberFormat))
+                try
                 {
-                    if (float.TryParse(slider.value.ToString(desiredNumberFormat), out float parsed))
-                    {
-                        roundedValue = parsed;
-                    }                        
-                    else
-                    {
-                        roundedValue = Mathf.Round(slider.value * 100f) / 100f; // fallback
-                    }                        
+                    roundedValue = float.Parse(slider.value.ToString(desiredNumberFormat));
                 }
-                else if (slider.wholeNumbers)
+                catch
                 {
-                    roundedValue = Mathf.Round(slider.value);
+                    roundedValue = Mathf.Round(slider.value * 100f) / 100f;
                 }
-                else
-                {
-                    roundedValue = Mathf.Round(slider.value * 10f) / 10f;
-                }
-
-                slider.value = roundedValue;
-
-                if (mainMixer && mixerProperty != null)
-                {                    
-                    if (desiredNumberFormat != null && text)
-                    {
-                        desiredText = roundedValue.ToString(desiredNumberFormat) + "<color=red>%</color>";
-                        text.text = desiredText;
-                        desiredText = null;
-                    }
-                    else if (text)
-                    {
-                        desiredText = roundedValue.ToString("F2") + "<color=red>%</color>";
-                        text.text = desiredText;                        
-                        desiredText = null;
-                    }
-                    dB = Mathf.Lerp(MIN_DB, MAX_DB, roundedValue / slider.maxValue);
-                    mainMixer.SetFloat(mixerProperty, dB);
-                }
-                else if (text)
-                {
-                    if (desiredNumberFormat != null)
-                    {
-                        text.text = roundedValue.ToString(desiredNumberFormat);
-                    }
-                    else
-                    {
-                        if (slider.wholeNumbers)
-                        {
-                            text.text = roundedValue.ToString("F0");
-                        }
-                        else
-                        {
-                            // ROUND SLIDER.VALUE TO F1
-                            text.text = roundedValue.ToString("F1");
-                        }
-                    }
-                }
-
-                setter(slider.value);
             }
+            else if (slider.wholeNumbers)
+            {
+                roundedValue = Mathf.Round(slider.value);
+            }
+            else
+            {
+                roundedValue = Mathf.Round(slider.value * 10f) / 10f;
+            }
+
+            slider.value = roundedValue;
+
+            // Audio mixer path
+            if (mainMixer && !string.IsNullOrEmpty(mixerProperty))
+            {
+                float dB = Mathf.Lerp(MIN_DB, MAX_DB, roundedValue / slider.maxValue);
+                mainMixer.SetFloat(mixerProperty, dB);
+
+                if (text)
+                {
+                    string formattedValue = desiredNumberFormat != null ? roundedValue.ToString(desiredNumberFormat) : roundedValue.ToString("F2");
+
+                    text.text = $"{formattedValue}";
+                    //Debug.Log($"[Slider] Value: {roundedValue}, Format: {desiredNumberFormat}, Output: {roundedValue.ToString(desiredNumberFormat)}");
+                }
+            }
+            // Regular float display
+            else if (text)
+            {
+                string format = slider.wholeNumbers ? "F0" : "F1";
+
+                text.text = !string.IsNullOrEmpty(desiredNumberFormat) ? roundedValue.ToString(desiredNumberFormat) : roundedValue.ToString(format);
+            }
+
+            setter(slider.value);
         };
     }
+
+
 
 
 
