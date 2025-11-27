@@ -11,6 +11,7 @@ using UnityEngine.Events;
 using System.Collections;
 using UnityEngine.SceneManagement;
 using UnityEngine.Audio;
+using UnityEngine.VFX;
 
 public static class Utils
 {
@@ -22,15 +23,27 @@ public static class Utils
 
     #if ENABLE_INPUT_SYSTEM
     static bool newInputSystem = true;
-    #else
+#else
     static bool newInputSystem = false;
-    #endif
+#endif
 
-    // PLATFORM DETECTION
+    #region Platform
     //Debug.Log("Running on Windows: " + Utils.Windows);
+    /// <summary>
+    /// Returns true if detected platform is Windows.
+    /// </summary>
     public static bool Windows { get; private set; } = false;
+    /// <summary>
+    /// Returns true if detected platform is Steamdeck.
+    /// </summary>
     public static bool Steamdeck { get; private set; } = false;
+    /// <summary>
+    /// Returns true if detected platform is Playstation5.
+    /// </summary>
     public static bool Playstation5 { get; private set; } = false;
+    /// <summary>
+    /// Returns true if detected platform is XBox.
+    /// </summary>
     public static bool XBox { get; private set; } = false;
 
     static Utils()
@@ -51,6 +64,53 @@ public static class Utils
         XBox = true;
         #endif
     }
+
+    // if(Utils.GetPreferredSystemLanguage() == "en"){// SYSTEM USING ENGLISH, DO SOMETHING};
+    public static string GetPreferredSystemLanguage()
+    {
+        CultureInfo currentCulture = CultureInfo.CurrentCulture;
+        string language = currentCulture.TwoLetterISOLanguageName;
+        return language;
+    }
+
+
+    //if (Utils.CheckForOptionsSave(gameManager.saveManager.optionsFilePath)){/*SAVE EXISTS, DO SOMETHING*/};
+    public static bool CheckForOptionsSave(string filePath)
+    {
+        if (File.Exists(filePath))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    #endregion
+
+    #region Times
+    public static WaitForSeconds wfsZeroOne = new WaitForSeconds(0.1f);
+    public static WaitForSeconds wfsZeroTwo = new WaitForSeconds(0.2f);
+    public static WaitForSeconds wfsZeroThree = new WaitForSeconds(0.3f);
+    public static WaitForSeconds wfsZeroFour = new WaitForSeconds(0.4f);
+    public static WaitForSeconds wfsZeroFive = new WaitForSeconds(0.5f);
+    public static WaitForSeconds wfsZeroSix = new WaitForSeconds(0.6f);
+    public static WaitForSeconds wfsZeroSeven = new WaitForSeconds(0.7f);
+    public static WaitForSeconds wfsZeroEight = new WaitForSeconds(0.8f);
+    public static WaitForSeconds wfsZeroNine = new WaitForSeconds(0.9f);
+    public static WaitForSeconds wfsOne = new WaitForSeconds(1f);
+    public static WaitForSeconds wfsTwo = new WaitForSeconds(2f);
+    public static WaitForSeconds wfsThree = new WaitForSeconds(3f);
+    public static WaitForSeconds wfsFour = new WaitForSeconds(4f);
+    public static WaitForSeconds wfsFive = new WaitForSeconds(5f);
+    public static WaitForSeconds wfsSix = new WaitForSeconds(6f);
+    public static WaitForSeconds wfsSeven = new WaitForSeconds(7f);
+    public static WaitForSeconds wfsEight = new WaitForSeconds(8f);
+    public static WaitForSeconds wfsNine = new WaitForSeconds(9f);
+    public static WaitForSeconds wfsTen = new WaitForSeconds(10f);
+    #endregion
+
+    #region Cursor
 
     // Vector3 mouseWorldPosition = Utils.GetCursorWorldPosition3D();
     public static Vector3 GetCursorWorldPosition3D()
@@ -85,10 +145,50 @@ public static class Utils
 
         cursorCanvasImageTransform.localPosition = localPoint;
     }
+    #endregion
 
-    // Vector3 hitWorldPosition;
-    // int uiLayer = LayerMask.NameToLayer("Layer Name");
-    // if (Utils.RayCastIn3DLayerSpecific(uiLayer, out hitWorldPosition))
+    #region Raycasts
+    /// <summary>
+    /// Performs a 3D raycast that respects a LayerMask, either from a custom origin/direction or from the cursor.
+    /// </summary>
+    /// <param name="hitPoint">World position of the hit, zero if nothing hit</param>
+    /// <param name="hitLayers">LayerMask to test against</param>
+    /// <param name="origin">Optional ray origin; if null, uses CursorRay3D()</param>
+    /// <param name="direction">Optional ray direction; required if origin is specified</param>
+    /// <param name="maxDistance">Optional max distance (defaults to Mathf.Infinity)</param>
+    /// <returns>True if something was hit</returns>
+    public static bool RayCastLayered(out Vector3 hitPoint, LayerMask hitLayers, Vector3? origin = null, Vector3? direction = null, float maxDistance = Mathf.Infinity)
+    {
+        Ray ray;
+
+        if (origin.HasValue && direction.HasValue)
+        {
+            ray = new Ray(origin.Value, direction.Value);
+        }
+        else
+        {
+            ray = CursorRay3D();
+        }
+
+        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, hitLayers))
+        {
+            hitPoint = hit.point;
+            return true;
+        }
+
+        hitPoint = Vector3.zero;
+        return false;
+    }
+
+    /// <summary>
+    /// Performs a 3D raycast from CURSOR POSITION that respects a LayerMask int.
+    /// <code>
+    /// int uiLayer = LayerMask.NameToLayer("Layer Name");
+    /// Vector3 hitWorldPosition; 
+    /// if (Utils.RayCastIn3DLayerSpecific(uiLayer,hitWorldPosition)){/*DO SOMETHING*/}</code></summary>
+    /// <param name="desiredLayer">Pass in a layer name using LayerMask.NameToLayer</param>
+    /// <param name="hitPoint">Store the result using a Vector3</param>
+    /// <returns>True if something was hit.</returns>
     public static bool RayCastIn3DLayerSpecific(int desiredLayer, out Vector3 hitPoint)
     {
         Ray ray = CursorRay3D();
@@ -106,8 +206,16 @@ public static class Utils
         }
     }
 
-    // Vector3 hitWorldPosition;
-    // if (Utils.RayCastIn3DTagSpecific("Tag Name", hitWorldPosition))
+    /// <summary>
+    /// Performs a 3D raycast from CURSOR POSITION that respects a LayerMask int.
+    /// <code>
+    /// Vector3 hitWorldPosition;
+    /// if (Utils.RayCastIn3DTagSpecific("Tag Name", hitWorldPosition))
+    /// </code>
+    /// </summary>
+    /// <param name="tag">Tag name string</param>
+    /// <param name="hitPoint">Vector3 hitWorldPosition; - to store the result</param>
+    /// <returns>True if something was hit.</returns>
     public static bool RayCastIn3DTagSpecific(string tag, out Vector3 hitPoint)
     {
         Ray ray = CursorRay3D();
@@ -154,12 +262,12 @@ public static class Utils
         if (Physics.Raycast(ray, out RaycastHit cursorObject, Mathf.Infinity))
         {
             transform = cursorObject.transform;
-            return cursorObject.transform.gameObject;            
+            return cursorObject.transform.gameObject;
         }
         else
         {
             transform = null;
-            return null;            
+            return null;
         }
     }
 
@@ -214,7 +322,7 @@ public static class Utils
 
     // GameObject firstCursorObject = Utils.CursorFirstObjectHit();
     public static GameObject CursorFirstObjectHit()
-    {        
+    {
         var layerMask = Physics.DefaultRaycastLayers;
 
         Ray ray = CursorRay3D();
@@ -228,29 +336,9 @@ public static class Utils
             return null;
         }
     }
+    #endregion
 
-    // if(Utils.GetPreferredSystemLanguage() == "en"){// SYSTEM USING ENGLISH, DO SOMETHING};
-    public static string GetPreferredSystemLanguage()
-    {
-        CultureInfo currentCulture = CultureInfo.CurrentCulture;
-        string language = currentCulture.TwoLetterISOLanguageName;
-        return language;
-    }
-
-
-    //if (Utils.CheckForOptionsSave(gameManager.saveManager.optionsFilePath)){/*SAVE EXISTS, DO SOMETHING*/};
-    public static bool CheckForOptionsSave(string filePath)
-    {
-        if (File.Exists(filePath))
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
+    #region Scene
     public static IEnumerator LoadUnloadScene(string sceneName, bool load)
     {        
         if (!Application.CanStreamedLevelBeLoaded(sceneName))// Check if the scene exists in the build settings
@@ -289,7 +377,9 @@ public static class Utils
             }
         }
     }
+    #endregion
 
+    #region Object
     // Utils.ActivateObject(object, true);
     public static void ActivateObject(GameObject gameObject, bool activate)
     {
@@ -320,12 +410,64 @@ public static class Utils
         UnityEngine.Object.DontDestroyOnLoad(gameObject);
     }
 
-    // Utils.ClearMemory();
-    public static void ClearMemory()
+    public static void EnableActionMap(InputActionMap inputActionMap, bool enable)
     {
-        System.GC.Collect();
+        if (inputActionMap != null)
+        {
+            if (enable)
+            {
+                inputActionMap.Enable();
+            }
+            else
+            {
+                inputActionMap.Disable();
+            }
+        }
     }
 
+    //Enemy enemy = null;
+    //if (enemy == null) Utils.TryGetComponentInParent(hit, out enemy, true); // 2. Parent chain    
+    public static bool TryGetComponentInParent<T>(Component start, out T result, bool includeInactive = true) where T : Component
+    {
+        result = null;
+
+        Transform t = start.transform.parent; // skip self, handled by caller
+        while (t != null)
+        {
+            if (includeInactive || t.gameObject.activeInHierarchy)
+            {
+                if (t.TryGetComponent<T>(out result))
+                    return true;
+            }
+            t = t.parent;
+        }
+
+        return false;
+    }
+
+    //Enemy enemy = null;
+    //if (enemy == null) Utils.TryGetComponentInChildren(hit, out enemy, true);// 3. Child chain
+    public static bool TryGetComponentInChildren<T>(Component start, out T result, bool includeInactive = true) where T : Component
+    {
+        result = null;
+
+        foreach (Transform child in start.transform)
+        {
+            if (!includeInactive && !child.gameObject.activeInHierarchy)
+                continue;
+
+            if (child.TryGetComponent<T>(out result))
+                return true;
+
+            if (TryGetComponentInChildren(child, out result, includeInactive))
+                return true;
+        }
+
+        return false;
+    }
+    #endregion
+
+    #region UI
     // Utils.TintUI(image, onColor);
     public static void TintUI(Image image, Color32 desiredColor)
     {
@@ -367,6 +509,21 @@ public static class Utils
         image.color = color;
     }
 
+    // Utils.SliderScaleUI(gameManager.scripts.uiManager.optionsUI.gamepadLeftDeadzoneSlider, gameManager.scripts.uiManager.optionsUI.gamepadLeftDeadzoneEffect.transform);
+    public static void SliderScaleUI(Slider slider, Transform UIToScale)
+    {
+        if (slider)
+        {
+            Vector3 newScale;
+            newScale.z = 1;
+            newScale.x = slider.value;
+            newScale.y = slider.value;
+            UIToScale.localScale = newScale;
+        }
+    }
+    #endregion
+
+    #region Options
     //Utils.CheckToggleValueModified(gameManager.scripts.uiManager.optionsUI.frameRateCapToggle, appliedProperties.appliedFrameRateCap, ref gameManager.scripts.uiManager.optionsUI.framerateCapModifiedIcon);
     public static void CheckToggleValueModified(Toggle toggle, bool optionsAppliedBool, GameObject valueModifiedImage)
     {
@@ -414,19 +571,6 @@ public static class Utils
         if (slider && valueModifiedImage.activeSelf != (optionsAppliedFloat != slider.value))
         {
             valueModifiedImage.SetActive(optionsAppliedFloat != slider.value);
-        }
-    }
-
-    // Utils.SliderScaleUI(gameManager.scripts.uiManager.optionsUI.gamepadLeftDeadzoneSlider, gameManager.scripts.uiManager.optionsUI.gamepadLeftDeadzoneEffect.transform);
-    public static void SliderScaleUI(Slider slider, Transform UIToScale)
-    {
-        if (slider)
-        {
-            Vector3 newScale;
-            newScale.z = 1;
-            newScale.x = slider.value;
-            newScale.y = slider.value;
-            UIToScale.localScale = newScale;
         }
     }
 
@@ -539,9 +683,23 @@ public static class Utils
             setter(slider.value);
         };
     }
+    #endregion
 
+    #region VFX
+    // StartCoroutine(Utils.WaitForVFXToFinish(VFX, .gameObject, new WaitForSeconds(0.1f)));
+    public static IEnumerator WaitForVFXToFinish(VisualEffect vfx, GameObject objectToDestroy, WaitForSeconds waitTime)
+    {
+        if (vfx == null || objectToDestroy == null)
+            yield break;
 
+        yield return waitTime;
 
+        if (objectToDestroy != null)
+        {
+            UnityEngine.Object.Destroy(objectToDestroy);
+        }            
+    }
+    #endregion
 
 
     // -----------------------------------------------------
