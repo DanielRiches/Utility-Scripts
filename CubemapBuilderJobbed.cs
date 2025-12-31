@@ -24,11 +24,9 @@ public class CubemapBuilderJobbed : EditorWindow
     const string buildCubemapError = "Error";
     const string buildCubemapErrorDesc = "Please assign all 6 textures";
     const string buildCubemapOk = "Ok";
-    const string saveCubemap = "Save Cubemap";
     const string newCubemap = "NewCubemap";
-    const string cubemapExr = "exr";
-    const string cubemapPng = "png";
-    const string cubemapSavePath = "Choose save path";
+    const string cubemapExr = ".exr";
+    const string cubemapPng = ".png";
     const string success = "Success";
     const string cubemapBuilt = "Cubemap built successfully! Face size:";
     const string exposure = "Exposure (EV)";
@@ -39,6 +37,8 @@ public class CubemapBuilderJobbed : EditorWindow
     const string preview = "Preview";
     const string settings = "Settings";
     const string noPreview = "No preview generated yet.";
+    const string memorySafety = "(clamped for memory safety)";
+    const string textureSafety = "(clamped to input texture size)";
 
     [MenuItem(menu)]
     public static void OpenWindow() => GetWindow<CubemapBuilderJobbed>();
@@ -139,7 +139,7 @@ public class CubemapBuilderJobbed : EditorWindow
                 return;
             }
 
-            string fileName = newCubemap + (generateHDR ? ".exr" : ".png");
+            string fileName = newCubemap + (generateHDR ? cubemapExr : cubemapPng);
             string path = Path.Combine(saveFolder, fileName);
             BuildCubemap(path);
         }
@@ -207,14 +207,8 @@ public class CubemapBuilderJobbed : EditorWindow
         string reason = "";
         if (clampedSize < requestedSize)
         {
-            if (clampedSize < requestedSize && clampedSize < smallestWidth || clampedSize < smallestHeight)
-            {
-                reason = " (clamped to input texture size)";
-            }
-            else
-            {
-                reason = " (clamped for memory safety)";
-            }
+            if (clampedSize < requestedSize && clampedSize < smallestWidth || clampedSize < smallestHeight) reason = textureSafety;
+            else reason = memorySafety;
         }
 
         int crossWidth = clampedSize * 4;
