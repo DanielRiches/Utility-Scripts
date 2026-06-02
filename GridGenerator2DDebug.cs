@@ -5,190 +5,170 @@ using UnityEngine;
 public class GridGenerator2DDebug : MonoBehaviour
 {
     [Header("Grid Reference")]
+    [Tooltip("Reference to the grid being visualized and inspected.")]
     public GridGenerator2D grid;
 
     [Header("Tile Debug")]
-    [SerializeField] private bool debugTileData = false;
-
-    [Tooltip("-1 = full grid, otherwise specific world space position")]
+    [Tooltip("When enabled, prints tile information to the Console and then automatically resets.")]
+    [SerializeField] private bool debugTileData;
+    [Tooltip("Tile coordinate to inspect. Use (-1, -1) to iterate through every tile in the grid.")]
     [SerializeField] private int2 tileCoord = new int2(-1, -1);
-
+    [Tooltip("Stops any active tile debugging operation and clears the current selection.")]
     [SerializeField] private bool cancelDebug;
 
-    // ------------------------------------------------------------
-    // GIZMOS
-    // ------------------------------------------------------------
-
     [Header("Gizmos")]
-    [SerializeField] private bool drawCells = false;
-    [SerializeField] private bool drawGuideCells = false;
+    [Tooltip("Draws debug gizmos for visible grid cells.")]
+    [SerializeField] private bool drawCells;
+    [Tooltip("Highlights the grid center, guide axes, and corner cells using different colors.")]
+    [SerializeField] private bool drawGuideCells;
+    [Tooltip("Additional world-space origins that draw grid gizmos around themselves. Useful for tracking moving objects such as creatures.")]
+    [SerializeField] private Transform[] multiOrigin;
+    [Tooltip("Draw radius around each Multi Origin transform.")]
+    [SerializeField] private float multiDrawRadius = 50f;
+    [Tooltip("Optional custom origin used as the primary gizmo draw center.")]
+    [SerializeField] private Transform customOrigin;
+    [Tooltip("Uses grid cell (0,0) as the primary gizmo draw center when no custom origin is assigned.")]
+    [SerializeField] private bool useGridOrigin;
 
-    [SerializeField, Range(0f, 20000f)]
-    private float drawRadius = 50f;
+    [Tooltip("Draw radius around the primary origin (camera, custom origin, or grid origin).")]
+    [SerializeField] private float drawRadius = 150f;
 
-    [Header("Radius Origin")]
-    [SerializeField] private bool useFirstCellAsOrigin = false;
+    private Coroutine routine;
+    private bool cancel;
 
-    // ------------------------------------------------------------
-    // INTERNAL
-    // ------------------------------------------------------------
+    private Vector2Int current = new Vector2Int(-1, -1);
 
-    private Coroutine sampleCoroutine;
-    private bool cancelRequested;
-
-    private Plane[] frustumPlanes = new Plane[6];
-
-    private Vector2Int currentSampledTile = new Vector2Int(-1, -1);
-
-    private void Update()
+    void Update()
     {
         if (debugTileData)
         {
             debugTileData = false;
-            SampleTileFlags(tileCoord);
+            Sample(tileCoord);
         }
 
         if (cancelDebug)
         {
             cancelDebug = false;
-            CancelSampling();
+            Cancel();
         }
     }
 
-    // ------------------------------------------------------------
-    // TILE DEBUG
-    // ------------------------------------------------------------
-
-    public void SampleTileFlags(int2 coord)
+    public void Sample(int2 coord)
     {
-        if (grid == null || !grid.IsGenerated)
-            return;
+        if (grid == null || !grid.IsGenerated) return;
 
-        CancelSampling();
-
-        cancelRequested = false;
-        sampleCoroutine = StartCoroutine(SampleCoroutine(coord));
+        Cancel();
+        cancel = false;
+        routine = StartCoroutine(Run(coord));
     }
 
-    public void CancelSampling()
+    public void Cancel()
     {
-        cancelRequested = true;
-        currentSampledTile = new Vector2Int(-1, -1);
+        cancel = true;
+        current = new Vector2Int(-1, -1);
 
-        if (sampleCoroutine != null)
-        {
-            StopCoroutine(sampleCoroutine);
-            sampleCoroutine = null;
-        }
-
-        Debug.Log("Tile sampling cancelled.");
+        if (routine != null) StopCoroutine(routine);
     }
 
-    private IEnumerator SampleCoroutine(int2 coord)
+    IEnumerator Run(int2 coord)
     {
-        int width = grid.gridProperties.GridWidth;
-        int height = grid.gridProperties.GridHeight;
-
         if (coord.x >= 0 && coord.y >= 0)
         {
-            if (!grid.InBounds(coord.x, coord.y))
-                yield break;
+            if (!grid.InBounds(coord.x, coord.y)) yield break;
 
-            currentSampledTile = new Vector2Int(coord.x, coord.y);
-            PrintTile(coord.x, coord.y);
-            currentSampledTile = new Vector2Int(-1, -1);
+            current = new Vector2Int(coord.x, coord.y);
+            Print(coord.x, coord.y);
+            current = new Vector2Int(-1, -1);
             yield break;
         }
 
-        for (int y = 0; y < height; y++)
-        {
-            for (int x = 0; x < width; x++)
+        for (int y = 0; y < grid.gridProperties.GridHeight; y++)
+            for (int x = 0; x < grid.gridProperties.GridWidth; x++)
             {
-                if (cancelRequested)
-                {
-                    currentSampledTile = new Vector2Int(-1, -1);
-                    yield break;
-                }
-
-                currentSampledTile = new Vector2Int(x, y);
-                PrintTile(x, y);
-
+                if (cancel) yield break;
+                current = new Vector2Int(x, y);
+                Print(x, y);
                 yield return null;
             }
-        }
 
-        currentSampledTile = new Vector2Int(-1, -1);
+        current = new Vector2Int(-1, -1);
     }
 
-    private void PrintTile(int x, int y)
+    void Print(int x, int y)
     {
-        float3 world = grid.GetWorldPosition(x, y);
-        float3 center = grid.GetCenterPosition(x, y);
+        var flags = grid.GetFlags(x, y);
+        var terrain = grid.GetTerrain(x, y);
+        var effect = grid.GetEffect(x, y);
+        var room = grid.GetRoom(x, y);
 
         Debug.Log(
-            $"Tile ({x},{y}) | World: {world} | Center: {center} | " +
-            $"Flags: {grid.GetFlags(x, y)} | Terrain: {grid.GetTerrain(x, y)} | " +
-            $"Effect: {grid.GetEffect(x, y)} | Room: {grid.GetRoom(x, y)}"
+            $"Tile ({x},{y}) | Corner: {grid.CellToWorldCorner(x, y)} | Center: {grid.CellToWorldCenter(x, y)}\n" +
+            $"Flags: {FlagsToString(flags)} |    Terrain: {TerrainToString(terrain)} |    Effect: {EffectToString(effect)} |    Room: {RoomToString(room)}"
         );
     }
 
-    // ------------------------------------------------------------
-    // GIZMOS
-    // ------------------------------------------------------------
-
-    private void OnDrawGizmos()
+    void OnDrawGizmos()
     {
         if (!drawCells || grid == null || !grid.IsGenerated)
             return;
 
-        Camera cam = Camera.main;
-        if (cam == null)
-            return;
+        Vector3 origin =
+            customOrigin != null
+                ? customOrigin.position
+                : useGridOrigin
+                    ? grid.CellToWorldCorner(0, 0)
+                    : Camera.main.transform.position;
 
-        GeometryUtility.CalculateFrustumPlanes(cam, frustumPlanes);
-
-        Vector3 origin = cam.transform.position;
-
-        if (useFirstCellAsOrigin)
-        {
-            float3 first = grid.GetWorldPosition(0, 0);
-            origin = (Vector3)first;
-        }
-
-        float radiusSqr = drawRadius * drawRadius;
+        float r2 = drawRadius * drawRadius;
+        float multiR2 = multiDrawRadius * multiDrawRadius;
 
         int width = grid.gridProperties.GridWidth;
         int height = grid.gridProperties.GridHeight;
 
-        float cellSize = grid.gridProperties.CellSize;
-        float baseHeight = Mathf.Max(0.1f, grid.gridProperties.CellHeight);
+        int centerX = width / 2;
+        int centerY = height / 2;
 
         int maxX = width - 1;
         int maxY = height - 1;
 
-        int centerX = width / 2;
-        int centerY = height / 2;
-
-        bool useFrustumCulling = !useFirstCellAsOrigin;
+        float baseHeight = grid.gridProperties.CellHeight;
 
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
-                float3 world = grid.GetWorldPosition(x, y);
-                Vector3 worldPos = (Vector3)world;
+                Vector3 p = grid.CellToWorldCenter(x, y);
 
-                if ((worldPos - origin).sqrMagnitude > radiusSqr)
-                    continue;
+                bool insideMainRadius =
+                    (p - origin).sqrMagnitude <= r2;
 
-                if (useFrustumCulling)
+                bool insideMultiRadius = false;
+
+                if (multiOrigin != null && multiOrigin.Length > 0)
                 {
-                    Bounds b = new Bounds(worldPos, Vector3.one * cellSize);
-                    if (!GeometryUtility.TestPlanesAABB(frustumPlanes, b))
-                        continue;
+                    for (int i = 0; i < multiOrigin.Length; i++)
+                    {
+                        Transform t = multiOrigin[i];
+
+                        if (t == null)
+                            continue;
+
+                        if ((p - t.position).sqrMagnitude <= multiR2)
+                        {
+                            insideMultiRadius = true;
+                            break;
+                        }
+                    }
                 }
 
-                bool isCenter = (x == centerX && y == centerY);
+                if (!insideMainRadius && !insideMultiRadius)
+                    continue;
+
+                bool isSelected =
+                    (x == current.x && y == current.y);
+
+                bool isCenter =
+                    (x == centerX && y == centerY);
 
                 bool isCorner =
                     (x == 0 && y == 0) ||
@@ -196,43 +176,93 @@ public class GridGenerator2DDebug : MonoBehaviour
                     (x == 0 && y == maxY) ||
                     (x == maxX && y == maxY);
 
-                bool isGuide = (x == centerX || y == centerY);
+                bool isGuide =
+                    (x == centerX || y == centerY);
 
-                bool isSamplingThisTile =
-                    (x == currentSampledTile.x && y == currentSampledTile.y);
+                Color color;
+                float heightScale;
 
-                float drawHeight = baseHeight;
-                Color color = Color.white;
+                // ----------------------------------------------------
+                // COLOR PRIORITY
+                // 1. Yellow   = active scan tile
+                // 2. Red    = center tile
+                // 3. Green  = guide lines + corners
+                // 4. Blue = multi-origin radius
+                // 5. White  = normal cells
+                // ----------------------------------------------------
 
-                if (isSamplingThisTile)
+                if (isSelected)
                 {
-                    color = Color.blue;
-                    drawHeight *= 15f;
+                    color = Color.yellow;
+                    heightScale = grid.gridProperties.CellHeight + 5f;
                 }
-                else if (drawGuideCells)
+                else if (drawGuideCells && isCenter)
                 {
-                    if (isCenter)
-                        color = Color.red;
-                    else if (isCorner)
-                        color = Color.green;
-                    else if (isGuide)
-                        color = new Color(0f, 1f, 0f, 0.35f);
+                    color = Color.red;
+                    heightScale = grid.gridProperties.CellHeight + 3f;
                 }
-
-                if (isCenter || isCorner)
-                    drawHeight *= 5f;
+                else if (drawGuideCells && (isGuide || isCorner))
+                {
+                    color = new Color(0f, 1f, 0f, 1f);
+                    heightScale = grid.gridProperties.CellHeight + 3f;
+                }
+                else if (insideMultiRadius)
+                {
+                    color = Color.midnightBlue;
+                    heightScale = grid.gridProperties.CellHeight * 2f;
+                }
+                else
+                {
+                    color = Color.white;
+                    heightScale = grid.gridProperties.CellHeight * 2f;
+                }
 
                 Gizmos.color = color;
 
                 Gizmos.DrawWireCube(
+                    p,
                     new Vector3(
-                        worldPos.x,
-                        worldPos.y + drawHeight * 0.5f,
-                        worldPos.z
-                    ),
-                    new Vector3(cellSize, drawHeight, cellSize)
+                        grid.gridProperties.CellSize,
+                        heightScale,
+                        grid.gridProperties.CellSize
+                    )
                 );
             }
         }
+    }
+
+    public string FlagsToString(GridGenerator2D.TileFlags flags)
+    {
+        return
+            $"Walkable({flags.HasFlag(GridGenerator2D.TileFlags.Walkable)}) | " +
+            $"Diggable({flags.HasFlag(GridGenerator2D.TileFlags.Diggable)}) | " +
+            $"Claimable({flags.HasFlag(GridGenerator2D.TileFlags.Claimable)}) | " +
+            $"Claimed({flags.HasFlag(GridGenerator2D.TileFlags.Claimed)}) | " +
+            $"Reserved({flags.HasFlag(GridGenerator2D.TileFlags.Reserved)}) | " +
+            $"Occupied({flags.HasFlag(GridGenerator2D.TileFlags.Occupied)})";
+    }
+
+    public string TerrainToString(GridGenerator2D.TerrainType terrain)
+    {
+        return
+            $"None({terrain == GridGenerator2D.TerrainType.None}) | " +
+            $"Tile({terrain == GridGenerator2D.TerrainType.Tile}) | " +
+            $"Corrupt({terrain == GridGenerator2D.TerrainType.Corrupt}) | " +
+            $"Water({terrain == GridGenerator2D.TerrainType.Water})";
+    }
+
+    public string EffectToString(GridGenerator2D.EffectType effect)
+    {
+        return
+            $"None({effect == GridGenerator2D.EffectType.None}) | " +
+            $"Frozen({effect == GridGenerator2D.EffectType.Frozen}) | " +
+            $"Corrupted({effect == GridGenerator2D.EffectType.Corrupted}) | " +
+            $"Electrified({effect == GridGenerator2D.EffectType.Electrified}) | " +
+            $"Trapped({effect == GridGenerator2D.EffectType.Trapped})";
+    }
+
+    public string RoomToString(GridGenerator2D.RoomType room)
+    {
+        return room.ToString();
     }
 }
