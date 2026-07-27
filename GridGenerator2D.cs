@@ -21,6 +21,9 @@ public class GridGenerator2D : MonoBehaviour
         [Tooltip("Total number of cells in the grid. X = width, Y = height. For example, (100, 100) creates a grid containing 10,000 cells.")]
         [SerializeField] private int2 gridSize = new int2(500, 500);
 
+        [Tooltip("If enabled, all chunks are allocated when the grid is generated. If disabled, chunks are created only when tile data is written to them.")]
+        [SerializeField] private bool preAllocateChunks = false;
+
         [Tooltip("Number of cells stored per chunk along one axis. Larger values reduce chunk count but increase per-chunk memory usage. A value of 128 creates chunks containing 128×128 cells.")]
         [SerializeField] private int chunkSize = 128;
 
@@ -38,7 +41,7 @@ public class GridGenerator2D : MonoBehaviour
         public int2 GridSize => gridSize;
         public int GridWidth => gridSize.x;
         public int GridHeight => gridSize.y;
-
+        public bool PreAllocateChunks => preAllocateChunks;
         public int ChunkSize => chunkSize;
         public int ChunkCountX => (gridSize.x + chunkSize - 1) / chunkSize;
         public int ChunkCountY => (gridSize.y + chunkSize - 1) / chunkSize;
@@ -51,6 +54,14 @@ public class GridGenerator2D : MonoBehaviour
         {
             get => origin;
             set => origin = value;
+        }
+
+        public void ClampGridSize()
+        {
+            gridSize = new int2(
+                math.min(gridSize.x, 16000),
+                math.min(gridSize.y, 16000)
+            );
         }
     }
 
@@ -88,27 +99,22 @@ public class GridGenerator2D : MonoBehaviour
     // CHUNK STORAGE
     // ------------------------------------------------------------
 
+    private const int TerrainShift = 8;
+    private const int EffectShift = 16;
+    private const int RoomShift = 24;
+
+    private const uint FlagsMask = 0xFF;
+    private const uint TerrainMask = 0xFF;
+    private const uint EffectMask = 0xFF;
+    private const uint RoomMask = 0xFF;
+
     private class Chunk
     {
-        public readonly uint[] flags;
-        public readonly byte[] terrain;
-        public readonly byte[] effects;
-        public readonly byte[] rooms;
-
-        public readonly float3[] world;
-        public readonly float3[] center;
+        public readonly uint[] data;
 
         public Chunk(int size)
         {
-            int count = size * size;
-
-            flags = new uint[count];
-            terrain = new byte[count];
-            effects = new byte[count];
-            rooms = new byte[count];
-
-            world = new float3[count];
-            center = new float3[count];
+            data = new uint[size * size];
         }
     }
 
@@ -126,45 +132,28 @@ public class GridGenerator2D : MonoBehaviour
 
     private void GenerateGrid()
     {
+        gridProperties.ClampGridSize();
+
         gridProperties.Origin = (float3)transform.position;
 
-        int cx = gridProperties.ChunkCountX;
-        int cy = gridProperties.ChunkCountY;
+        int chunkCountX = gridProperties.ChunkCountX;
+        int chunkCountY = gridProperties.ChunkCountY;
         int chunkSize = gridProperties.ChunkSize;
 
-        chunks = new Chunk[cx, cy];
+        chunks = new Chunk[chunkCountX, chunkCountY];
 
-        float spacing = gridProperties.CellSize + gridProperties.CellGap;
-
-        for (int cyi = 0; cyi < cy; cyi++)
+        if (gridProperties.PreAllocateChunks)
         {
-            for (int cxi = 0; cxi < cx; cxi++)
+            for (int cy = 0; cy < chunkCountY; cy++)
             {
-                float3 chunkOrigin = gridProperties.Origin + new float3(cxi * chunkSize * spacing, 0f, cyi * chunkSize * spacing);
-
-                Chunk chunk = new Chunk(chunkSize);
-                chunks[cxi, cyi] = chunk;
-
-                for (int y = 0; y < chunkSize; y++)
-                    for (int x = 0; x < chunkSize; x++)
-                    {
-                        int i = x + y * chunkSize;
-
-                        chunk.terrain[i] = (byte)TerrainType.None;
-                        chunk.effects[i] = (byte)EffectType.None;
-                        chunk.rooms[i] = (byte)RoomType.None;
-
-                        float3 worldPos = chunkOrigin + new float3(x * spacing, 0f, y * spacing);
-
-                        chunk.world[i] = worldPos;
-
-                        chunk.center[i] = worldPos + new float3(gridProperties.CellSize * 0.5f, 0f, gridProperties.CellSize * 0.5f);
-                    }
+                for (int cx = 0; cx < chunkCountX; cx++)
+                {
+                    chunks[cx, cy] = new Chunk(chunkSize);
+                }
             }
         }
 
         gridGenerated = true;
-
         if (generateFloor) CreateGridFloor();
     }
 
@@ -257,12 +246,23 @@ public class GridGenerator2D : MonoBehaviour
     // CHUNK ACCESS
     // ------------------------------------------------------------
 
-    private Chunk GetChunk(int x, int y)
+    private Chunk GetChunk(int x, int y, bool createIfMissing = false)
     {
+        if (!InBounds(x, y))
+            return null;
+
         int cx = x / gridProperties.ChunkSize;
         int cy = y / gridProperties.ChunkSize;
 
-        return chunks[cx, cy];
+        Chunk chunk = chunks[cx, cy];
+
+        if (chunk == null && createIfMissing)
+        {
+            chunk = new Chunk(gridProperties.ChunkSize);
+            chunks[cx, cy] = chunk;
+        }
+
+        return chunk;
     }
 
     private int LocalIndex(int x, int y)
@@ -280,24 +280,108 @@ public class GridGenerator2D : MonoBehaviour
     public TileFlags GetFlags(int x, int y)
     {
         Chunk c = GetChunk(x, y);
-        return (TileFlags)c.flags[LocalIndex(x, y)];
+
+        if (c == null)
+            return TileFlags.None;
+
+        uint data = c.data[LocalIndex(x, y)];
+
+        return (TileFlags)(data & FlagsMask);
+    }
+
+    public void SetFlags(int x, int y, TileFlags flags)
+    {
+        if (!InBounds(x, y))
+            return;
+        Chunk c = GetChunk(x, y, true);
+        int index = LocalIndex(x, y);
+
+        uint data = c.data[index];
+
+        data &= ~FlagsMask;
+        data |= ((uint)flags & FlagsMask);
+
+        c.data[index] = data;
     }
 
     public TerrainType GetTerrain(int x, int y)
     {
         Chunk c = GetChunk(x, y);
-        return (TerrainType)c.terrain[LocalIndex(x, y)];
+
+        if (c == null)
+            return TerrainType.None;
+
+        uint data = c.data[LocalIndex(x, y)];
+
+        return (TerrainType)((data >> TerrainShift) & TerrainMask);
+    }
+
+    public void SetTerrain(int x, int y, TerrainType terrain)
+    {
+        if (!InBounds(x, y))
+            return;
+        Chunk c = GetChunk(x, y, true);
+        int index = LocalIndex(x, y);
+
+        uint data = c.data[index];
+
+        data &= ~(TerrainMask << TerrainShift);
+        data |= ((uint)terrain & TerrainMask) << TerrainShift;
+
+        c.data[index] = data;
     }
 
     public EffectType GetEffect(int x, int y)
     {
         Chunk c = GetChunk(x, y);
-        return (EffectType)c.effects[LocalIndex(x, y)];
+
+        if (c == null)
+            return EffectType.None;
+
+        uint data = c.data[LocalIndex(x, y)];
+
+        return (EffectType)((data >> EffectShift) & EffectMask);
+    }
+
+    public void SetEffect(int x, int y, EffectType effect)
+    {
+        if (!InBounds(x, y))
+            return;
+        Chunk c = GetChunk(x, y, true);
+        int index = LocalIndex(x, y);
+
+        uint data = c.data[index];
+
+        data &= ~(EffectMask << EffectShift);
+        data |= ((uint)effect & EffectMask) << EffectShift;
+
+        c.data[index] = data;
     }
 
     public RoomType GetRoom(int x, int y)
     {
         Chunk c = GetChunk(x, y);
-        return (RoomType)c.rooms[LocalIndex(x, y)];
+
+        if (c == null)
+            return RoomType.None;
+
+        uint data = c.data[LocalIndex(x, y)];
+
+        return (RoomType)((data >> RoomShift) & RoomMask);
+    }
+
+    public void SetRoom(int x, int y, RoomType room)
+    {
+        if (!InBounds(x, y))
+            return;
+        Chunk c = GetChunk(x, y, true);
+        int index = LocalIndex(x, y);
+
+        uint data = c.data[index];
+
+        data &= ~(RoomMask << RoomShift);
+        data |= ((uint)room & RoomMask) << RoomShift;
+
+        c.data[index] = data;
     }
 }

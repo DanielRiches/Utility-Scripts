@@ -153,6 +153,9 @@ public class GridGenerator2DDebug : MonoBehaviour
                         if (t == null)
                             continue;
 
+                        if (!t.gameObject.activeInHierarchy)
+                            continue;
+
                         if ((p - t.position).sqrMagnitude <= multiR2)
                         {
                             insideMultiRadius = true;
